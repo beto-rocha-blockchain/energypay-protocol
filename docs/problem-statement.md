@@ -55,3 +55,6 @@ Stellar offers:
 
 EnergyPay builds programmable settlement infrastructure
 for energy markets using Stellar.
+
+From energy as commodity
+to energy as programmable financial asset.
