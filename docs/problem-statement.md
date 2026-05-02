@@ -2,59 +2,93 @@
 
 ## Problem
 
-Energy markets still rely on fragmented settlement processes,
-limited programmability and inefficient payment rails.
+Energy markets operate on fragmented financial infrastructure, where contracts, payments and data are disconnected across multiple systems.
 
-Main frictions:
-- Slow settlement cycles
-- Counterparty risk and operational friction
-- Limited programmability in payment flows
-- Energy data remains under-monetized
+This results in:
+
+- Slow and inefficient settlement cycles
+- High operational and counterparty risk
+- Limited programmability of financial flows
+- Underutilization and lack of monetization of energy data
+
+Despite energy being traded as a financial asset, its settlement layer remains largely manual, opaque and non-programmable.
+
+---
 
 ## Why This Matters
 
-Energy is increasingly digital,
-but settlement infrastructure remains legacy.
+Energy markets are becoming increasingly complex and data-driven.
+
+However, the financial infrastructure supporting these markets has not evolved at the same pace.
+
+This creates:
+
+- Capital inefficiency (delayed cash flows)
+- Limited access to advanced financial strategies (hedging, automation)
+- High friction for new participants
+- Missed opportunities for data-driven monetization
+
+---
+
+## Structural Gap
+
+There is a fundamental mismatch between:
+
+- Energy as a financial and tradable asset
+vs
+- Legacy settlement systems that are slow and non-programmable
+
+---
 
 ## Opportunity
 
-Programmable settlement infrastructure can enable:
+A programmable financial infrastructure layer can unlock:
 
 - Digital energy contracts
 - Near-instant settlement
-- Stablecoin payments
-- Monetized energy APIs
+- Automated financial flows
+- Integration with stablecoins and global payment rails
+- Monetization of energy data through APIs
+
+---
 
 ## Why Existing Solutions Fall Short
 
-Traditional financial rails are:
-- expensive
-- slow
-- not programmable
+Traditional financial rails:
 
-Generic blockchains often do not optimize payments.
+- Slow (batch settlement)
+- Expensive
+- Not programmable
+
+Generic blockchain solutions:
+
+- Not optimized for payments
+- Lack integration with real-world financial systems
+
+---
 
 ## Why Stellar
 
-Stellar offers:
-- fast settlement
-- low-cost payments
-- anchors
-- stablecoin rails
-- Soroban smart contracts
-- x402 programmable micropayments
+Stellar provides:
+
+- Fast and low-cost settlement
+- Native support for stablecoins
+- Anchors for fiat integration (e.g., Pix)
+- Soroban smart contracts for programmability
+- x402 protocol for native micropayments
+
+---
 
 ## Initial Target Users
 
-- Energy retailers
+- Energy retailers (comercializadoras)
 - Free market consumers
 - Energy traders
-- API consumers of energy data
+- Data/API consumers in the energy market
+
+---
 
 ## EnergyPay Thesis
 
-EnergyPay builds programmable settlement infrastructure
-for energy markets using Stellar.
-
-From energy as commodity
-to energy as programmable financial asset.
+EnergyPay builds a programmable settlement infrastructure for energy markets,
+transforming energy contracts into digital, liquid and programmable financial assets.
