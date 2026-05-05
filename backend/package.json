@@ -1,0 +1,15 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "EnergyPay backend",
+  "main": "src/app.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node src/app.js"
+  },
+  "dependencies": {
+    "@stellar/stellar-sdk": "^15.1.0",
+    "cors": "^2.8.6",
+    "express": "^4.22.1"
+  }
+}
