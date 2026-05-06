@@ -172,7 +172,7 @@ function ContractsList() {
               );
             })}
             {rows.length === 0 && (
-              <TableRow><TableCell colSpan={10} className="py-10 text-center text-sm text-muted-foreground">No contracts match the current filters.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={11} className="py-10 text-center text-sm text-muted-foreground">No contracts match the current filters.</TableCell></TableRow>
             )}
           </TableBody>
         </Table>
