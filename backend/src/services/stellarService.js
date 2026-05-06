@@ -1,142 +1,282 @@
-import express from "express";
-import {
-  createWallet,
-  fundAccount,
-  getBalance,
-  createTrustline,
-  issueToken,
-  createSellOffer,
-  createBuyOffer,
-  buyEPRW,
-  getOrderbook
-} from "../services/stellarService.js";
+import StellarSdk from "@stellar/stellar-sdk";
 
-const router = express.Router();
+const server = new StellarSdk.Horizon.Server(
+  "https://horizon-testnet.stellar.org"
+);
+
+const EPRW = "EPRW";
 
 // 🔐 Criar wallet
-router.post("/create", async (req, res) => {
-  try {
-    const wallet = createWallet();
-    await fundAccount(wallet.publicKey);
-    res.json(wallet);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Erro ao criar wallet" });
-  }
-});
+export function createWallet() {
+  const pair = StellarSdk.Keypair.random();
+
+  return {
+    publicKey: pair.publicKey(),
+    privateKey: pair.secret()
+  };
+}
+
+// 💸 Fund account
+export async function fundAccount(publicKey) {
+  const response = await fetch(
+    `https://friendbot.stellar.org?addr=${publicKey}`
+  );
+
+  return response.json();
+}
 
 // 💰 Saldo
-router.get("/:publicKey", async (req, res) => {
-  try {
-    const data = await getBalance(req.params.publicKey);
-    res.json(data);
-  } catch (err) {
-    console.error(err);
-    res.status(404).json({ error: "Conta não encontrada" });
-  }
-});
+export async function getBalance(publicKey) {
+  const account = await server.loadAccount(publicKey);
+
+  return {
+    balances: account.balances
+  };
+}
 
 // 🔗 Trustline
-router.post("/trustline", async (req, res) => {
-  try {
-    const { privateKey, issuerPublicKey } = req.body;
+export async function createTrustline(
+  privateKey,
+  issuerPublicKey
+) {
+  const keypair = StellarSdk.Keypair.fromSecret(privateKey);
 
-    const result = await createTrustline(
-      privateKey,
-      issuerPublicKey
-    );
+  const account = await server.loadAccount(keypair.publicKey());
 
-    res.json(result);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Erro ao criar trustline" });
-  }
-});
+  const asset = new StellarSdk.Asset(EPRW, issuerPublicKey);
 
-// 🪙 Emissão
-router.post("/issue", async (req, res) => {
-  try {
-    const { issuerPrivateKey, destinationPublic, amount } = req.body;
+  const transaction = new StellarSdk.TransactionBuilder(account, {
+    fee: StellarSdk.BASE_FEE,
+    networkPassphrase: StellarSdk.Networks.TESTNET
+  })
+    .addOperation(
+      StellarSdk.Operation.changeTrust({
+        asset
+      })
+    )
+    .setTimeout(30)
+    .build();
 
-    const result = await issueToken(
-      issuerPrivateKey,
-      destinationPublic,
-      amount
-    );
+  transaction.sign(keypair);
 
-    res.json(result);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Erro ao emitir token" });
-  }
-});
+  return server.submitTransaction(transaction);
+}
 
-// 📊 SELL (ASK)
-router.post("/offer", async (req, res) => {
-  try {
-    const { privateKey, amount, price, issuerPublicKey } = req.body;
+// 🪙 Emitir token
+export async function issueToken(
+  issuerPrivateKey,
+  destinationPublic,
+  amount
+) {
+  const issuer = StellarSdk.Keypair.fromSecret(issuerPrivateKey);
 
-    const result = await createSellOffer(
-      privateKey,
-      amount,
-      price,
-      issuerPublicKey
-    );
+  const issuerAccount = await server.loadAccount(
+    issuer.publicKey()
+  );
 
-    res.json(result);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Erro ao criar oferta" });
-  }
-});
+  const asset = new StellarSdk.Asset(
+    EPRW,
+    issuer.publicKey()
+  );
 
-// 📊 BUY (BID)
-router.post("/buy-offer", async (req, res) => {
-  try {
-    const { privateKey, amount, price, issuerPublicKey } = req.body;
+  const transaction = new StellarSdk.TransactionBuilder(
+    issuerAccount,
+    {
+      fee: StellarSdk.BASE_FEE,
+      networkPassphrase: StellarSdk.Networks.TESTNET
+    }
+  )
+    .addOperation(
+      StellarSdk.Operation.payment({
+        destination: destinationPublic,
+        asset,
+        amount
+      })
+    )
+    .setTimeout(30)
+    .build();
 
-    const result = await createBuyOffer(
-      privateKey,
-      amount,
-      price,
-      issuerPublicKey
-    );
+  transaction.sign(issuer);
 
-    res.json(result);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Erro ao criar ordem de compra" });
-  }
-});
+  return server.submitTransaction(transaction);
+}
+
+// 📊 SELL OFFER
+export async function createSellOffer(
+  privateKey,
+  amount,
+  price,
+  issuerPublicKey
+) {
+  const pair = StellarSdk.Keypair.fromSecret(privateKey);
+
+  const account = await server.loadAccount(pair.publicKey());
+
+  const selling = new StellarSdk.Asset(
+    EPRW,
+    issuerPublicKey
+  );
+
+  const buying = StellarSdk.Asset.native();
+
+  const transaction = new StellarSdk.TransactionBuilder(
+    account,
+    {
+      fee: StellarSdk.BASE_FEE,
+      networkPassphrase: StellarSdk.Networks.TESTNET
+    }
+  )
+    .addOperation(
+      StellarSdk.Operation.manageSellOffer({
+        selling,
+        buying,
+        amount,
+        price,
+        offerId: 0
+      })
+    )
+    .setTimeout(30)
+    .build();
+
+  transaction.sign(pair);
+
+  return server.submitTransaction(transaction);
+}
+
+// 📊 BUY OFFER
+export async function createBuyOffer(
+  privateKey,
+  amount,
+  price,
+  issuerPublicKey
+) {
+  const pair = StellarSdk.Keypair.fromSecret(privateKey);
+
+  const account = await server.loadAccount(pair.publicKey());
+
+  const buying = new StellarSdk.Asset(
+    EPRW,
+    issuerPublicKey
+  );
+
+  const selling = StellarSdk.Asset.native();
+
+  const transaction = new StellarSdk.TransactionBuilder(
+    account,
+    {
+      fee: StellarSdk.BASE_FEE,
+      networkPassphrase: StellarSdk.Networks.TESTNET
+    }
+  )
+    .addOperation(
+      StellarSdk.Operation.manageBuyOffer({
+        selling,
+        buying,
+        buyAmount: amount,
+        price,
+        offerId: 0
+      })
+    )
+    .setTimeout(30)
+    .build();
+
+  transaction.sign(pair);
+
+  return server.submitTransaction(transaction);
+}
 
 // 💸 Compra direta
-router.post("/buy", async (req, res) => {
-  try {
-    const { buyerPrivateKey, issuerPublicKey, amount, maxXlm } = req.body;
+export async function buyEPRW({
+  buyerSecret,
+  issuerPublicKey,
+  amountToReceive,
+  maxXlmSpend
+}) {
+  const buyer = StellarSdk.Keypair.fromSecret(buyerSecret);
 
-    const result = await buyEPRW({
-      buyerSecret: buyerPrivateKey,
-      issuerPublicKey,
-      amountToReceive: amount,
-      maxXlmSpend: maxXlm
-    });
+  const account = await server.loadAccount(
+    buyer.publicKey()
+  );
 
-    res.json(result);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Erro ao comprar EPRW" });
-  }
-});
+  const sendAsset = StellarSdk.Asset.native();
 
-// 📊 Preço
-router.get("/price/:issuerPublicKey", async (req, res) => {
-  try {
-    const data = await getOrderbook(req.params.issuerPublicKey);
-    res.json(data);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Erro ao obter preço" });
-  }
-});
+  const destAsset = new StellarSdk.Asset(
+    EPRW,
+    issuerPublicKey
+  );
 
-export default router;
+  const transaction = new StellarSdk.TransactionBuilder(
+    account,
+    {
+      fee: StellarSdk.BASE_FEE,
+      networkPassphrase: StellarSdk.Networks.TESTNET
+    }
+  )
+    .addOperation(
+      StellarSdk.Operation.pathPaymentStrictReceive({
+        sendAsset,
+        sendMax: maxXlmSpend,
+        destination: buyer.publicKey(),
+        destAsset,
+        destAmount: amountToReceive
+      })
+    )
+    .setTimeout(30)
+    .build();
+
+  transaction.sign(buyer);
+
+  return server.submitTransaction(transaction);
+}
+
+// 📈 Orderbook
+export async function getOrderbook(issuerPublicKey) {
+  const selling = new StellarSdk.Asset(
+    EPRW,
+    issuerPublicKey
+  );
+
+  const buying = StellarSdk.Asset.native();
+
+  const orderbook = await server
+    .orderbook(selling, buying)
+    .call();
+
+  const bids = orderbook.bids || [];
+  const asks = orderbook.asks || [];
+
+  const bestBid = bids[0]?.price || null;
+  const bestAsk = asks[0]?.price || null;
+
+  const midPrice =
+    bestBid && bestAsk
+      ? (
+          (parseFloat(bestBid) +
+            parseFloat(bestAsk)) /
+          2
+        ).toFixed(6)
+      : null;
+
+  const spread =
+    bestBid && bestAsk
+      ? (
+          parseFloat(bestAsk) -
+          parseFloat(bestBid)
+        ).toFixed(6)
+      : null;
+
+  const volume = asks.reduce(
+    (acc, ask) => acc + Number(ask.amount),
+    0
+  );
+
+  return {
+    bestBid,
+    bestAsk,
+    midPrice,
+    spread,
+    volume,
+    bids,
+    asks
+  };
+}
