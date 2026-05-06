@@ -1,12 +1,18 @@
+export type ContractStatus = "ACTIVE" | "SETTLED" | "PENDING" | "FAILED";
+
 export type Contract = {
   id: string;
   buyer: string;
   seller: string;
   volumeMWh: number;
   priceBRL: number;
+  pldBRL: number;
   settlementDate: string;
-  status: "ACTIVE" | "SETTLED" | "PENDING";
+  status: ContractStatus;
+  txHash: string;
 };
+
+export const computeExposure = (c: Contract) => (c.pldBRL - c.priceBRL) * c.volumeMWh;
 
 export type Settlement = {
   id: string;
@@ -20,12 +26,13 @@ export type Settlement = {
 };
 
 export const mockContracts: Contract[] = [
-  { id: "EPC-2041", buyer: "Vale Energia S.A.", seller: "Engie Brasil", volumeMWh: 2400, priceBRL: 248.5, settlementDate: "2026-05-12", status: "ACTIVE" },
-  { id: "EPC-2040", buyer: "Petrobras Trading", seller: "EDP Brasil", volumeMWh: 1800, priceBRL: 252.1, settlementDate: "2026-05-10", status: "ACTIVE" },
-  { id: "EPC-2039", buyer: "CCEE Comercializadora", seller: "Eletrobras", volumeMWh: 5200, priceBRL: 241.8, settlementDate: "2026-05-09", status: "PENDING" },
-  { id: "EPC-2038", buyer: "Cemig Trading", seller: "Itaipu Binacional", volumeMWh: 3600, priceBRL: 239.4, settlementDate: "2026-05-08", status: "SETTLED" },
-  { id: "EPC-2037", buyer: "Copel Mercado Livre", seller: "AES Tietê", volumeMWh: 980, priceBRL: 256.7, settlementDate: "2026-05-07", status: "SETTLED" },
-  { id: "EPC-2036", buyer: "Light Energia", seller: "Neoenergia", volumeMWh: 1450, priceBRL: 244.2, settlementDate: "2026-05-06", status: "ACTIVE" },
+  { id: "EPC-2041", buyer: "Vale Energia S.A.", seller: "Engie Brasil", volumeMWh: 2400, priceBRL: 248.5, pldBRL: 271.2, settlementDate: "2026-05-12", status: "ACTIVE", txHash: "a3f9c1e240b8d7f4a3f9c1e240b8d7f4a3f9c1e240b8d7f4a3f9c1e240b8d7f4" },
+  { id: "EPC-2040", buyer: "Petrobras Trading", seller: "EDP Brasil", volumeMWh: 1800, priceBRL: 252.1, pldBRL: 264.8, settlementDate: "2026-05-10", status: "ACTIVE", txHash: "b8d4e2912ca5b8d4e2912ca5b8d4e2912ca5b8d4e2912ca5b8d4e2912ca5b8d4" },
+  { id: "EPC-2039", buyer: "CCEE Comercializadora", seller: "Eletrobras", volumeMWh: 5200, priceBRL: 241.8, pldBRL: 258.0, settlementDate: "2026-05-09", status: "PENDING", txHash: "c1a7f03e8b91c1a7f03e8b91c1a7f03e8b91c1a7f03e8b91c1a7f03e8b91c1a7" },
+  { id: "EPC-2038", buyer: "Cemig Trading", seller: "Itaipu Binacional", volumeMWh: 3600, priceBRL: 239.4, pldBRL: 278.4, settlementDate: "2026-05-08", status: "SETTLED", txHash: "d9b3e877c1f2d9b3e877c1f2d9b3e877c1f2d9b3e877c1f2d9b3e877c1f2d9b3" },
+  { id: "EPC-2037", buyer: "Copel Mercado Livre", seller: "AES Tietê", volumeMWh: 980, priceBRL: 256.7, pldBRL: 237.1, settlementDate: "2026-05-07", status: "SETTLED", txHash: "e2f7a188d310e2f7a188d310e2f7a188d310e2f7a188d310e2f7a188d310e2f7" },
+  { id: "EPC-2036", buyer: "Light Energia", seller: "Neoenergia", volumeMWh: 1450, priceBRL: 244.2, pldBRL: 261.5, settlementDate: "2026-05-06", status: "ACTIVE", txHash: "f1c9b327ae84f1c9b327ae84f1c9b327ae84f1c9b327ae84f1c9b327ae84f1c9" },
+  { id: "EPC-2035", buyer: "Equatorial Energia", seller: "Furnas", volumeMWh: 2100, priceBRL: 246.0, pldBRL: 246.0, settlementDate: "2026-05-05", status: "FAILED", txHash: "0000000000000000000000000000000000000000000000000000000000000000" },
 ];
 
 export const mockSettlements: Settlement[] = [
