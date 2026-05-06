@@ -14,7 +14,8 @@ import {
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
-import { mockContracts, computeExposure, contractOperationalTimeline, type Contract, type ContractStatus } from "@/lib/mock-data";
+import { computeExposure, contractOperationalTimeline, type Contract, type ContractStatus } from "@/lib/mock-data";
+import { useOps } from "@/store/operations";
 import { StateMachine } from "@/components/StateMachine";
 import { CheckCircle2 } from "lucide-react";
 
