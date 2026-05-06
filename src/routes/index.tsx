@@ -15,10 +15,8 @@ import {
 } from "@/components/ui/table";
 import { StatCard } from "@/components/StatCard";
 import { SettlementTimeline } from "@/components/SettlementTimeline";
-import {
-  mockContracts, mockSettlements, pldSeries, volumeSeries,
-  operationalAlerts, settlementQueue, recentSettlementFeed,
-} from "@/lib/mock-data";
+import { pldSeries, volumeSeries, computeExposure } from "@/lib/mock-data";
+import { useOps } from "@/store/operations";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -34,9 +32,18 @@ const fmtBRL = (n: number) =>
   n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 
 function Dashboard() {
-  const activeContracts = mockContracts.filter((c) => c.status === "ACTIVE").length;
+  const contracts = useOps((s) => s.contracts);
+  const settlements = useOps((s) => s.settlements);
+  const alerts = useOps((s) => s.alerts);
+  const queue = useOps((s) => s.queue);
+  const feed = useOps((s) => s.feed);
+  const ackAlert = useOps((s) => s.ackAlert);
+
+  const activeContracts = contracts.filter((c) => c.status === "ACTIVE").length;
   const settledToday = 22900;
-  const exposure = 4_280_000;
+  const exposure = contracts
+    .filter((c) => c.status === "ACTIVE")
+    .reduce((acc, c) => acc + Math.abs(computeExposure(c)), 0);
 
   return (
     <div className="space-y-6">
