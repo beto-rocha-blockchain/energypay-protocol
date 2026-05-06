@@ -56,7 +56,7 @@ function ContractsList() {
   const [selected, setSelected] = useState<Contract | null>(null);
 
   const rows = useMemo(() => {
-    let r = mockContracts.filter((c) => {
+    let r = contracts.filter((c) => {
       const matchQ =
         !q ||
         c.id.toLowerCase().includes(q.toLowerCase()) ||
@@ -124,7 +124,7 @@ function ContractsList() {
                 <SelectItem value="FAILED">Failed</SelectItem>
               </SelectContent>
             </Select>
-            <Badge variant="outline" className="font-mono text-xs">{rows.length} / {mockContracts.length}</Badge>
+            <Badge variant="outline" className="font-mono text-xs">{rows.length} / {contracts.length}</Badge>
           </div>
         </div>
 
