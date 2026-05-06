@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink, Copy, Terminal } from "lucide-react";
 import { StateMachine } from "@/components/StateMachine";
-import { type SettlementState, type Contract } from "@/lib/mock-data";
+import { type SettlementState, type Contract, type Settlement } from "@/lib/mock-data";
+import { useOps } from "@/store/operations";
 import { toast } from "sonner";
 
 type LogLine = { ts: string; text: string; level?: "info" | "ok" | "warn" };
@@ -48,6 +49,10 @@ export function ExecutionConsole({
   const startRef = useRef<number>(0);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  const appendLog = useOps((s) => s.appendLog);
+  const updateContractState = useOps((s) => s.updateContractState);
+  const recordSettlement = useOps((s) => s.recordSettlement);
+
   useEffect(() => {
     if (!open) return;
     setLogs([]);
@@ -86,21 +91,45 @@ export function ExecutionConsole({
       const t = window.setTimeout(() => {
         setState(s.state);
         setLogs((l) => [...l, { ts: fmtTs(new Date()), text: s.log, level: s.level ?? "info" }]);
+        updateContractState(contract.id, s.state);
+        appendLog({
+          contractId: contract.id,
+          settlementId,
+          state: s.state,
+          level: (s.level ?? "info") as "info" | "ok" | "warn",
+          message: s.log,
+        });
       }, s.delay);
       timers.push(t);
     });
     const finish = window.setTimeout(() => {
       setTx(txHash);
       setLedger(ledgerNum);
-      setLatency(Date.now() - startRef.current);
+      const lat = Date.now() - startRef.current;
+      setLatency(lat);
       setRunning(false);
       setDone(true);
+      const stl: Settlement = {
+        id: settlementId,
+        contractId: contract.id,
+        counterparty: contract.seller,
+        amountBRL: amount,
+        pld,
+        date: new Date().toISOString().slice(0, 16).replace("T", " "),
+        txHash,
+        ledger: ledgerNum,
+        latencyMs: lat,
+        window: contract.window,
+        state: "SETTLED",
+        status: "CONFIRMED",
+      };
+      recordSettlement(stl);
       toast.success("Settlement finalized", { description: `Ledger #${ledgerNum}` });
     }, 3500);
     timers.push(finish);
 
     return () => timers.forEach((t) => clearTimeout(t));
-  }, [open, contract.id, contract.seller, pld, amount]);
+  }, [open, contract.id, contract.seller, contract.window, pld, amount, appendLog, updateContractState, recordSettlement]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
