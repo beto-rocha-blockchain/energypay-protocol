@@ -14,7 +14,9 @@ import {
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
-import { mockContracts, computeExposure, type Contract, type ContractStatus } from "@/lib/mock-data";
+import { mockContracts, computeExposure, contractOperationalTimeline, type Contract, type ContractStatus } from "@/lib/mock-data";
+import { StateMachine } from "@/components/StateMachine";
+import { CheckCircle2 } from "lucide-react";
 
 export const Route = createFileRoute("/contracts/")({
   head: () => ({
