@@ -9,7 +9,7 @@ import { Slider } from "@/components/ui/slider";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { mockContracts } from "@/lib/mock-data";
+import { useOps } from "@/store/operations";
 import { ExecutionConsole } from "@/components/ExecutionConsole";
 import { StateMachine } from "@/components/StateMachine";
 
@@ -27,8 +27,9 @@ const fmtBRL = (n: number) =>
   n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 2 });
 
 function SettlementPage() {
-  const [contractId, setContractId] = useState(mockContracts[0].id);
-  const contract = mockContracts.find((c) => c.id === contractId)!;
+  const contracts = useOps((s) => s.contracts);
+  const [contractId, setContractId] = useState(contracts[0]?.id ?? "");
+  const contract = contracts.find((c) => c.id === contractId) ?? contracts[0];
   const [pld, setPld] = useState<number>(278);
 
   const settlement = useMemo(() => (pld - contract.priceBRL) * contract.volumeMWh, [pld, contract]);
@@ -61,7 +62,7 @@ function SettlementPage() {
               <Select value={contractId} onValueChange={setContractId}>
                 <SelectTrigger className="bg-input"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {mockContracts.map((c) => (
+                  {contracts.map((c) => (
                     <SelectItem key={c.id} value={c.id}>
                       <span className="font-mono">{c.id}</span> — {c.buyer} ↔ {c.seller}
                     </SelectItem>

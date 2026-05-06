@@ -67,6 +67,10 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  if (typeof window !== "undefined") {
+    // start the operational ticker once on the client
+    import("@/store/operations").then((m) => m.startOpsTicker());
+  }
   return (
     <QueryClientProvider client={queryClient}>
       <SidebarProvider>

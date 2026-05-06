@@ -14,7 +14,8 @@ import {
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
-import { mockContracts, computeExposure, contractOperationalTimeline, type Contract, type ContractStatus } from "@/lib/mock-data";
+import { computeExposure, contractOperationalTimeline, type Contract, type ContractStatus } from "@/lib/mock-data";
+import { useOps } from "@/store/operations";
 import { StateMachine } from "@/components/StateMachine";
 import { CheckCircle2 } from "lucide-react";
 
@@ -48,13 +49,14 @@ function StatusBadge({ status }: { status: ContractStatus }) {
 }
 
 function ContractsList() {
+  const contracts = useOps((s) => s.contracts);
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState<"ALL" | ContractStatus>("ALL");
   const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" }>({ key: "settlementDate", dir: "desc" });
   const [selected, setSelected] = useState<Contract | null>(null);
 
   const rows = useMemo(() => {
-    let r = mockContracts.filter((c) => {
+    let r = contracts.filter((c) => {
       const matchQ =
         !q ||
         c.id.toLowerCase().includes(q.toLowerCase()) ||
@@ -71,7 +73,7 @@ function ContractsList() {
       return 0;
     });
     return r;
-  }, [q, statusFilter, sort]);
+  }, [contracts, q, statusFilter, sort]);
 
   const toggle = (key: SortKey) =>
     setSort((s) => ({ key, dir: s.key === key && s.dir === "asc" ? "desc" : "asc" }));
@@ -122,7 +124,7 @@ function ContractsList() {
                 <SelectItem value="FAILED">Failed</SelectItem>
               </SelectContent>
             </Select>
-            <Badge variant="outline" className="font-mono text-xs">{rows.length} / {mockContracts.length}</Badge>
+            <Badge variant="outline" className="font-mono text-xs">{rows.length} / {contracts.length}</Badge>
           </div>
         </div>
 
