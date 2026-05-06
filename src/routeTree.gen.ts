@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SettlementRouteImport } from './routes/settlement'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ContractsIndexRouteImport } from './routes/contracts.index'
 import { Route as ContractsNewRouteImport } from './routes/contracts.new'
 
 const SettlementRoute = SettlementRouteImport.update({
@@ -23,6 +24,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ContractsIndexRoute = ContractsIndexRouteImport.update({
+  id: '/contracts/',
+  path: '/contracts/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ContractsNewRoute = ContractsNewRouteImport.update({
   id: '/contracts/new',
   path: '/contracts/new',
@@ -33,30 +39,34 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/settlement': typeof SettlementRoute
   '/contracts/new': typeof ContractsNewRoute
+  '/contracts/': typeof ContractsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/settlement': typeof SettlementRoute
   '/contracts/new': typeof ContractsNewRoute
+  '/contracts': typeof ContractsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/settlement': typeof SettlementRoute
   '/contracts/new': typeof ContractsNewRoute
+  '/contracts/': typeof ContractsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/settlement' | '/contracts/new'
+  fullPaths: '/' | '/settlement' | '/contracts/new' | '/contracts/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/settlement' | '/contracts/new'
-  id: '__root__' | '/' | '/settlement' | '/contracts/new'
+  to: '/' | '/settlement' | '/contracts/new' | '/contracts'
+  id: '__root__' | '/' | '/settlement' | '/contracts/new' | '/contracts/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   SettlementRoute: typeof SettlementRoute
   ContractsNewRoute: typeof ContractsNewRoute
+  ContractsIndexRoute: typeof ContractsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -75,6 +85,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/contracts/': {
+      id: '/contracts/'
+      path: '/contracts'
+      fullPath: '/contracts/'
+      preLoaderRoute: typeof ContractsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/contracts/new': {
       id: '/contracts/new'
       path: '/contracts/new'
@@ -89,7 +106,18 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   SettlementRoute: SettlementRoute,
   ContractsNewRoute: ContractsNewRoute,
+  ContractsIndexRoute: ContractsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
