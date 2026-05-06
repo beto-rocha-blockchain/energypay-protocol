@@ -79,13 +79,15 @@ function RootComponent() {
                 <div className="hidden items-center gap-2 text-xs text-muted-foreground md:flex">
                   <span className="font-mono uppercase tracking-widest">Settlement Operations</span>
                   <span className="h-1 w-1 rounded-full bg-muted-foreground/40" />
-                  <span className="font-mono">Sandbox · v0.4.2</span>
+                  <span className="font-mono">Pilot Environment · v0.4.2</span>
+                  <span className="h-1 w-1 rounded-full bg-muted-foreground/40" />
+                  <span className="font-mono">Clearing Desk · BRL</span>
                 </div>
               </div>
               <div className="flex items-center gap-3 text-xs">
                 <span className="hidden font-mono text-muted-foreground md:inline">Network</span>
                 <span className="flex items-center gap-1.5 rounded-md border border-border bg-card px-2 py-1 font-mono text-success">
-                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-success" /> STELLAR · ONLINE
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-success" /> STELLAR TESTNET · SETTLEMENT NETWORK
                 </span>
               </div>
             </header>

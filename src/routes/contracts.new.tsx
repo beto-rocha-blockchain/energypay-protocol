@@ -103,7 +103,7 @@ function NewContract() {
               Register Contract <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
             <p className="mt-3 text-center font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-              Anchored to Stellar mainnet
+              Anchored to Stellar Testnet · Settlement Network
             </p>
           </Card>
         </div>

@@ -1,14 +1,15 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, FileSignature, Calculator, Zap, Activity } from "lucide-react";
+import { LayoutDashboard, FileSignature, Calculator, Zap, Activity, ListChecks, FilePlus2 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter,
 } from "@/components/ui/sidebar";
 
 const items = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Contracts", url: "/contracts/new", icon: FileSignature },
-  { title: "Settlement", url: "/settlement", icon: Calculator },
+  { title: "Control Room", url: "/", icon: LayoutDashboard },
+  { title: "Contract Registry", url: "/contracts", icon: ListChecks },
+  { title: "New Contract", url: "/contracts/new", icon: FilePlus2 },
+  { title: "Settlement Engine", url: "/settlement", icon: Calculator },
 ];
 
 export function AppSidebar() {
@@ -22,7 +23,7 @@ export function AppSidebar() {
           </div>
           <div className="flex flex-col leading-tight">
             <span className="text-sm font-semibold tracking-tight">EnergyPay</span>
-            <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Settlement Demo</span>
+            <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Clearing Infrastructure</span>
           </div>
         </div>
       </SidebarHeader>
@@ -48,7 +49,7 @@ export function AppSidebar() {
       <SidebarFooter className="border-t border-sidebar-border">
         <div className="flex items-center gap-2 px-2 py-2 text-xs text-muted-foreground">
           <Activity className="h-3.5 w-3.5 text-success" />
-          <span className="font-mono">Stellar mainnet · live</span>
+          <span className="font-mono">Stellar Testnet · Settlement Network</span>
         </div>
       </SidebarFooter>
     </Sidebar>
