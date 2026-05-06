@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
-  Activity, ArrowUpRight, FileSignature, ExternalLink,
-  TrendingUp, Wallet, Zap,
+  Activity, AlertTriangle, ArrowUpRight, FileSignature, ExternalLink, Info,
+  ShieldAlert, TrendingUp, Wallet, Zap, Clock,
 } from "lucide-react";
 import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, Line, LineChart,
@@ -14,13 +14,17 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { StatCard } from "@/components/StatCard";
-import { mockContracts, mockSettlements, pldSeries, volumeSeries } from "@/lib/mock-data";
+import { SettlementTimeline } from "@/components/SettlementTimeline";
+import {
+  mockContracts, mockSettlements, pldSeries, volumeSeries,
+  operationalAlerts, settlementQueue, recentSettlementFeed,
+} from "@/lib/mock-data";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Dashboard — EnergyPay Settlement" },
-      { name: "description", content: "Operational overview of programmable energy settlements." },
+      { title: "Control Room — EnergyPay Settlement" },
+      { name: "description", content: "Operational overview of programmable energy settlements, exposure and reconciliation." },
     ],
   }),
   component: Dashboard,
@@ -31,7 +35,6 @@ const fmtBRL = (n: number) =>
 
 function Dashboard() {
   const activeContracts = mockContracts.filter((c) => c.status === "ACTIVE").length;
-  const totalVolume = volumeSeries.reduce((a, b) => a + b.volume, 0);
   const settledToday = 22900;
   const exposure = 4_280_000;
 
@@ -40,11 +43,17 @@ function Dashboard() {
       <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
         <div>
           <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-            Settlement Operations / Overview
+            Settlement Operations / Control Room
           </p>
-          <h1 className="mt-1 font-display text-3xl font-semibold tracking-tight">Control Room</h1>
+          <h1 className="mt-1 font-display text-3xl font-semibold tracking-tight">Operational Overview</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Intraday settlement cycle · counterparty exposure · reconciliation pipeline.
+          </p>
         </div>
         <div className="flex gap-2">
+          <Button asChild variant="outline" size="sm">
+            <Link to="/contracts"><FileSignature className="mr-2 h-4 w-4" /> Contract Registry</Link>
+          </Button>
           <Button asChild variant="outline" size="sm">
             <Link to="/settlement"><Activity className="mr-2 h-4 w-4" /> Run Settlement</Link>
           </Button>
@@ -56,13 +65,13 @@ function Dashboard() {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Active Contracts" value={activeContracts}
-          sub="+3 vs. last week" trend="up" icon={<FileSignature className="h-5 w-5" />} />
+          sub="3 onboarded this cycle" trend="up" icon={<FileSignature className="h-5 w-5" />} />
         <StatCard label="Settled Today (MWh)" value={settledToday.toLocaleString("pt-BR")}
-          sub="+12.4% intraday" trend="up" icon={<Zap className="h-5 w-5" />} />
-        <StatCard label="Settlement Volume (30d)" value={fmtBRL(38_420_000)}
-          sub="98.7% on-chain finality" trend="up" icon={<TrendingUp className="h-5 w-5" />} />
-        <StatCard label="Open Exposure" value={fmtBRL(exposure)}
-          sub="Δ −1.8% vs. close" trend="down" icon={<Wallet className="h-5 w-5" />} />
+          sub="+12.4% vs. previous cycle" trend="up" icon={<Zap className="h-5 w-5" />} />
+        <StatCard label="Cleared Volume (30d)" value={fmtBRL(38_420_000)}
+          sub="98.7% transaction finality" trend="up" icon={<TrendingUp className="h-5 w-5" />} />
+        <StatCard label="Intraday Open Exposure" value={fmtBRL(exposure)}
+          sub="Δ −1.8% vs. T-1 close" trend="down" icon={<Wallet className="h-5 w-5" />} />
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -70,7 +79,7 @@ function Dashboard() {
           <div className="mb-4 flex items-center justify-between">
             <div>
               <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Settlement Throughput</p>
-              <p className="font-display text-lg font-semibold">Volume vs. Settled (MWh)</p>
+              <p className="font-display text-lg font-semibold">Notified vs. Cleared volume (MWh)</p>
             </div>
             <Badge variant="outline" className="font-mono text-xs">8 day window</Badge>
           </div>
@@ -120,58 +129,126 @@ function Dashboard() {
         </Card>
       </div>
 
+      {/* Operational widgets row */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <Card className="border-border bg-card p-5 lg:col-span-2">
+        <Card className="border-border bg-card p-5">
           <div className="mb-4 flex items-center justify-between">
-            <p className="font-display text-lg font-semibold">Recent Settlements</p>
-            <Button variant="ghost" size="sm" className="text-xs">View all <ArrowUpRight className="ml-1 h-3 w-3" /></Button>
+            <div>
+              <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Real-time</p>
+              <p className="font-display text-base font-semibold">Recent Settlement Feed</p>
+            </div>
+            <span className="flex items-center gap-1 font-mono text-[10px] text-success">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-success" /> LIVE
+            </span>
           </div>
-          <Table>
-            <TableHeader>
-              <TableRow className="border-border hover:bg-transparent">
-                <TableHead className="text-[11px] uppercase tracking-wider">ID</TableHead>
-                <TableHead className="text-[11px] uppercase tracking-wider">Counterparty</TableHead>
-                <TableHead className="text-right text-[11px] uppercase tracking-wider">PLD</TableHead>
-                <TableHead className="text-right text-[11px] uppercase tracking-wider">Amount</TableHead>
-                <TableHead className="text-[11px] uppercase tracking-wider">Tx Hash</TableHead>
-                <TableHead className="text-[11px] uppercase tracking-wider">Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {mockSettlements.map((s) => (
-                <TableRow key={s.id} className="border-border">
-                  <TableCell className="font-mono text-xs">{s.id}</TableCell>
-                  <TableCell className="text-sm">{s.counterparty}</TableCell>
-                  <TableCell className="text-right font-mono text-xs">{s.pld.toFixed(2)}</TableCell>
-                  <TableCell className={`text-right font-mono text-sm ${s.amountBRL >= 0 ? "text-success" : "text-destructive"}`}>
-                    {s.amountBRL >= 0 ? "+" : ""}{fmtBRL(s.amountBRL)}
-                  </TableCell>
-                  <TableCell className="font-mono text-xs text-muted-foreground">
-                    <span className="inline-flex items-center gap-1">
-                      {s.txHash}
-                      <ExternalLink className="h-3 w-3" />
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="border-success/40 bg-success/10 font-mono text-[10px] text-success">
-                      ● {s.status}
-                    </Badge>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <ul className="space-y-3">
+            {recentSettlementFeed.map((f) => (
+              <li key={f.id} className="flex items-center justify-between border-b border-border/50 pb-2 last:border-0">
+                <div className="min-w-0">
+                  <p className="font-mono text-xs text-muted-foreground">{f.id}</p>
+                  <p className="truncate text-sm">{f.counterparty}</p>
+                </div>
+                <div className="text-right">
+                  <p className={`font-mono text-sm ${f.amount >= 0 ? "text-success" : "text-destructive"}`}>
+                    {f.amount >= 0 ? "+" : ""}{fmtBRL(f.amount)}
+                  </p>
+                  <p className="font-mono text-[10px] text-muted-foreground">{f.ago}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
         </Card>
 
         <Card className="border-border bg-card p-5">
-          <p className="mb-4 font-display text-lg font-semibold">Operational Metrics</p>
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Reconciliation Pipeline</p>
+              <p className="font-display text-base font-semibold">Settlement Queue</p>
+            </div>
+            <Badge variant="outline" className="font-mono text-xs">{settlementQueue.length} pending</Badge>
+          </div>
+          <ul className="space-y-3">
+            {settlementQueue.map((q) => (
+              <li key={q.id} className="rounded-md border border-border bg-background/40 p-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-mono text-xs text-muted-foreground">{q.id}</p>
+                    <p className="text-sm">{q.counterparty}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-mono text-sm">{fmtBRL(q.amount)}</p>
+                    <p className="flex items-center justify-end gap-1 font-mono text-[10px] text-muted-foreground">
+                      <Clock className="h-3 w-3" /> ETA {q.eta}
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-2 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest">
+                  <span className={
+                    q.phase === "signing" ? "rounded bg-primary/15 px-1.5 py-0.5 text-primary"
+                    : q.phase === "broadcasting" ? "rounded bg-accent/15 px-1.5 py-0.5 text-accent"
+                    : "rounded bg-muted px-1.5 py-0.5 text-muted-foreground"
+                  }>{q.phase}</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </Card>
+
+        <Card className="border-border bg-card p-5">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Operational</p>
+              <p className="font-display text-base font-semibold">Alerts</p>
+            </div>
+            <Badge variant="outline" className="font-mono text-xs">{operationalAlerts.length} open</Badge>
+          </div>
+          <ul className="space-y-3">
+            {operationalAlerts.map((a) => {
+              const Icon = a.level === "critical" ? ShieldAlert : a.level === "warn" ? AlertTriangle : Info;
+              const color =
+                a.level === "critical" ? "text-destructive" :
+                a.level === "warn" ? "text-warning" : "text-accent";
+              return (
+                <li key={a.id} className="flex gap-3 border-b border-border/50 pb-3 last:border-0">
+                  <Icon className={`mt-0.5 h-4 w-4 ${color}`} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-medium">{a.title}</p>
+                      <span className="font-mono text-[10px] text-muted-foreground">{a.time}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{a.detail}</p>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </Card>
+      </div>
+
+      {/* Timeline + ops metrics */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <Card className="border-border bg-[image:var(--gradient-card)] p-5 lg:col-span-2">
+          <div className="mb-5 flex items-center justify-between">
+            <div>
+              <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Active settlement cycle</p>
+              <p className="font-display text-lg font-semibold">EPC-2041 · Operational Timeline</p>
+            </div>
+            <Badge variant="outline" className="border-primary/40 bg-primary/10 font-mono text-xs text-primary">
+              IN EXECUTION
+            </Badge>
+          </div>
+          <SettlementTimeline />
+        </Card>
+
+        <Card className="border-border bg-card p-5">
+          <p className="mb-4 font-display text-lg font-semibold">Operational KPIs</p>
           <div className="space-y-4">
             {[
-              { label: "Avg. settlement latency", value: "2.4s", bar: 92 },
-              { label: "On-chain finality rate", value: "98.7%", bar: 98 },
+              { label: "Avg. transaction finality", value: "2.4s", bar: 92 },
+              { label: "Reconciliation match rate", value: "99.6%", bar: 99 },
               { label: "Counterparty coverage", value: "47 entities", bar: 76 },
-              { label: "EPWR token velocity", value: "1.32×", bar: 64 },
-              { label: "Failed transactions (24h)", value: "0", bar: 4 },
+              { label: "Clearing flow utilisation", value: "1.32×", bar: 64 },
+              { label: "Failed settlements (24h)", value: "1", bar: 8 },
             ].map((m) => (
               <div key={m.label}>
                 <div className="mb-1.5 flex justify-between text-xs">
@@ -189,39 +266,41 @@ function Dashboard() {
 
       <Card className="border-border bg-card p-5">
         <div className="mb-4 flex items-center justify-between">
-          <div>
-            <p className="font-display text-lg font-semibold">Active Contracts</p>
-            <p className="text-xs text-muted-foreground">Bilateral PPAs registered in the settlement registry.</p>
-          </div>
-          <Badge variant="outline" className="font-mono text-xs">{mockContracts.length} contracts</Badge>
+          <p className="font-display text-lg font-semibold">Recent Settlements</p>
+          <Button asChild variant="ghost" size="sm" className="text-xs">
+            <Link to="/contracts">View registry <ArrowUpRight className="ml-1 h-3 w-3" /></Link>
+          </Button>
         </div>
         <Table>
           <TableHeader>
             <TableRow className="border-border hover:bg-transparent">
-              <TableHead className="text-[11px] uppercase tracking-wider">Contract</TableHead>
-              <TableHead className="text-[11px] uppercase tracking-wider">Buyer</TableHead>
-              <TableHead className="text-[11px] uppercase tracking-wider">Seller</TableHead>
-              <TableHead className="text-right text-[11px] uppercase tracking-wider">Vol (MWh)</TableHead>
-              <TableHead className="text-right text-[11px] uppercase tracking-wider">Price</TableHead>
-              <TableHead className="text-[11px] uppercase tracking-wider">Settles</TableHead>
-              <TableHead className="text-[11px] uppercase tracking-wider">Status</TableHead>
+              <TableHead className="text-[11px] uppercase tracking-wider">ID</TableHead>
+              <TableHead className="text-[11px] uppercase tracking-wider">Counterparty</TableHead>
+              <TableHead className="text-right text-[11px] uppercase tracking-wider">PLD</TableHead>
+              <TableHead className="text-right text-[11px] uppercase tracking-wider">Amount</TableHead>
+              <TableHead className="text-[11px] uppercase tracking-wider">Tx Hash</TableHead>
+              <TableHead className="text-[11px] uppercase tracking-wider">Finality</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {mockContracts.map((c) => (
-              <TableRow key={c.id} className="border-border">
-                <TableCell className="font-mono text-xs">{c.id}</TableCell>
-                <TableCell className="text-sm">{c.buyer}</TableCell>
-                <TableCell className="text-sm text-muted-foreground">{c.seller}</TableCell>
-                <TableCell className="text-right font-mono text-sm">{c.volumeMWh.toLocaleString("pt-BR")}</TableCell>
-                <TableCell className="text-right font-mono text-sm">{c.priceBRL.toFixed(2)}</TableCell>
-                <TableCell className="font-mono text-xs text-muted-foreground">{c.settlementDate}</TableCell>
+            {mockSettlements.map((s) => (
+              <TableRow key={s.id} className="border-border">
+                <TableCell className="font-mono text-xs">{s.id}</TableCell>
+                <TableCell className="text-sm">{s.counterparty}</TableCell>
+                <TableCell className="text-right font-mono text-xs">{s.pld.toFixed(2)}</TableCell>
+                <TableCell className={`text-right font-mono text-sm ${s.amountBRL >= 0 ? "text-success" : "text-destructive"}`}>
+                  {s.amountBRL >= 0 ? "+" : ""}{fmtBRL(s.amountBRL)}
+                </TableCell>
+                <TableCell className="font-mono text-xs text-muted-foreground">
+                  <span className="inline-flex items-center gap-1">
+                    {s.txHash}
+                    <ExternalLink className="h-3 w-3" />
+                  </span>
+                </TableCell>
                 <TableCell>
-                  <Badge variant="outline" className={
-                    c.status === "ACTIVE" ? "border-success/40 bg-success/10 text-success font-mono text-[10px]"
-                    : c.status === "PENDING" ? "border-warning/40 bg-warning/10 text-warning font-mono text-[10px]"
-                    : "border-border bg-muted text-muted-foreground font-mono text-[10px]"
-                  }>● {c.status}</Badge>
+                  <Badge variant="outline" className="border-success/40 bg-success/10 font-mono text-[10px] text-success">
+                    ● {s.status}
+                  </Badge>
                 </TableCell>
               </TableRow>
             ))}
@@ -232,7 +311,7 @@ function Dashboard() {
       <Card className="border-border bg-[image:var(--gradient-card)] p-5">
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Transaction history</p>
+            <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Cleared notional</p>
             <p className="font-display text-lg font-semibold">Settlement value (R$, last 8 days)</p>
           </div>
         </div>
