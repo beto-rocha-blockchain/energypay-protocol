@@ -149,7 +149,7 @@ function Dashboard() {
             </span>
           </div>
           <ul className="space-y-3">
-            {recentSettlementFeed.map((f) => (
+            {feed.map((f) => (
               <li key={f.id} className="flex items-center justify-between border-b border-border/50 pb-2 last:border-0">
                 <div className="min-w-0">
                   <p className="font-mono text-xs text-muted-foreground">{f.id}</p>
@@ -172,10 +172,10 @@ function Dashboard() {
               <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Reconciliation Pipeline</p>
               <p className="font-display text-base font-semibold">Settlement Queue</p>
             </div>
-            <Badge variant="outline" className="font-mono text-xs">{settlementQueue.length} pending</Badge>
+            <Badge variant="outline" className="font-mono text-xs">{queue.length} pending</Badge>
           </div>
           <ul className="divide-y divide-border/60">
-            {settlementQueue.map((q) => (
+            {queue.map((q) => (
               <li key={q.id} className="grid grid-cols-12 items-center gap-2 py-2 text-xs">
                 <span className="col-span-3 font-mono text-muted-foreground">{q.id}</span>
                 <span className="col-span-4 truncate">{q.counterparty}</span>
@@ -210,10 +210,10 @@ function Dashboard() {
               <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Operational</p>
               <p className="font-display text-base font-semibold">Alerts</p>
             </div>
-            <Badge variant="outline" className="font-mono text-xs">{operationalAlerts.length} open</Badge>
+            <Badge variant="outline" className="font-mono text-xs">{alerts.length} open</Badge>
           </div>
           <ul className="space-y-3">
-            {operationalAlerts.map((a) => {
+            {alerts.map((a) => {
               const Icon = a.level === "critical" ? ShieldAlert : a.level === "warn" ? AlertTriangle : Info;
               const color =
                 a.level === "critical" ? "text-destructive" :
@@ -293,7 +293,7 @@ function Dashboard() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {mockSettlements.map((s) => (
+            {settlements.slice(0, 6).map((s) => (
               <TableRow key={s.id} className="border-border">
                 <TableCell className="font-mono text-xs">{s.id}</TableCell>
                 <TableCell className="text-sm">{s.counterparty}</TableCell>
