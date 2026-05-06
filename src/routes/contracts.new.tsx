@@ -21,6 +21,7 @@ export const Route = createFileRoute("/contracts/new")({
 
 function NewContract() {
   const navigate = useNavigate();
+  const registerContract = useOps((s) => s.registerContract);
   const [form, setForm] = useState({
     buyer: "", seller: "", volume: "", price: "", date: "",
   });
@@ -28,10 +29,17 @@ function NewContract() {
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success("Contract registered", {
-      description: `${form.buyer} ↔ ${form.seller} · ${form.volume} MWh @ R$ ${form.price}`,
+    const c = registerContract({
+      buyer: form.buyer,
+      seller: form.seller,
+      volumeMWh: Number(form.volume),
+      priceBRL: Number(form.price),
+      settlementDate: form.date,
     });
-    setTimeout(() => navigate({ to: "/settlement" }), 600);
+    toast.success(`Contract ${c.id} registered`, {
+      description: `${c.buyer} ↔ ${c.seller} · ${c.volumeMWh} MWh @ R$ ${c.priceBRL.toFixed(2)}`,
+    });
+    setTimeout(() => navigate({ to: "/contracts" }), 600);
   };
 
   const notional = (Number(form.volume) || 0) * (Number(form.price) || 0);
