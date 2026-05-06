@@ -1,26 +1,23 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Calculator, CheckCircle2, ExternalLink, Loader2, ShieldCheck, Zap } from "lucide-react";
+import { Calculator, ShieldCheck, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
 import { mockContracts } from "@/lib/mock-data";
-import { toast } from "sonner";
+import { ExecutionConsole } from "@/components/ExecutionConsole";
+import { StateMachine } from "@/components/StateMachine";
 
 export const Route = createFileRoute("/settlement")({
   head: () => ({
     meta: [
-      { title: "Settlement Simulation — EnergyPay" },
-      { name: "description", content: "Simulate and execute programmable settlements via EPWR token." },
+      { title: "Settlement Engine — EnergyPay" },
+      { name: "description", content: "Operational settlement console for programmable electricity contracts on Stellar." },
     ],
   }),
   component: SettlementPage,
@@ -35,31 +32,9 @@ function SettlementPage() {
   const [pld, setPld] = useState<number>(278);
 
   const settlement = useMemo(() => (pld - contract.priceBRL) * contract.volumeMWh, [pld, contract]);
-  const exposure = Math.abs(settlement);
   const direction = settlement >= 0 ? "Buyer receives" : "Seller receives";
 
   const [open, setOpen] = useState(false);
-  const [phase, setPhase] = useState<"idle" | "signing" | "broadcasting" | "done">("idle");
-  const [tx, setTx] = useState<string | null>(null);
-
-  const execute = () => {
-    setPhase("signing");
-    setTimeout(() => {
-      setPhase("broadcasting");
-      setTimeout(() => {
-        const hash =
-          Array.from({ length: 64 }, () => "0123456789abcdef"[Math.floor(Math.random() * 16)]).join("");
-        setTx(hash);
-        setPhase("done");
-        toast.success("Settlement executed", { description: `Tx ${hash.slice(0, 10)}…` });
-      }, 1400);
-    }, 900);
-  };
-
-  const reset = () => {
-    setOpen(false);
-    setTimeout(() => { setPhase("idle"); setTx(null); }, 200);
-  };
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
@@ -67,9 +42,9 @@ function SettlementPage() {
         <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
           Settlement Engine / Simulation & Execution
         </p>
-        <h1 className="mt-1 font-display text-3xl font-semibold tracking-tight">Settlement Simulation</h1>
+        <h1 className="mt-1 font-display text-3xl font-semibold tracking-tight">Settlement Console</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Simulate financial exposure under PLD scenarios, then execute settlement on-chain via EPWR.
+          Simulate exposure under PLD scenarios then execute atomic settlement on the Stellar settlement rail.
         </p>
       </div>
 
@@ -98,6 +73,8 @@ function SettlementPage() {
             <div className="grid grid-cols-2 gap-4">
               <ReadOnly label="Contracted Volume" value={`${contract.volumeMWh.toLocaleString("pt-BR")} MWh`} />
               <ReadOnly label="Contract Price" value={`R$ ${contract.priceBRL.toFixed(2)}`} />
+              <ReadOnly label="Settlement window" value={contract.window} />
+              <ReadOnly label="Current state" value={contract.state} />
             </div>
 
             <div className="space-y-2">
@@ -112,16 +89,22 @@ function SettlementPage() {
                 <span className="text-xs text-muted-foreground">Fine-tune PLD scenario</span>
               </div>
             </div>
+
+            <div>
+              <p className="mb-2 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                Settlement state machine
+              </p>
+              <StateMachine current={contract.state} failed={contract.state === "FAILED"} />
+            </div>
           </div>
         </Card>
 
-        <Card className="relative overflow-hidden border-border bg-[image:var(--gradient-card)] p-6">
-          <div className="absolute inset-x-0 top-0 h-px bg-[image:var(--gradient-primary)] opacity-60" />
-          <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Financial Exposure</p>
+        <Card className="relative overflow-hidden border-border bg-card p-6">
+          <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Net Financial Exposure</p>
           <p className={`mt-2 font-display text-3xl font-semibold tracking-tight ${settlement >= 0 ? "text-success" : "text-destructive"}`}>
             {settlement >= 0 ? "+" : ""}{fmtBRL(settlement)}
           </p>
-          <p className="mt-1 text-xs text-muted-foreground">{direction} · |exposure| {fmtBRL(exposure)}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{direction}</p>
 
           <div className="my-5 rounded-md border border-dashed border-border bg-background/40 p-3 font-mono text-[11px] text-muted-foreground">
             settlement = (PLD − Price) × Volume
@@ -132,7 +115,7 @@ function SettlementPage() {
           </div>
 
           <Button className="w-full" size="lg" onClick={() => setOpen(true)}>
-            <Zap className="mr-2 h-4 w-4" /> Execute Settlement
+            <Zap className="mr-2 h-4 w-4" /> Run Settlement
           </Button>
           <p className="mt-3 flex items-center justify-center gap-1.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
             <ShieldCheck className="h-3 w-3" /> Atomic settlement · counterparty net exposure
@@ -140,65 +123,13 @@ function SettlementPage() {
         </Card>
       </div>
 
-      <Dialog open={open} onOpenChange={(o) => (o ? setOpen(true) : reset())}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="font-display">
-              {phase === "done" ? "Settlement Confirmed" : "Confirm Settlement"}
-            </DialogTitle>
-            <DialogDescription>
-              {phase === "done"
-                ? "Atomic transfer broadcast to Stellar network."
-                : "Review the operation before signing."}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-3 rounded-md border border-border bg-card p-4 text-sm">
-            <Row k="Contract" v={contract.id} mono />
-            <Row k="Counterparty" v={contract.seller} />
-            <Row k="Volume" v={`${contract.volumeMWh} MWh`} mono />
-            <Row k="PLD" v={`R$ ${pld.toFixed(2)}`} mono />
-            <div className="border-t border-border pt-3">
-              <Row k="Settlement amount" v={fmtBRL(settlement)} mono highlight />
-            </div>
-
-            {phase !== "idle" && (
-              <div className="border-t border-border pt-3">
-                <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Status</p>
-                <div className="mt-1 flex items-center gap-2 font-mono text-xs">
-                  {phase === "signing" && <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Signing with EPWR keypair…</>}
-                  {phase === "broadcasting" && <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Broadcasting to Stellar Horizon…</>}
-                  {phase === "done" && tx && (
-                    <div className="w-full space-y-2">
-                      <div className="flex items-center gap-1.5 text-success">
-                        <CheckCircle2 className="h-4 w-4" /> CONFIRMED · ledger #58 921 432
-                      </div>
-                      <div>
-                        <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Tx hash</p>
-                        <p className="break-all rounded bg-background/60 p-2 text-[11px]">{tx}</p>
-                      </div>
-                      <a href={`https://stellar.expert/explorer/testnet/tx/${tx}`} target="_blank" rel="noreferrer"
-                        className="inline-flex items-center gap-1 text-xs text-accent hover:underline">
-                        View on Stellar Explorer (Testnet) <ExternalLink className="h-3 w-3" />
-                      </a>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <DialogFooter>
-            {phase === "idle" && (
-              <>
-                <Button variant="ghost" onClick={reset}>Cancel</Button>
-                <Button onClick={execute}><Zap className="mr-2 h-4 w-4" /> Sign & Broadcast</Button>
-              </>
-            )}
-            {phase === "done" && <Button onClick={reset}>Close</Button>}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ExecutionConsole
+        open={open}
+        onOpenChange={setOpen}
+        contract={contract}
+        pld={pld}
+        amount={settlement}
+      />
     </div>
   );
 }
@@ -208,15 +139,6 @@ function ReadOnly({ label, value }: { label: string; value: string }) {
     <div className="space-y-1.5">
       <Label className="text-[11px] uppercase tracking-widest text-muted-foreground">{label}</Label>
       <div className="flex h-9 items-center rounded-md border border-border bg-input px-3 font-mono text-sm">{value}</div>
-    </div>
-  );
-}
-
-function Row({ k, v, mono, highlight }: { k: string; v: string; mono?: boolean; highlight?: boolean }) {
-  return (
-    <div className="flex items-center justify-between">
-      <span className="text-xs text-muted-foreground">{k}</span>
-      <span className={`${mono ? "font-mono" : ""} ${highlight ? "text-base font-semibold text-primary" : "text-sm"}`}>{v}</span>
     </div>
   );
 }

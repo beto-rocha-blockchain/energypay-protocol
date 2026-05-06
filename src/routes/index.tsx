@@ -54,7 +54,7 @@ function Dashboard() {
           <Button asChild variant="outline" size="sm">
             <Link to="/contracts"><FileSignature className="mr-2 h-4 w-4" /> Contract Registry</Link>
           </Button>
-          <Button asChild variant="outline" size="sm">
+          <Button asChild size="sm">
             <Link to="/settlement"><Activity className="mr-2 h-4 w-4" /> Run Settlement</Link>
           </Button>
           <Button asChild size="sm">
@@ -167,27 +167,30 @@ function Dashboard() {
             </div>
             <Badge variant="outline" className="font-mono text-xs">{settlementQueue.length} pending</Badge>
           </div>
-          <ul className="space-y-3">
+          <ul className="divide-y divide-border/60">
             {settlementQueue.map((q) => (
-              <li key={q.id} className="rounded-md border border-border bg-background/40 p-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-mono text-xs text-muted-foreground">{q.id}</p>
-                    <p className="text-sm">{q.counterparty}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-mono text-sm">{fmtBRL(q.amount)}</p>
-                    <p className="flex items-center justify-end gap-1 font-mono text-[10px] text-muted-foreground">
-                      <Clock className="h-3 w-3" /> ETA {q.eta}
-                    </p>
-                  </div>
-                </div>
-                <div className="mt-2 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest">
+              <li key={q.id} className="grid grid-cols-12 items-center gap-2 py-2 text-xs">
+                <span className="col-span-3 font-mono text-muted-foreground">{q.id}</span>
+                <span className="col-span-4 truncate">{q.counterparty}</span>
+                <span className="col-span-3 text-right font-mono">{fmtBRL(q.amount)}</span>
+                <span className="col-span-2 flex items-center justify-end gap-1 font-mono text-[10px] text-muted-foreground">
+                  <Clock className="h-3 w-3" /> {q.eta}
+                </span>
+                <div className="col-span-12 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest">
+                  <span className={
+                    q.priority === "high" ? "rounded border border-destructive/40 bg-destructive/10 px-1.5 py-0.5 text-destructive"
+                    : q.priority === "low" ? "rounded border border-border px-1.5 py-0.5 text-muted-foreground"
+                    : "rounded border border-warning/40 bg-warning/10 px-1.5 py-0.5 text-warning"
+                  }>P · {q.priority}</span>
                   <span className={
                     q.phase === "signing" ? "rounded bg-primary/15 px-1.5 py-0.5 text-primary"
                     : q.phase === "broadcasting" ? "rounded bg-accent/15 px-1.5 py-0.5 text-accent"
+                    : q.phase === "validating" ? "rounded bg-warning/15 px-1.5 py-0.5 text-warning"
                     : "rounded bg-muted px-1.5 py-0.5 text-muted-foreground"
                   }>{q.phase}</span>
+                  <span className="ml-auto rounded border border-border px-1.5 py-0.5 text-muted-foreground">
+                    {q.state}
+                  </span>
                 </div>
               </li>
             ))}

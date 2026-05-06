@@ -1,3 +1,21 @@
+export type SettlementState =
+  | "CREATED"
+  | "VALIDATED"
+  | "PENDING_SIGNATURE"
+  | "BROADCASTING"
+  | "CONFIRMED"
+  | "SETTLED"
+  | "FAILED";
+
+export const SETTLEMENT_STATE_FLOW: SettlementState[] = [
+  "CREATED",
+  "VALIDATED",
+  "PENDING_SIGNATURE",
+  "BROADCASTING",
+  "CONFIRMED",
+  "SETTLED",
+];
+
 export type ContractStatus = "ACTIVE" | "SETTLED" | "PENDING" | "FAILED";
 
 export type Contract = {
@@ -10,6 +28,10 @@ export type Contract = {
   settlementDate: string;
   status: ContractStatus;
   txHash: string;
+  state: SettlementState;
+  ledger: number;
+  latencyMs: number;
+  window: string;
 };
 
 export const computeExposure = (c: Contract) => (c.pldBRL - c.priceBRL) * c.volumeMWh;
@@ -22,25 +44,29 @@ export type Settlement = {
   pld: number;
   date: string;
   txHash: string;
+  ledger: number;
+  latencyMs: number;
+  window: string;
+  state: SettlementState;
   status: "CONFIRMED" | "PENDING" | "FAILED";
 };
 
 export const mockContracts: Contract[] = [
-  { id: "EPC-2041", buyer: "Vale Energia S.A.", seller: "Engie Brasil", volumeMWh: 2400, priceBRL: 248.5, pldBRL: 271.2, settlementDate: "2026-05-12", status: "ACTIVE", txHash: "a3f9c1e240b8d7f4a3f9c1e240b8d7f4a3f9c1e240b8d7f4a3f9c1e240b8d7f4" },
-  { id: "EPC-2040", buyer: "Petrobras Trading", seller: "EDP Brasil", volumeMWh: 1800, priceBRL: 252.1, pldBRL: 264.8, settlementDate: "2026-05-10", status: "ACTIVE", txHash: "b8d4e2912ca5b8d4e2912ca5b8d4e2912ca5b8d4e2912ca5b8d4e2912ca5b8d4" },
-  { id: "EPC-2039", buyer: "CCEE Comercializadora", seller: "Eletrobras", volumeMWh: 5200, priceBRL: 241.8, pldBRL: 258.0, settlementDate: "2026-05-09", status: "PENDING", txHash: "c1a7f03e8b91c1a7f03e8b91c1a7f03e8b91c1a7f03e8b91c1a7f03e8b91c1a7" },
-  { id: "EPC-2038", buyer: "Cemig Trading", seller: "Itaipu Binacional", volumeMWh: 3600, priceBRL: 239.4, pldBRL: 278.4, settlementDate: "2026-05-08", status: "SETTLED", txHash: "d9b3e877c1f2d9b3e877c1f2d9b3e877c1f2d9b3e877c1f2d9b3e877c1f2d9b3" },
-  { id: "EPC-2037", buyer: "Copel Mercado Livre", seller: "AES Tietê", volumeMWh: 980, priceBRL: 256.7, pldBRL: 237.1, settlementDate: "2026-05-07", status: "SETTLED", txHash: "e2f7a188d310e2f7a188d310e2f7a188d310e2f7a188d310e2f7a188d310e2f7" },
-  { id: "EPC-2036", buyer: "Light Energia", seller: "Neoenergia", volumeMWh: 1450, priceBRL: 244.2, pldBRL: 261.5, settlementDate: "2026-05-06", status: "ACTIVE", txHash: "f1c9b327ae84f1c9b327ae84f1c9b327ae84f1c9b327ae84f1c9b327ae84f1c9" },
-  { id: "EPC-2035", buyer: "Equatorial Energia", seller: "Furnas", volumeMWh: 2100, priceBRL: 246.0, pldBRL: 246.0, settlementDate: "2026-05-05", status: "FAILED", txHash: "0000000000000000000000000000000000000000000000000000000000000000" },
+  { id: "EPC-2041", buyer: "Vale Energia S.A.", seller: "Engie Brasil", volumeMWh: 2400, priceBRL: 248.5, pldBRL: 271.2, settlementDate: "2026-05-12", status: "ACTIVE", state: "PENDING_SIGNATURE", ledger: 58921412, latencyMs: 2380, window: "D+1 17:00 BRT", txHash: "a3f9c1e240b8d7f4a3f9c1e240b8d7f4a3f9c1e240b8d7f4a3f9c1e240b8d7f4" },
+  { id: "EPC-2040", buyer: "Petrobras Trading", seller: "EDP Brasil", volumeMWh: 1800, priceBRL: 252.1, pldBRL: 264.8, settlementDate: "2026-05-10", status: "ACTIVE", state: "VALIDATED", ledger: 58921388, latencyMs: 2120, window: "D+1 17:00 BRT", txHash: "b8d4e2912ca5b8d4e2912ca5b8d4e2912ca5b8d4e2912ca5b8d4e2912ca5b8d4" },
+  { id: "EPC-2039", buyer: "CCEE Comercializadora", seller: "Eletrobras", volumeMWh: 5200, priceBRL: 241.8, pldBRL: 258.0, settlementDate: "2026-05-09", status: "PENDING", state: "CREATED", ledger: 58921301, latencyMs: 2640, window: "D+1 17:00 BRT", txHash: "c1a7f03e8b91c1a7f03e8b91c1a7f03e8b91c1a7f03e8b91c1a7f03e8b91c1a7" },
+  { id: "EPC-2038", buyer: "Cemig Trading", seller: "Itaipu Binacional", volumeMWh: 3600, priceBRL: 239.4, pldBRL: 278.4, settlementDate: "2026-05-08", status: "SETTLED", state: "SETTLED", ledger: 58920871, latencyMs: 2210, window: "D+0 17:00 BRT", txHash: "d9b3e877c1f2d9b3e877c1f2d9b3e877c1f2d9b3e877c1f2d9b3e877c1f2d9b3" },
+  { id: "EPC-2037", buyer: "Copel Mercado Livre", seller: "AES Tietê", volumeMWh: 980, priceBRL: 256.7, pldBRL: 237.1, settlementDate: "2026-05-07", status: "SETTLED", state: "SETTLED", ledger: 58920512, latencyMs: 1980, window: "D+0 17:00 BRT", txHash: "e2f7a188d310e2f7a188d310e2f7a188d310e2f7a188d310e2f7a188d310e2f7" },
+  { id: "EPC-2036", buyer: "Light Energia", seller: "Neoenergia", volumeMWh: 1450, priceBRL: 244.2, pldBRL: 261.5, settlementDate: "2026-05-06", status: "ACTIVE", state: "BROADCASTING", ledger: 58921450, latencyMs: 2540, window: "D+1 17:00 BRT", txHash: "f1c9b327ae84f1c9b327ae84f1c9b327ae84f1c9b327ae84f1c9b327ae84f1c9" },
+  { id: "EPC-2035", buyer: "Equatorial Energia", seller: "Furnas", volumeMWh: 2100, priceBRL: 246.0, pldBRL: 246.0, settlementDate: "2026-05-05", status: "FAILED", state: "FAILED", ledger: 0, latencyMs: 0, window: "D-1 17:00 BRT", txHash: "0000000000000000000000000000000000000000000000000000000000000000" },
 ];
 
 export const mockSettlements: Settlement[] = [
-  { id: "STL-90211", contractId: "EPC-2038", counterparty: "Itaipu Binacional", amountBRL: 862400, pld: 278.4, date: "2026-05-05 14:22", txHash: "a3f9c1...e7b240", status: "CONFIRMED" },
-  { id: "STL-90210", contractId: "EPC-2037", counterparty: "AES Tietê", amountBRL: -19208, pld: 237.1, date: "2026-05-05 11:08", txHash: "b8d4e2...912ca5", status: "CONFIRMED" },
-  { id: "STL-90209", contractId: "EPC-2035", counterparty: "Neoenergia", amountBRL: 412900, pld: 268.0, date: "2026-05-04 17:54", txHash: "c1a7f0...3e8b91", status: "CONFIRMED" },
-  { id: "STL-90208", contractId: "EPC-2034", counterparty: "Engie Brasil", amountBRL: 218750, pld: 261.5, date: "2026-05-04 09:31", txHash: "d9b3e8...77c1f2", status: "CONFIRMED" },
-  { id: "STL-90207", contractId: "EPC-2033", counterparty: "EDP Brasil", amountBRL: 154600, pld: 254.9, date: "2026-05-03 16:12", txHash: "e2f7a1...88d310", status: "CONFIRMED" },
+  { id: "STL-90211", contractId: "EPC-2038", counterparty: "Itaipu Binacional", amountBRL: 862400, pld: 278.4, date: "2026-05-05 14:22", txHash: "a3f9c1e240b8d7f4a3f9c1e240b8d7f4a3f9c1e240b8d7f4a3f9c1e240b8d7f4", ledger: 58920871, latencyMs: 2210, window: "D+0 17:00 BRT", state: "SETTLED", status: "CONFIRMED" },
+  { id: "STL-90210", contractId: "EPC-2037", counterparty: "AES Tietê", amountBRL: -19208, pld: 237.1, date: "2026-05-05 11:08", txHash: "b8d4e2912ca5b8d4e2912ca5b8d4e2912ca5b8d4e2912ca5b8d4e2912ca5b8d4", ledger: 58920512, latencyMs: 1980, window: "D+0 17:00 BRT", state: "SETTLED", status: "CONFIRMED" },
+  { id: "STL-90209", contractId: "EPC-2035", counterparty: "Neoenergia", amountBRL: 412900, pld: 268.0, date: "2026-05-04 17:54", txHash: "c1a7f03e8b91c1a7f03e8b91c1a7f03e8b91c1a7f03e8b91c1a7f03e8b91c1a7", ledger: 58919944, latencyMs: 2410, window: "D-1 17:00 BRT", state: "SETTLED", status: "CONFIRMED" },
+  { id: "STL-90208", contractId: "EPC-2034", counterparty: "Engie Brasil", amountBRL: 218750, pld: 261.5, date: "2026-05-04 09:31", txHash: "d9b3e877c1f2d9b3e877c1f2d9b3e877c1f2d9b3e877c1f2d9b3e877c1f2d9b3", ledger: 58919712, latencyMs: 2080, window: "D-1 17:00 BRT", state: "SETTLED", status: "CONFIRMED" },
+  { id: "STL-90207", contractId: "EPC-2033", counterparty: "EDP Brasil", amountBRL: 154600, pld: 254.9, date: "2026-05-03 16:12", txHash: "e2f7a188d310e2f7a188d310e2f7a188d310e2f7a188d310e2f7a188d310e2f7", ledger: 58919210, latencyMs: 2330, window: "D-2 17:00 BRT", state: "SETTLED", status: "CONFIRMED" },
 ];
 
 export const volumeSeries = [
@@ -68,27 +94,53 @@ export type TimelineEvent = {
 };
 
 export const settlementTimeline: TimelineEvent[] = [
-  { ts: "T-04:12", label: "Contract creation", detail: "EPC-2041 registered by Vale Energia S.A.", state: "done" },
-  { ts: "T-03:48", label: "Counterparty validation", detail: "KYC + clearing limits verified · Engie Brasil", state: "done" },
-  { ts: "T-02:20", label: "PLD ingestion", detail: "CCEE oracle feed · R$ 271.20 / MWh", state: "done" },
-  { ts: "T-00:42", label: "Settlement execution", detail: "Net exposure computed · awaiting signature", state: "active" },
-  { ts: "T+00:00", label: "Stellar confirmation", detail: "Atomic transfer broadcast to Settlement Network", state: "pending" },
-  { ts: "T+00:08", label: "Final settlement state", detail: "Reconciliation closed · ledger anchored", state: "pending" },
+  { ts: "T-04:12", label: "Contract created", detail: "EPC-2041 registered by Vale Energia S.A.", state: "done" },
+  { ts: "T-03:48", label: "Counterparty validated", detail: "KYC + clearing limits verified · Engie Brasil", state: "done" },
+  { ts: "T-02:20", label: "Exposure recalculated", detail: "CCEE oracle feed · R$ 271.20 / MWh", state: "done" },
+  { ts: "T-00:42", label: "Settlement initiated", detail: "Net exposure computed · awaiting signature", state: "active" },
+  { ts: "T+00:00", label: "Signed by operator", detail: "Atomic transfer broadcast to Stellar Testnet", state: "pending" },
+  { ts: "T+00:08", label: "Settlement finalized", detail: "Reconciliation closed · ledger anchored", state: "pending" },
+];
+
+export const contractOperationalTimeline = (cid: string) => [
+  { ts: "21:41:02", label: "Contract created", detail: `${cid} registered in clearing pool`, state: "done" as const },
+  { ts: "21:41:48", label: "Counterparty validated", detail: "KYC, exposure limits & collateral verified", state: "done" as const },
+  { ts: "21:42:11", label: "Exposure recalculated", detail: "PLD ingested from CCEE oracle feed", state: "done" as const },
+  { ts: "21:42:33", label: "Settlement initiated", detail: "Operator queued atomic transfer", state: "done" as const },
+  { ts: "21:42:35", label: "Signed by operator", detail: "EPWR keypair · ed25519 signature attached", state: "done" as const },
+  { ts: "21:42:37", label: "Stellar confirmation received", detail: "Ledger anchored · finality 2.4s", state: "done" as const },
+  { ts: "21:42:38", label: "Settlement finalized", detail: "Reconciliation closed · BRL leg cleared", state: "done" as const },
 ];
 
 export type AlertItem = { id: string; level: "info" | "warn" | "critical"; title: string; detail: string; time: string };
 export const operationalAlerts: AlertItem[] = [
-  { id: "A-118", level: "warn", title: "PLD spread above threshold", detail: "Sub-mercado SE/CO · +14.2% over T-1 close", time: "12:04" },
+  { id: "A-122", level: "warn", title: "Counterparty settlement delay detected", detail: "EDP Brasil · ack pending > 90s on STL-90214", time: "12:18" },
+  { id: "A-121", level: "warn", title: "Oracle synchronization latency", detail: "CCEE PLD feed · 6.2s lag vs. reference clock", time: "12:11" },
+  { id: "A-120", level: "info", title: "Settlement retry initiated", detail: "STL-90209 · attempt 2/3 scheduled at T+00:05", time: "12:08" },
+  { id: "A-119", level: "critical", title: "Exposure threshold exceeded", detail: "Sub-mercado SE/CO · +14.2% over T-1 close", time: "12:04" },
+  { id: "A-118", level: "info", title: "Pending reconciliation queue increasing", detail: "12 → 18 items in last 15 min", time: "11:52" },
   { id: "A-117", level: "info", title: "Counterparty onboarded", detail: "Equatorial Energia added to clearing pool", time: "11:31" },
-  { id: "A-116", level: "critical", title: "Settlement retry queued", detail: "EPC-2035 · oracle desync, scheduled T+00:05", time: "10:48" },
 ];
 
-export type QueueItem = { id: string; counterparty: string; amount: number; eta: string; phase: "queued" | "signing" | "broadcasting" };
+export type QueuePhase = "queued" | "validating" | "signing" | "broadcasting" | "confirming";
+export type QueuePriority = "high" | "normal" | "low";
+export type QueueItem = {
+  id: string;
+  contractId: string;
+  counterparty: string;
+  amount: number;
+  eta: string;
+  phase: QueuePhase;
+  priority: QueuePriority;
+  state: SettlementState;
+};
 export const settlementQueue: QueueItem[] = [
-  { id: "STL-90213", counterparty: "Engie Brasil", amount: 544800, eta: "00:42", phase: "signing" },
-  { id: "STL-90214", counterparty: "EDP Brasil", amount: 228600, eta: "01:15", phase: "queued" },
-  { id: "STL-90215", counterparty: "Eletrobras", amount: 842400, eta: "02:38", phase: "queued" },
-  { id: "STL-90216", counterparty: "Neoenergia", amount: 251285, eta: "04:10", phase: "queued" },
+  { id: "STL-90213", contractId: "EPC-2041", counterparty: "Engie Brasil", amount: 544800, eta: "00:42", phase: "signing", priority: "high", state: "PENDING_SIGNATURE" },
+  { id: "STL-90214", contractId: "EPC-2040", counterparty: "EDP Brasil", amount: 228600, eta: "01:15", phase: "validating", priority: "normal", state: "VALIDATED" },
+  { id: "STL-90215", contractId: "EPC-2039", counterparty: "Eletrobras", amount: 842400, eta: "02:38", phase: "queued", priority: "high", state: "CREATED" },
+  { id: "STL-90216", contractId: "EPC-2036", counterparty: "Neoenergia", amount: 251285, eta: "04:10", phase: "broadcasting", priority: "normal", state: "BROADCASTING" },
+  { id: "STL-90217", contractId: "EPC-2042", counterparty: "Copel", amount: 188900, eta: "05:24", phase: "queued", priority: "low", state: "CREATED" },
+  { id: "STL-90218", contractId: "EPC-2043", counterparty: "Cemig Trading", amount: 96420, eta: "07:02", phase: "queued", priority: "low", state: "CREATED" },
 ];
 
 export type FeedItem = { id: string; counterparty: string; amount: number; ago: string };
