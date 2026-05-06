@@ -135,7 +135,7 @@ function SettlementPage() {
             <Zap className="mr-2 h-4 w-4" /> Execute Settlement
           </Button>
           <p className="mt-3 flex items-center justify-center gap-1.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-            <ShieldCheck className="h-3 w-3" /> Atomic transfer · EPWR token
+            <ShieldCheck className="h-3 w-3" /> Atomic settlement · counterparty net exposure
           </p>
         </Card>
       </div>
@@ -177,9 +177,9 @@ function SettlementPage() {
                         <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Tx hash</p>
                         <p className="break-all rounded bg-background/60 p-2 text-[11px]">{tx}</p>
                       </div>
-                      <a href={`https://stellar.expert/explorer/public/tx/${tx}`} target="_blank" rel="noreferrer"
+                      <a href={`https://stellar.expert/explorer/testnet/tx/${tx}`} target="_blank" rel="noreferrer"
                         className="inline-flex items-center gap-1 text-xs text-accent hover:underline">
-                        View on Stellar Explorer <ExternalLink className="h-3 w-3" />
+                        View on Stellar Explorer (Testnet) <ExternalLink className="h-3 w-3" />
                       </a>
                     </div>
                   )}
