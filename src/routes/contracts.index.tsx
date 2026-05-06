@@ -73,7 +73,7 @@ function ContractsList() {
       return 0;
     });
     return r;
-  }, [q, statusFilter, sort]);
+  }, [contracts, q, statusFilter, sort]);
 
   const toggle = (key: SortKey) =>
     setSort((s) => ({ key, dir: s.key === key && s.dir === "asc" ? "desc" : "asc" }));

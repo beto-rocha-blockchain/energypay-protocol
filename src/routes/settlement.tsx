@@ -9,7 +9,7 @@ import { Slider } from "@/components/ui/slider";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { mockContracts } from "@/lib/mock-data";
+import { useOps } from "@/store/operations";
 import { ExecutionConsole } from "@/components/ExecutionConsole";
 import { StateMachine } from "@/components/StateMachine";
 
