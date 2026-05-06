@@ -175,7 +175,7 @@ function ContractsList() {
       </Card>
 
       <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-2xl">
           {selected && (
             <>
               <DialogHeader>
@@ -185,22 +185,63 @@ function ContractsList() {
                   <StatusBadge status={selected.status} />
                 </DialogTitle>
                 <DialogDescription>
-                  Bilateral PPA · counterparty exposure & settlement finality
+                  Bilateral PPA · operational state, exposure & settlement finality
                 </DialogDescription>
               </DialogHeader>
 
-              <div className="space-y-3 rounded-md border border-border bg-card p-4 text-sm">
-                <KV k="Buyer" v={selected.buyer} />
-                <KV k="Seller" v={selected.seller} />
-                <KV k="Volume" v={`${selected.volumeMWh.toLocaleString("pt-BR")} MWh`} mono />
-                <KV k="Contract price" v={`R$ ${selected.priceBRL.toFixed(2)} / MWh`} mono />
-                <KV k="PLD reference" v={`R$ ${selected.pldBRL.toFixed(2)} / MWh`} mono />
-                <div className="border-t border-border pt-3">
-                  <KV k="Financial exposure" v={fmtBRL(computeExposure(selected))} mono highlight />
+              <div className="space-y-4">
+                <div>
+                  <p className="mb-2 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                    Settlement state machine
+                  </p>
+                  <StateMachine current={selected.state} failed={selected.state === "FAILED"} />
                 </div>
-                <KV k="Settlement cycle" v={selected.settlementDate} mono />
-                <div className="border-t border-border pt-3">
-                  <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Stellar Tx Hash</p>
+
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div className="space-y-2 rounded-md border border-border bg-card p-4 text-sm">
+                    <p className="mb-1 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                      Operational metadata
+                    </p>
+                    <KV k="Buyer" v={selected.buyer} />
+                    <KV k="Seller" v={selected.seller} />
+                    <KV k="Volume" v={`${selected.volumeMWh.toLocaleString("pt-BR")} MWh`} mono />
+                    <KV k="Contract price" v={`R$ ${selected.priceBRL.toFixed(2)}`} mono />
+                    <KV k="PLD reference" v={`R$ ${selected.pldBRL.toFixed(2)}`} mono />
+                    <KV k="Settlement window" v={selected.window} mono />
+                    <KV k="Settlement date" v={selected.settlementDate} mono />
+                    <KV k="Ledger #" v={selected.ledger ? selected.ledger.toLocaleString("en-US") : "—"} mono />
+                    <KV k="Finality latency" v={selected.latencyMs ? `${(selected.latencyMs / 1000).toFixed(2)}s` : "—"} mono />
+                    <div className="border-t border-border pt-2">
+                      <KV k="Net exposure" v={fmtBRL(computeExposure(selected))} mono highlight />
+                    </div>
+                  </div>
+
+                  <div className="rounded-md border border-border bg-card p-4">
+                    <p className="mb-3 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                      Operational timeline
+                    </p>
+                    <ol className="space-y-2.5">
+                      {contractOperationalTimeline(selected.id).map((e, i, arr) => (
+                        <li key={i} className="relative flex gap-3 pl-1">
+                          <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-success" />
+                          {i < arr.length - 1 && (
+                            <span className="absolute left-[7px] top-5 bottom-[-10px] w-px bg-border" />
+                          )}
+                          <div className="flex-1">
+                            <div className="flex items-baseline justify-between gap-2">
+                              <p className="text-xs font-medium">{e.label}</p>
+                              <span className="font-mono text-[10px] text-muted-foreground">{e.ts}</span>
+                            </div>
+                            <p className="text-[11px] text-muted-foreground">{e.detail}</p>
+                          </div>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                </div>
+
+                <div className="rounded-md border border-border bg-card p-4">
+                  <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Stellar Tx Hash</p>
                   <p className="mt-1 break-all rounded bg-background/60 p-2 font-mono text-[11px]">
                     {selected.status === "FAILED" ? "— transaction not broadcast —" : selected.txHash}
                   </p>
@@ -211,7 +252,7 @@ function ContractsList() {
                       rel="noreferrer"
                       className="mt-2 inline-flex items-center gap-1 text-xs text-accent hover:underline"
                     >
-                      View on Stellar Explorer <ExternalLink className="h-3 w-3" />
+                      View on Stellar Expert <ExternalLink className="h-3 w-3" />
                     </a>
                   )}
                 </div>
