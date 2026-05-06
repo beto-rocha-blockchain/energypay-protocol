@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { useOps } from "@/store/operations";
 
 export const Route = createFileRoute("/contracts/new")({
   head: () => ({
