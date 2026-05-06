@@ -181,21 +181,21 @@ function ContractsList() {
       </Card>
 
       <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
-        <DialogContent className="sm:max-w-2xl">
+        <DialogContent className="sm:max-w-3xl p-0 gap-0 overflow-hidden">
           {selected && (
             <>
-              <DialogHeader>
+              <DialogHeader className="border-b border-border px-5 py-4 space-y-1">
                 <DialogTitle className="font-display flex items-center gap-2">
                   <span>Contract</span>
                   <span className="font-mono text-base text-primary">{selected.id}</span>
                   <StatusBadge status={selected.status} />
                 </DialogTitle>
-                <DialogDescription>
+                <DialogDescription className="text-xs">
                   Bilateral PPA · operational state, exposure & settlement finality
                 </DialogDescription>
               </DialogHeader>
 
-              <div className="space-y-4">
+              <div className="px-5 py-4 space-y-4">
                 <div>
                   <p className="mb-2 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
                     Settlement state machine
@@ -203,69 +203,75 @@ function ContractsList() {
                   <StateMachine current={selected.state} failed={selected.state === "FAILED"} />
                 </div>
 
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div className="space-y-2 rounded-md border border-border bg-card p-4 text-sm">
-                    <p className="mb-1 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:items-stretch">
+                  <div className="flex h-full flex-col rounded-md border border-border bg-card p-3.5 text-sm">
+                    <p className="mb-2 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
                       Operational metadata
                     </p>
-                    <KV k="Buyer" v={selected.buyer} />
-                    <KV k="Seller" v={selected.seller} />
-                    <KV k="Volume" v={`${selected.volumeMWh.toLocaleString("pt-BR")} MWh`} mono />
-                    <KV k="Contract price" v={`R$ ${selected.priceBRL.toFixed(2)}`} mono />
-                    <KV k="PLD reference" v={`R$ ${selected.pldBRL.toFixed(2)}`} mono />
-                    <KV k="Settlement window" v={selected.window} mono />
-                    <KV k="Settlement date" v={selected.settlementDate} mono />
-                    <KV k="Ledger #" v={selected.ledger ? selected.ledger.toLocaleString("en-US") : "—"} mono />
-                    <KV k="Finality latency" v={selected.latencyMs ? `${(selected.latencyMs / 1000).toFixed(2)}s` : "—"} mono />
-                    <div className="border-t border-border pt-2">
+                    <div className="flex-1 space-y-1.5">
+                      <KV k="Buyer" v={selected.buyer} />
+                      <KV k="Seller" v={selected.seller} />
+                      <KV k="Volume" v={`${selected.volumeMWh.toLocaleString("pt-BR")} MWh`} mono />
+                      <KV k="Contract price" v={`R$ ${selected.priceBRL.toFixed(2)}`} mono />
+                      <KV k="PLD reference" v={`R$ ${selected.pldBRL.toFixed(2)}`} mono />
+                      <KV k="Settlement window" v={selected.window} mono />
+                      <KV k="Settlement date" v={selected.settlementDate} mono />
+                      <KV k="Ledger #" v={selected.ledger ? selected.ledger.toLocaleString("en-US") : "—"} mono />
+                      <KV k="Finality latency" v={selected.latencyMs ? `${(selected.latencyMs / 1000).toFixed(2)}s` : "—"} mono />
+                    </div>
+                    <div className="mt-2 border-t border-border pt-2">
                       <KV k="Net exposure" v={fmtBRL(computeExposure(selected))} mono highlight />
                     </div>
                   </div>
 
-                  <div className="rounded-md border border-border bg-card p-4">
-                    <p className="mb-3 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                  <div className="flex h-full flex-col rounded-md border border-border bg-card p-3.5">
+                    <p className="mb-2 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
                       Operational timeline
                     </p>
-                    <ol className="space-y-2.5">
+                    <ol className="flex-1 space-y-1.5">
                       {contractOperationalTimeline(selected.id).map((e, i, arr) => (
-                        <li key={i} className="relative flex gap-3 pl-1">
-                          <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-success" />
+                        <li key={i} className="relative flex gap-2.5 pl-1">
+                          <CheckCircle2 className="mt-0.5 h-3 w-3 shrink-0 text-success" />
                           {i < arr.length - 1 && (
-                            <span className="absolute left-[7px] top-5 bottom-[-10px] w-px bg-border" />
+                            <span className="absolute left-[6px] top-4 bottom-[-6px] w-px bg-border" />
                           )}
-                          <div className="flex-1">
+                          <div className="flex-1 pb-0.5">
                             <div className="flex items-baseline justify-between gap-2">
-                              <p className="text-xs font-medium">{e.label}</p>
+                              <p className="text-[11px] font-medium leading-tight">{e.label}</p>
                               <span className="font-mono text-[10px] text-muted-foreground">{e.ts}</span>
                             </div>
-                            <p className="text-[11px] text-muted-foreground">{e.detail}</p>
+                            <p className="text-[10px] leading-snug text-muted-foreground">{e.detail}</p>
                           </div>
                         </li>
                       ))}
                     </ol>
                   </div>
                 </div>
+              </div>
 
-                <div className="rounded-md border border-border bg-card p-4">
-                  <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Stellar Tx Hash</p>
-                  <p className="mt-1 break-all rounded bg-background/60 p-2 font-mono text-[11px]">
-                    {selected.status === "FAILED" ? "— transaction not broadcast —" : selected.txHash}
-                  </p>
+              <div className="border-t border-border bg-background/40 px-5 py-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">Stellar Tx Hash</p>
+                    <p className="truncate font-mono text-[11px]">
+                      {selected.status === "FAILED" ? "— transaction not broadcast —" : selected.txHash}
+                    </p>
+                  </div>
                   {selected.status !== "FAILED" && (
                     <a
                       href={`https://stellar.expert/explorer/testnet/tx/${selected.txHash}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="mt-2 inline-flex items-center gap-1 text-xs text-accent hover:underline"
+                      className="inline-flex shrink-0 items-center gap-1 rounded border border-border bg-card px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider text-accent hover:bg-accent/10"
                     >
-                      View on Stellar Expert <ExternalLink className="h-3 w-3" />
+                      Explorer <ExternalLink className="h-3 w-3" />
                     </a>
                   )}
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2">
-                <Button variant="ghost" onClick={() => setSelected(null)}>Close</Button>
+              <div className="flex items-center justify-end gap-2 border-t border-border bg-card/40 px-5 py-3">
+                <Button size="sm" variant="ghost" onClick={() => setSelected(null)}>Close</Button>
               </div>
             </>
           )}
