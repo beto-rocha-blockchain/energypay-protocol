@@ -137,7 +137,9 @@ function ContractsList() {
               <SortableHead k="pldBRL" label="PLD" align="right" />
               <SortableHead k="exposure" label="Exposure" align="right" />
               <TableHead className="text-[11px] uppercase tracking-wider">Status</TableHead>
+              <TableHead className="text-[11px] uppercase tracking-wider">State</TableHead>
               <SortableHead k="settlementDate" label="Settles" />
+              <TableHead className="text-[11px] uppercase tracking-wider">Ledger</TableHead>
               <TableHead className="text-[11px] uppercase tracking-wider">Tx Hash</TableHead>
             </TableRow>
           </TableHeader>
