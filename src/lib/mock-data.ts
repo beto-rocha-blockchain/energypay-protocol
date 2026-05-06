@@ -59,3 +59,43 @@ export const pldSeries = [
   { hour: "09h", pld: 258 }, { hour: "12h", pld: 271 }, { hour: "15h", pld: 282 },
   { hour: "18h", pld: 294 }, { hour: "21h", pld: 263 },
 ];
+
+export type TimelineEvent = {
+  ts: string;
+  label: string;
+  detail: string;
+  state: "done" | "active" | "pending";
+};
+
+export const settlementTimeline: TimelineEvent[] = [
+  { ts: "T-04:12", label: "Contract creation", detail: "EPC-2041 registered by Vale Energia S.A.", state: "done" },
+  { ts: "T-03:48", label: "Counterparty validation", detail: "KYC + clearing limits verified · Engie Brasil", state: "done" },
+  { ts: "T-02:20", label: "PLD ingestion", detail: "CCEE oracle feed · R$ 271.20 / MWh", state: "done" },
+  { ts: "T-00:42", label: "Settlement execution", detail: "Net exposure computed · awaiting signature", state: "active" },
+  { ts: "T+00:00", label: "Stellar confirmation", detail: "Atomic transfer broadcast to Settlement Network", state: "pending" },
+  { ts: "T+00:08", label: "Final settlement state", detail: "Reconciliation closed · ledger anchored", state: "pending" },
+];
+
+export type AlertItem = { id: string; level: "info" | "warn" | "critical"; title: string; detail: string; time: string };
+export const operationalAlerts: AlertItem[] = [
+  { id: "A-118", level: "warn", title: "PLD spread above threshold", detail: "Sub-mercado SE/CO · +14.2% over T-1 close", time: "12:04" },
+  { id: "A-117", level: "info", title: "Counterparty onboarded", detail: "Equatorial Energia added to clearing pool", time: "11:31" },
+  { id: "A-116", level: "critical", title: "Settlement retry queued", detail: "EPC-2035 · oracle desync, scheduled T+00:05", time: "10:48" },
+];
+
+export type QueueItem = { id: string; counterparty: string; amount: number; eta: string; phase: "queued" | "signing" | "broadcasting" };
+export const settlementQueue: QueueItem[] = [
+  { id: "STL-90213", counterparty: "Engie Brasil", amount: 544800, eta: "00:42", phase: "signing" },
+  { id: "STL-90214", counterparty: "EDP Brasil", amount: 228600, eta: "01:15", phase: "queued" },
+  { id: "STL-90215", counterparty: "Eletrobras", amount: 842400, eta: "02:38", phase: "queued" },
+  { id: "STL-90216", counterparty: "Neoenergia", amount: 251285, eta: "04:10", phase: "queued" },
+];
+
+export type FeedItem = { id: string; counterparty: string; amount: number; ago: string };
+export const recentSettlementFeed: FeedItem[] = [
+  { id: "STL-90212", counterparty: "Itaipu Binacional", amount: 862400, ago: "32s ago" },
+  { id: "STL-90211", counterparty: "AES Tietê", amount: -19208, ago: "2m ago" },
+  { id: "STL-90210", counterparty: "Neoenergia", amount: 412900, ago: "6m ago" },
+  { id: "STL-90209", counterparty: "Engie Brasil", amount: 218750, ago: "11m ago" },
+  { id: "STL-90208", counterparty: "EDP Brasil", amount: 154600, ago: "18m ago" },
+];
