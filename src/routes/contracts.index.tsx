@@ -90,32 +90,42 @@ function ContractsList() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto w-full max-w-[1280px] space-y-5">
       <div>
-        <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+        <p className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
           Clearing & Reconciliation / Contract Registry
         </p>
-        <h1 className="mt-1 font-display text-3xl font-semibold tracking-tight">Contract Registry</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <h1 className="mt-1 font-display text-2xl font-semibold tracking-tight">Contract Registry</h1>
+        <p className="mt-1 text-xs text-muted-foreground">
           Bilateral PPAs under settlement supervision · counterparty exposure, PLD reference and transaction finality.
         </p>
       </div>
 
-      <Card className="border-border bg-card p-5">
-        <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div className="relative w-full md:max-w-sm">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+      <Card className="overflow-hidden border-border bg-card/60 p-0 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
+        <div className="flex items-center justify-between gap-3 border-b border-border bg-background/40 px-4 py-2.5">
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+              Registry · Live
+            </span>
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-success" />
+          </div>
+          <Badge variant="outline" className="font-mono text-[10px]">{rows.length} / {contracts.length} contracts</Badge>
+        </div>
+
+        <div className="flex flex-col gap-2 border-b border-border bg-background/20 px-4 py-2.5 md:flex-row md:items-center md:justify-between">
+          <div className="relative w-full md:max-w-xs">
+            <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-muted-foreground" />
             <Input
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Search contract ID, buyer or seller…"
-              className="bg-input pl-9"
+              placeholder="Search ID, buyer or seller…"
+              className="h-8 bg-input pl-8 text-xs"
             />
           </div>
           <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-muted-foreground" />
+            <Filter className="h-3.5 w-3.5 text-muted-foreground" />
             <Select value={statusFilter} onValueChange={(v: any) => setStatusFilter(v)}>
-              <SelectTrigger className="w-[180px] bg-input"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-8 w-[160px] bg-input text-xs"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="ALL">All statuses</SelectItem>
                 <SelectItem value="ACTIVE">Active</SelectItem>
@@ -124,60 +134,66 @@ function ContractsList() {
                 <SelectItem value="FAILED">Failed</SelectItem>
               </SelectContent>
             </Select>
-            <Badge variant="outline" className="font-mono text-xs">{rows.length} / {contracts.length}</Badge>
           </div>
         </div>
 
-        <Table>
-          <TableHeader>
-            <TableRow className="border-border hover:bg-transparent">
-              <SortableHead k="id" label="Contract" />
-              <TableHead className="text-[11px] uppercase tracking-wider">Buyer</TableHead>
-              <TableHead className="text-[11px] uppercase tracking-wider">Seller</TableHead>
-              <SortableHead k="volumeMWh" label="Volume (MWh)" align="right" />
-              <SortableHead k="priceBRL" label="Price" align="right" />
-              <SortableHead k="pldBRL" label="PLD" align="right" />
-              <SortableHead k="exposure" label="Exposure" align="right" />
-              <TableHead className="text-[11px] uppercase tracking-wider">Status</TableHead>
-              <TableHead className="text-[11px] uppercase tracking-wider">State</TableHead>
-              <SortableHead k="settlementDate" label="Settles" />
-              <TableHead className="text-[11px] uppercase tracking-wider">Ledger</TableHead>
-              <TableHead className="text-[11px] uppercase tracking-wider">Tx Hash</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.map((c) => {
-              const exp = computeExposure(c);
-              return (
-                <TableRow
-                  key={c.id}
-                  className="cursor-pointer border-border"
-                  onClick={() => setSelected(c)}
-                >
-                  <TableCell className="font-mono text-xs">{c.id}</TableCell>
-                  <TableCell className="text-sm">{c.buyer}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{c.seller}</TableCell>
-                  <TableCell className="text-right font-mono text-sm">{c.volumeMWh.toLocaleString("pt-BR")}</TableCell>
-                  <TableCell className="text-right font-mono text-sm">{c.priceBRL.toFixed(2)}</TableCell>
-                  <TableCell className="text-right font-mono text-sm">{c.pldBRL.toFixed(2)}</TableCell>
-                  <TableCell className={`text-right font-mono text-sm ${exp >= 0 ? "text-success" : "text-destructive"}`}>
-                    {exp >= 0 ? "+" : ""}{fmtBRL(exp)}
-                  </TableCell>
-                  <TableCell><StatusBadge status={c.status} /></TableCell>
-                  <TableCell className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">{c.state}</TableCell>
-                  <TableCell className="font-mono text-xs text-muted-foreground">{c.settlementDate}</TableCell>
-                  <TableCell className="font-mono text-[11px] text-muted-foreground">{c.ledger ? `#${c.ledger.toLocaleString("en-US")}` : "—"}</TableCell>
-                  <TableCell className="font-mono text-[11px] text-muted-foreground">
-                    {c.status === "FAILED" ? "—" : `${c.txHash.slice(0, 6)}…${c.txHash.slice(-6)}`}
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-            {rows.length === 0 && (
-              <TableRow><TableCell colSpan={11} className="py-10 text-center text-sm text-muted-foreground">No contracts match the current filters.</TableCell></TableRow>
-            )}
-          </TableBody>
-        </Table>
+        <div className="max-h-[calc(100vh-280px)] overflow-auto">
+          <Table className="text-xs [&_th]:h-8 [&_th]:px-2.5 [&_td]:px-2.5 [&_td]:py-1.5">
+            <TableHeader className="sticky top-0 z-10 bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/70">
+              <TableRow className="border-border hover:bg-transparent">
+                <SortableHead k="id" label="Contract" />
+                <TableHead className="text-[10px] uppercase tracking-wider">Buyer</TableHead>
+                <TableHead className="text-[10px] uppercase tracking-wider">Seller</TableHead>
+                <SortableHead k="volumeMWh" label="MWh" align="right" />
+                <SortableHead k="priceBRL" label="Price" align="right" />
+                <SortableHead k="pldBRL" label="PLD" align="right" />
+                <SortableHead k="exposure" label="Exposure" align="right" />
+                <TableHead className="text-[10px] uppercase tracking-wider">Status</TableHead>
+                <TableHead className="text-[10px] uppercase tracking-wider">State</TableHead>
+                <SortableHead k="settlementDate" label="Settles" />
+                <TableHead className="text-[10px] uppercase tracking-wider">Ledger</TableHead>
+                <TableHead className="text-[10px] uppercase tracking-wider">Tx Hash</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.map((c) => {
+                const exp = computeExposure(c);
+                return (
+                  <TableRow
+                    key={c.id}
+                    className="cursor-pointer border-border/60 hover:bg-accent/5"
+                    onClick={() => setSelected(c)}
+                  >
+                    <TableCell className="font-mono text-[11px]">{c.id}</TableCell>
+                    <TableCell className="text-xs">{c.buyer}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{c.seller}</TableCell>
+                    <TableCell className="text-right font-mono text-xs">{c.volumeMWh.toLocaleString("pt-BR")}</TableCell>
+                    <TableCell className="text-right font-mono text-xs">{c.priceBRL.toFixed(2)}</TableCell>
+                    <TableCell className="text-right font-mono text-xs text-muted-foreground">{c.pldBRL.toFixed(2)}</TableCell>
+                    <TableCell className={`text-right font-mono text-xs font-medium ${exp >= 0 ? "text-success" : "text-destructive"}`}>
+                      {exp >= 0 ? "+" : ""}{fmtBRL(exp)}
+                    </TableCell>
+                    <TableCell><StatusBadge status={c.status} /></TableCell>
+                    <TableCell className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">{c.state}</TableCell>
+                    <TableCell className="font-mono text-[11px] text-muted-foreground">{c.settlementDate}</TableCell>
+                    <TableCell className="font-mono text-[10px] text-muted-foreground">{c.ledger ? `#${c.ledger.toLocaleString("en-US")}` : "—"}</TableCell>
+                    <TableCell className="font-mono text-[10px] text-muted-foreground">
+                      {c.status === "FAILED" ? "—" : `${c.txHash.slice(0, 6)}…${c.txHash.slice(-6)}`}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+              {rows.length === 0 && (
+                <TableRow><TableCell colSpan={12} className="py-10 text-center text-xs text-muted-foreground">No contracts match the current filters.</TableCell></TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+
+        <div className="flex items-center justify-between border-t border-border bg-background/40 px-4 py-2 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+          <span>Σ Exposure · {fmtBRL(rows.reduce((a, c) => a + computeExposure(c), 0))}</span>
+          <span>Stellar Testnet · Settlement Network</span>
+        </div>
       </Card>
 
       <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
