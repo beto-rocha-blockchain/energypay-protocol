@@ -162,7 +162,9 @@ function ContractsList() {
                     {exp >= 0 ? "+" : ""}{fmtBRL(exp)}
                   </TableCell>
                   <TableCell><StatusBadge status={c.status} /></TableCell>
+                  <TableCell className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">{c.state}</TableCell>
                   <TableCell className="font-mono text-xs text-muted-foreground">{c.settlementDate}</TableCell>
+                  <TableCell className="font-mono text-[11px] text-muted-foreground">{c.ledger ? `#${c.ledger.toLocaleString("en-US")}` : "—"}</TableCell>
                   <TableCell className="font-mono text-[11px] text-muted-foreground">
                     {c.status === "FAILED" ? "—" : `${c.txHash.slice(0, 6)}…${c.txHash.slice(-6)}`}
                   </TableCell>
