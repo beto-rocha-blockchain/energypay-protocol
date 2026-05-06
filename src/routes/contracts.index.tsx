@@ -49,6 +49,7 @@ function StatusBadge({ status }: { status: ContractStatus }) {
 }
 
 function ContractsList() {
+  const contracts = useOps((s) => s.contracts);
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState<"ALL" | ContractStatus>("ALL");
   const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" }>({ key: "settlementDate", dir: "desc" });
