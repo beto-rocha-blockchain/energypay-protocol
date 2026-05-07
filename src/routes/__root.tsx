@@ -1,11 +1,14 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
-  Outlet, Link, createRootRouteWithContext, useRouter,
+  Outlet, Link, createRootRouteWithContext, useRouter, useRouterState, useNavigate,
   HeadContent, Scripts,
 } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import { OperatorBadge } from "@/components/OperatorBadge";
 import { Toaster } from "@/components/ui/sonner";
+import { useOperator } from "@/store/operator";
 
 import appCss from "../styles.css?url";
 
