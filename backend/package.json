@@ -9,7 +9,9 @@
   },
   "dependencies": {
     "@stellar/stellar-sdk": "^15.1.0",
+    "@supabase/supabase-js": "^2.105.3",
     "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
     "express": "^4.22.1"
   }
 }

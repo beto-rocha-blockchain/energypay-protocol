@@ -14,7 +14,12 @@ import {
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
-import { computeExposure, contractOperationalTimeline, type Contract, type ContractStatus } from "@/lib/mock-data";
+import {
+  computeExposure,
+  contractOperationalTimeline,
+  type Contract,
+  type ContractStatus,
+} from "@/lib/mock-data";
 import { useOps } from "@/store/operations";
 import { StateMachine } from "@/components/StateMachine";
 import { CheckCircle2 } from "lucide-react";
@@ -54,6 +59,10 @@ function ContractsList() {
   const [statusFilter, setStatusFilter] = useState<"ALL" | ContractStatus>("ALL");
   const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" }>({ key: "settlementDate", dir: "desc" });
   const [selected, setSelected] = useState<Contract | null>(null);
+  const liveContract =
+  useOps((s) =>
+    s.contracts.find((c) => c.id === selected?.id)
+  ) ?? selected;
 
   const rows = useMemo(() => {
     let r = contracts.filter((c) => {
@@ -178,8 +187,14 @@ function ContractsList() {
                     <TableCell className="font-mono text-[11px] text-muted-foreground">{c.settlementDate}</TableCell>
                     <TableCell className="font-mono text-[10px] text-muted-foreground">{c.ledger ? `#${c.ledger.toLocaleString("en-US")}` : "—"}</TableCell>
                     <TableCell className="font-mono text-[10px] text-muted-foreground">
-                      {c.status === "FAILED" ? "—" : `${c.txHash.slice(0, 6)}…${c.txHash.slice(-6)}`}
-                    </TableCell>
+                    {
+                      c.status === "FAILED"
+                        ? "—"
+                        : c.txHash
+                          ? `${c.txHash.slice(0, 6)}…${c.txHash.slice(-6)}`
+                          : "pending"
+}                    
+                  </TableCell>
                   </TableRow>
                 );
               })}
@@ -204,8 +219,7 @@ function ContractsList() {
                 <DialogTitle className="font-display flex items-center gap-2">
                   <span>Contract</span>
                   <span className="font-mono text-base text-primary">{selected.id}</span>
-                  <StatusBadge status={selected.status} />
-                </DialogTitle>
+                <StatusBadge status={(liveContract?.status ?? "PENDING") as ContractStatus} />                </DialogTitle>
                 <DialogDescription className="text-xs">
                   Bilateral PPA · operational state, exposure & settlement finality
                 </DialogDescription>
@@ -216,7 +230,10 @@ function ContractsList() {
                   <p className="mb-2 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
                     Settlement state machine
                   </p>
-                  <StateMachine current={selected.state} failed={selected.state === "FAILED"} />
+                  <StateMachine
+                    current={(liveContract?.state ?? "PENDING") as any}
+                    failed={liveContract?.state === "FAILED"}
+/>
                 </div>
 
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:items-stretch">
@@ -232,8 +249,8 @@ function ContractsList() {
                       <KV k="PLD reference" v={`R$ ${selected.pldBRL.toFixed(2)}`} mono />
                       <KV k="Settlement window" v={selected.window} mono />
                       <KV k="Settlement date" v={selected.settlementDate} mono />
-                      <KV k="Ledger #" v={selected.ledger ? selected.ledger.toLocaleString("en-US") : "—"} mono />
-                      <KV k="Finality latency" v={selected.latencyMs ? `${(selected.latencyMs / 1000).toFixed(2)}s` : "—"} mono />
+                      <KV k="Ledger #" v={liveContract?.ledger ? liveContract?.ledger.toLocaleString("en-US") : "—"} mono />
+                      <KV k="Finality latency" v={liveContract?.latencyMs ? `${(liveContract?.latencyMs / 1000).toFixed(2)}s` : "—"} mono />
                     </div>
                     <div className="mt-2 border-t border-border pt-2">
                       <KV k="Net exposure" v={fmtBRL(computeExposure(selected))} mono highlight />
@@ -270,12 +287,12 @@ function ContractsList() {
                   <div className="min-w-0 flex-1">
                     <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">Stellar Tx Hash</p>
                     <p className="truncate font-mono text-[11px]">
-                      {selected.status === "FAILED" ? "— transaction not broadcast —" : selected.txHash}
+                      {liveContract?.status === "FAILED" ? "— transaction not broadcast —" : liveContract?.txHash}
                     </p>
                   </div>
-                  {selected.status !== "FAILED" && (
+                  {liveContract?.status !== "FAILED" && (
                     <a
-                      href={`https://stellar.expert/explorer/testnet/tx/${selected.txHash}`}
+                      href={`https://stellar.expert/explorer/testnet/tx/${liveContract?.txHash}`}
                       target="_blank"
                       rel="noreferrer"
                       className="inline-flex shrink-0 items-center gap-1 rounded border border-border bg-card px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider text-accent hover:bg-accent/10"
