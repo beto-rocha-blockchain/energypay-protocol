@@ -1,11 +1,14 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
-  Outlet, Link, createRootRouteWithContext, useRouter,
+  Outlet, Link, createRootRouteWithContext, useRouter, useRouterState, useNavigate,
   HeadContent, Scripts,
 } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import { OperatorBadge } from "@/components/OperatorBadge";
 import { Toaster } from "@/components/ui/sonner";
+import { useOperator } from "@/store/operator";
 
 import appCss from "../styles.css?url";
 
@@ -67,10 +70,34 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-  if (typeof window !== "undefined") {
-    // start the operational ticker once on the client
-    import("@/store/operations").then((m) => m.startOpsTicker());
+  const isAuthenticated = useOperator((s) => s.isAuthenticated);
+  const operator = useOperator((s) => s.operator);
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      import("@/store/operations").then((m) => m.startOpsTicker());
+    }
+  }, []);
+
+  // institutional access gate — redirect to /login when no operator session
+  useEffect(() => {
+    if (!isAuthenticated && pathname !== "/login") {
+      navigate({ to: "/login" });
+    }
+  }, [isAuthenticated, pathname, navigate]);
+
+  // login route renders without the chrome
+  if (pathname === "/login") {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <div className="min-h-screen w-full bg-background"><Outlet /></div>
+        <Toaster />
+      </QueryClientProvider>
+    );
   }
+
   return (
     <QueryClientProvider client={queryClient}>
       <SidebarProvider>
@@ -85,17 +112,21 @@ function RootComponent() {
                   <span className="h-1 w-1 rounded-full bg-muted-foreground/40" />
                   <span className="font-mono">Pilot Environment · v0.4.2</span>
                   <span className="h-1 w-1 rounded-full bg-muted-foreground/40" />
-                  <span className="font-mono">Clearing Desk · BRL</span>
+                  <span className="font-mono">
+                    {operator ? `${operator.organization}` : "Clearing Desk · BRL"}
+                  </span>
                 </div>
               </div>
               <div className="flex items-center gap-3 text-xs">
-                <span className="hidden font-mono text-muted-foreground md:inline">Network</span>
+                <OperatorBadge />
                 <span className="flex items-center gap-1.5 rounded-md border border-border bg-card px-2 py-1 font-mono text-success">
-                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-success" /> STELLAR TESTNET · SETTLEMENT NETWORK
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-success" /> STELLAR TESTNET ACTIVE
                 </span>
               </div>
             </header>
-            <main className="flex-1 p-4 md:p-6 lg:p-8"><Outlet /></main>
+            <main className="flex-1 p-4 md:p-6 lg:p-8">
+              {isAuthenticated ? <Outlet /> : null}
+            </main>
           </div>
         </div>
         <Toaster />

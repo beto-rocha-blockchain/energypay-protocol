@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SettlementRouteImport } from './routes/settlement'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ContractsIndexRouteImport } from './routes/contracts.index'
 import { Route as ContractsNewRouteImport } from './routes/contracts.new'
@@ -17,6 +18,11 @@ import { Route as ContractsNewRouteImport } from './routes/contracts.new'
 const SettlementRoute = SettlementRouteImport.update({
   id: '/settlement',
   path: '/settlement',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -37,12 +43,14 @@ const ContractsNewRoute = ContractsNewRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
   '/settlement': typeof SettlementRoute
   '/contracts/new': typeof ContractsNewRoute
   '/contracts/': typeof ContractsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
   '/settlement': typeof SettlementRoute
   '/contracts/new': typeof ContractsNewRoute
   '/contracts': typeof ContractsIndexRoute
@@ -50,20 +58,28 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
   '/settlement': typeof SettlementRoute
   '/contracts/new': typeof ContractsNewRoute
   '/contracts/': typeof ContractsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/settlement' | '/contracts/new' | '/contracts/'
+  fullPaths: '/' | '/login' | '/settlement' | '/contracts/new' | '/contracts/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/settlement' | '/contracts/new' | '/contracts'
-  id: '__root__' | '/' | '/settlement' | '/contracts/new' | '/contracts/'
+  to: '/' | '/login' | '/settlement' | '/contracts/new' | '/contracts'
+  id:
+    | '__root__'
+    | '/'
+    | '/login'
+    | '/settlement'
+    | '/contracts/new'
+    | '/contracts/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  LoginRoute: typeof LoginRoute
   SettlementRoute: typeof SettlementRoute
   ContractsNewRoute: typeof ContractsNewRoute
   ContractsIndexRoute: typeof ContractsIndexRoute
@@ -76,6 +92,13 @@ declare module '@tanstack/react-router' {
       path: '/settlement'
       fullPath: '/settlement'
       preLoaderRoute: typeof SettlementRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -104,6 +127,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  LoginRoute: LoginRoute,
   SettlementRoute: SettlementRoute,
   ContractsNewRoute: ContractsNewRoute,
   ContractsIndexRoute: ContractsIndexRoute,
