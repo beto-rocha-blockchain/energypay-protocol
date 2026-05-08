@@ -78,7 +78,9 @@ export const useOperator = create<OperatorState>()(
     {
       name: "energypay.operator.v1",
       storage: createJSONStorage(() =>
-        typeof window !== "undefined" ? window.localStorage : (undefined as unknown as Storage),
+        typeof window !== "undefined"
+        ? window.sessionStorage
+        : (undefined as unknown as Storage)
       ),
     },
   ),

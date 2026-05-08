@@ -347,38 +347,4 @@ export type FeedItem = {
 };
 
 export const recentSettlementFeed: FeedItem[] = [];
-  [];
-  export const mockContracts: Contract[] = [
-  {
-    id: "EPC-2053",
-    buyer: "EnergyPay",
-    seller: "Furnas",
-    volumeMWh: 15999999.999,
-    priceBRL: 1,
-    pldBRL: 1,
-    settlementDate: "2026-08-06",
-    status: "ACTIVE",
-    txHash: "0".repeat(64),
-    state: "CREATED",
-    ledger: 0,
-    latencyMs: 0,
-    window: "D+1 17:00 BRT",
-  },
-
-  {
-    id: "EPC-2052",
-    buyer: "Petrobras Trading",
-    seller: "EDP Brasil",
-    volumeMWh: 1800,
-    priceBRL: 252.1,
-    pldBRL: 264.8,
-    settlementDate: "2026-05-07",
-    status: "SETTLED",
-    txHash:
-      "5676dd6ba21bf920e7efdac550ac3f20a8ebad75cdf208ea77a69e36ca0bd6af",
-    state: "SETTLED",
-    ledger: 2434550,
-    latencyMs: 2400,
-    window: "D+1 17:00 BRT",
-  },
-];
+  export const mockContracts: Contract[] = [];

@@ -1,28 +1,37 @@
 import dotenv from "dotenv";
+
 dotenv.config();
 
 import express from "express";
 import cors from "cors";
 
 import walletRoutes from "./routes/walletRoutes.js";
+import authRoutes from "./routes/auth.js";
 
 import { executeSettlement } from "./services/stellarSettlementService.js";
+
+import tokenRoutes from "./routes/tokenRoutes.js";
+
 const app = express();
 
 // ========================================
 // Middlewares
 // ========================================
+
 app.use(cors());
 app.use(express.json());
 
 // ========================================
 // API Routes
 // ========================================
-app.use("/wallet", walletRoutes);
 
+app.use("/api/wallet", walletRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/token", tokenRoutes);
 // ========================================
 // Health Check
 // ========================================
+
 app.get("/api/health", (req, res) => {
   res.json({
     status: "online",
@@ -36,6 +45,7 @@ app.get("/api/health", (req, res) => {
 // ========================================
 // Execute Settlement
 // ========================================
+
 app.post("/api/settlement/execute", async (req, res) => {
   try {
     const result = await executeSettlement();
@@ -59,6 +69,7 @@ app.post("/api/settlement/execute", async (req, res) => {
 // ========================================
 // Root Route
 // ========================================
+
 app.get("/", (req, res) => {
   res.send("🚀 EnergyPay API funcionando");
 });
@@ -66,6 +77,7 @@ app.get("/", (req, res) => {
 // ========================================
 // Start Server
 // ========================================
+
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {

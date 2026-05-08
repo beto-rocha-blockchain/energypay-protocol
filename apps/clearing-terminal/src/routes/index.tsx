@@ -53,6 +53,8 @@ import { useOps } from "@/store/operations";
 
 import { useBackendStatus } from "@/hooks/useBackendStatus";
 
+import { getSession } from "@/lib/session";
+
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [

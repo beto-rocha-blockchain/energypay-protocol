@@ -1,3 +1,4 @@
+import { getSession } from "@/lib/session";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { ArrowUpDown, ExternalLink, Filter, Search } from "lucide-react";
