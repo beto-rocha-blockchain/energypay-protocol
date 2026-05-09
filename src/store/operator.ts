@@ -76,25 +76,22 @@ type OperatorState = {
     roles: ParticipantRole[];
     coords?: OperatorCoords;
     fund?: boolean;
-  }) => OperatorIdentity;
+  }) => Promise<OperatorIdentity>;
   setRoles: (roles: ParticipantRole[]) => void;
   setCoords: (coords: OperatorCoords | undefined) => void;
   logout: () => void;
 };
 
-const B32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
-const rand = (n: number, alphabet: string) =>
-  Array.from({ length: n }, () => alphabet[Math.floor(Math.random() * alphabet.length)]).join("");
-
-export const generateStellarAddress = () => `G${rand(55, B32)}`;
-export const generateStellarSecret = () => `S${rand(55, B32)}`;
-export const generateStellarKeypair = (funded = true): StellarKeypair => ({
-  publicKey: generateStellarAddress(),
-  secretKey: generateStellarSecret(),
-  network: "STELLAR_TESTNET",
-  funded,
-  createdAt: new Date().toISOString(),
-});
+export const generateStellarKeypair = (funded = false): StellarKeypair => {
+  const { publicKey, secretKey } = generateKeypair();
+  return {
+    publicKey,
+    secretKey,
+    network: "STELLAR_TESTNET",
+    funded,
+    createdAt: new Date().toISOString(),
+  };
+};
 
 const orgToCode = (org: string) =>
   (org.replace(/[^A-Za-z0-9]/g, "").toUpperCase().slice(0, 4) || "OPER").padEnd(4, "X");
