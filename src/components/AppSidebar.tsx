@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, FileSignature, Calculator, Zap, Activity, ListChecks, FilePlus2 } from "lucide-react";
+import { LayoutDashboard, Calculator, Zap, Activity, ListChecks, FilePlus2, Send } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter,
@@ -10,6 +10,7 @@ const items = [
   { title: "Contract Registry", url: "/contracts", icon: ListChecks },
   { title: "New Contract", url: "/contracts/new", icon: FilePlus2 },
   { title: "Settlement Engine", url: "/settlement", icon: Calculator },
+  { title: "Direct Settlement", url: "/p2p", icon: Send },
 ];
 
 export function AppSidebar() {
