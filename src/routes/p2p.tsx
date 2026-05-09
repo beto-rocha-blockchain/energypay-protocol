@@ -340,7 +340,16 @@ function P2PPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <SettlementRailBanner />
+
+      {isOffline && (
+        <div className="rounded-md border border-destructive/40 bg-destructive/10 px-4 py-3 font-mono text-[11px] text-destructive">
+          ✗ Settlement backend unreachable at <span className="font-semibold">http://localhost:3000</span>.
+          Execute Settlement is disabled. Verify the backend service is running and Horizon is reachable.
+        </div>
+      )}
+
+
         {/* LEFT — Transfer form */}
         <Card className="border-border bg-card p-6 lg:col-span-2">
           <div className="mb-5 flex items-center justify-between">
