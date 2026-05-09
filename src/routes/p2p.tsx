@@ -211,7 +211,10 @@ function P2PPage() {
         return;
       }
 
-      const explorer = submission.explorer_link || stellarExpertTx(submission.tx_hash);
+      // Canonical receipt fields (with backwards-compatible fallbacks).
+      const explorer = submission.explorer_url || submission.explorer_link || stellarExpertTx(submission.tx_hash);
+      const senderKey = submission.sender || submission.source_public_key || operator.wallet.publicKey;
+      const finalizedTs = submission.finalized_at || submission.timestamp || new Date().toISOString();
       append("CONFIRMING", `awaiting Horizon confirmation · ledger pending`);
       setPhase("CONFIRMED", "CONFIRMING", {
         txHash: submission.tx_hash,
