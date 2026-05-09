@@ -14,6 +14,7 @@ import {
   useOperator, maskAddress, ROLE_META, type ParticipantRole,
 } from "@/store/operator";
 import { toast } from "sonner";
+import { safeErrorMessage } from "@/lib/safe-error";
 
 export const Route = createFileRoute("/register")({
   component: RegisterPage,
@@ -108,7 +109,7 @@ function RegisterPage() {
       setProvisionError(null);
       setStep("success");
     } catch (err) {
-      const reason = (err as Error)?.message || "Settlement Network unreachable.";
+      const reason = safeErrorMessage(err, "Settlement Network unreachable.");
       setProvisionError(reason);
       // Do NOT clear session, do NOT redirect to /login — keep operator on
       // the form with an inline institutional error banner.
