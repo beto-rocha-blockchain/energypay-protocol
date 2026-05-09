@@ -420,6 +420,11 @@ function P2PPage() {
                     <SelectItem value="XLM">XLM · Stellar Lumen</SelectItem>
                   </SelectContent>
                 </Select>
+                {fieldError?.field === "asset" && (
+                  <p className="font-mono text-[10px] text-destructive">
+                    server · {fieldError.message}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -431,8 +436,23 @@ function P2PPage() {
                 value={memo}
                 onChange={(e) => setMemo(e.target.value)}
                 placeholder="EPAY direct settlement note · invoice ref · operational tag"
-                className="min-h-[72px] bg-input font-mono text-xs"
+                className={`min-h-[72px] bg-input font-mono text-xs ${
+                  fieldError?.field === "memo" ? "border-destructive" : ""
+                }`}
+                maxLength={28}
               />
+              <div className="flex items-center justify-between">
+                {fieldError?.field === "memo" ? (
+                  <p className="font-mono text-[10px] text-destructive">
+                    server · {fieldError.message}
+                  </p>
+                ) : (
+                  <p className="font-mono text-[10px] text-muted-foreground">
+                    Stellar memo_text · 28 bytes max · ASCII safe
+                  </p>
+                )}
+                <p className="font-mono text-[10px] text-muted-foreground">{memo.length}/28</p>
+              </div>
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
