@@ -88,15 +88,15 @@ export function useSettlementRail() {
         const data = await res.json();
         if (cancelled) return;
         const counters: TelemetryCounters = data.counters;
-        const pending = Array.isArray(data.recent_logs)
-          ? data.recent_logs.filter((l: { stage?: string; message?: string }) =>
-              l.stage === "horizon" && /POST/i.test(l.message ?? ""),
-            ).length -
-            Array.isArray(data.recent_receipts)
-              ? data.recent_receipts.length
-              : 0
-          : 0;
-        setTelemetry({ counters, pending_confirmations: Math.max(0, pending) });
+        const logs: Array<{ stage?: string; message?: string }> =
+          Array.isArray(data.recent_logs) ? data.recent_logs : [];
+        const receipts: Array<unknown> =
+          Array.isArray(data.recent_receipts) ? data.recent_receipts : [];
+        const submissions = logs.filter(
+          (l) => l.stage === "horizon" && /→\s*POST/i.test(l.message ?? ""),
+        ).length;
+        const pending = Math.max(0, submissions - receipts.length);
+        setTelemetry({ counters, pending_confirmations: pending });
       } catch {
         /* keep last good telemetry */
       }
