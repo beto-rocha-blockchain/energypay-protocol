@@ -117,11 +117,13 @@ export const useOperator = create<OperatorState>()(
     (set, get) => ({
       operator: null,
       isAuthenticated: false,
-      login: ({ email, organization, accessKey }) => {
+      login: async ({ email, organization, accessKey }) => {
         if (!email || !organization || !accessKey) {
           throw new Error("Operational credentials incomplete.");
         }
-        const wallet = generateStellarKeypair(true);
+        const wallet = generateStellarKeypair(false);
+        const funded = await fundWithFriendbot(wallet.publicKey);
+        wallet.funded = funded;
         const roles: ParticipantRole[] = ["SELLER"];
         const id: OperatorIdentity = {
           operatorId: makeOperatorId(organization),
@@ -137,7 +139,7 @@ export const useOperator = create<OperatorState>()(
           permissions: buildPermissions(roles),
           network: "STELLAR_TESTNET",
           networkStatus: "ACTIVE",
-          funded: true,
+          funded,
           provisionedAt: new Date().toISOString(),
         };
         set({ operator: id, isAuthenticated: true });
