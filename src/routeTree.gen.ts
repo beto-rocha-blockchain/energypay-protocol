@@ -17,6 +17,7 @@ import { Route as GridRouteImport } from './routes/grid'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ContractsIndexRouteImport } from './routes/contracts.index'
 import { Route as ContractsNewRouteImport } from './routes/contracts.new'
+import { Route as ApiHealthRouteImport } from './routes/api.health'
 import { Route as ApiSettlementsTelemetryRouteImport } from './routes/api.settlements.telemetry'
 import { Route as ApiP2pValidateRouteImport } from './routes/api.p2p.validate'
 
@@ -60,6 +61,11 @@ const ContractsNewRoute = ContractsNewRouteImport.update({
   path: '/contracts/new',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiHealthRoute = ApiHealthRouteImport.update({
+  id: '/api/health',
+  path: '/api/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiSettlementsTelemetryRoute = ApiSettlementsTelemetryRouteImport.update({
   id: '/api/settlements/telemetry',
   path: '/api/settlements/telemetry',
@@ -78,6 +84,7 @@ export interface FileRoutesByFullPath {
   '/p2p': typeof P2pRoute
   '/register': typeof RegisterRoute
   '/settlement': typeof SettlementRoute
+  '/api/health': typeof ApiHealthRoute
   '/contracts/new': typeof ContractsNewRoute
   '/contracts/': typeof ContractsIndexRoute
   '/api/p2p/validate': typeof ApiP2pValidateRoute
@@ -90,6 +97,7 @@ export interface FileRoutesByTo {
   '/p2p': typeof P2pRoute
   '/register': typeof RegisterRoute
   '/settlement': typeof SettlementRoute
+  '/api/health': typeof ApiHealthRoute
   '/contracts/new': typeof ContractsNewRoute
   '/contracts': typeof ContractsIndexRoute
   '/api/p2p/validate': typeof ApiP2pValidateRoute
@@ -103,6 +111,7 @@ export interface FileRoutesById {
   '/p2p': typeof P2pRoute
   '/register': typeof RegisterRoute
   '/settlement': typeof SettlementRoute
+  '/api/health': typeof ApiHealthRoute
   '/contracts/new': typeof ContractsNewRoute
   '/contracts/': typeof ContractsIndexRoute
   '/api/p2p/validate': typeof ApiP2pValidateRoute
@@ -117,6 +126,7 @@ export interface FileRouteTypes {
     | '/p2p'
     | '/register'
     | '/settlement'
+    | '/api/health'
     | '/contracts/new'
     | '/contracts/'
     | '/api/p2p/validate'
@@ -129,6 +139,7 @@ export interface FileRouteTypes {
     | '/p2p'
     | '/register'
     | '/settlement'
+    | '/api/health'
     | '/contracts/new'
     | '/contracts'
     | '/api/p2p/validate'
@@ -141,6 +152,7 @@ export interface FileRouteTypes {
     | '/p2p'
     | '/register'
     | '/settlement'
+    | '/api/health'
     | '/contracts/new'
     | '/contracts/'
     | '/api/p2p/validate'
@@ -154,6 +166,7 @@ export interface RootRouteChildren {
   P2pRoute: typeof P2pRoute
   RegisterRoute: typeof RegisterRoute
   SettlementRoute: typeof SettlementRoute
+  ApiHealthRoute: typeof ApiHealthRoute
   ContractsNewRoute: typeof ContractsNewRoute
   ContractsIndexRoute: typeof ContractsIndexRoute
   ApiP2pValidateRoute: typeof ApiP2pValidateRoute
@@ -218,6 +231,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ContractsNewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/health': {
+      id: '/api/health'
+      path: '/api/health'
+      fullPath: '/api/health'
+      preLoaderRoute: typeof ApiHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/settlements/telemetry': {
       id: '/api/settlements/telemetry'
       path: '/api/settlements/telemetry'
@@ -242,6 +262,7 @@ const rootRouteChildren: RootRouteChildren = {
   P2pRoute: P2pRoute,
   RegisterRoute: RegisterRoute,
   SettlementRoute: SettlementRoute,
+  ApiHealthRoute: ApiHealthRoute,
   ContractsNewRoute: ContractsNewRoute,
   ContractsIndexRoute: ContractsIndexRoute,
   ApiP2pValidateRoute: ApiP2pValidateRoute,

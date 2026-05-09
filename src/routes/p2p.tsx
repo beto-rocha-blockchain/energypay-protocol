@@ -32,6 +32,8 @@ import { stellarExpertTx } from "@/lib/stellar";
 import { apiValidatedP2PTransfer, type P2PValidationError } from "@/lib/api";
 import { validateP2PTransfer } from "@/lib/p2p-validation";
 import { P2PLiveStatusPanel, type LiveStatusData, type LiveStatusPhase } from "@/components/P2PLiveStatusPanel";
+import { SettlementRailBanner } from "@/components/SettlementRailBanner";
+import { useSettlementRail } from "@/hooks/useSettlementRail";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/p2p")({
@@ -59,6 +61,7 @@ const ROLE_CONTEXT: Record<string, string> = {
 function P2PPage() {
   const operator = useOperator((s) => s.operator);
   const { transfers, counterparties, recordTransfer } = useP2P();
+  const { railState, isOffline, isExecutable } = useSettlementRail();
 
   const [destinationOrg, setDestinationOrg] = useState("");
   const [destinationAddress, setDestinationAddress] = useState("");
@@ -97,7 +100,7 @@ function P2PPage() {
   const numericAmount = Number(amount);
   const validAmount = numericAmount > 0;
   const canExecute =
-    !!operator && validAddress && validAmount && !running && destinationOrg.trim().length > 0;
+    !!operator && validAddress && validAmount && !running && destinationOrg.trim().length > 0 && isExecutable;
 
   const authorization = useMemo(() => {
     if (!operator || !validAddress || !validAmount) return null;
@@ -337,8 +340,17 @@ function P2PPage() {
         </div>
       </div>
 
+      <SettlementRailBanner />
+
+      {isOffline && (
+        <div className="rounded-md border border-destructive/40 bg-destructive/10 px-4 py-3 font-mono text-[11px] text-destructive">
+          ✗ Settlement backend unreachable at <span className="font-semibold">http://localhost:3000</span>.
+          Execute Settlement is disabled. Verify the backend service is running and Horizon is reachable.
+        </div>
+      )}
+
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        {/* LEFT — Transfer form */}
+
         <Card className="border-border bg-card p-6 lg:col-span-2">
           <div className="mb-5 flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -480,6 +492,15 @@ function P2PPage() {
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
               <p className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
                 <ShieldCheck className="h-3 w-3 text-success" /> Direct settlement rail · Stellar finality ~2s
+                <span className="ml-2 inline-flex items-center gap-1 rounded border border-border bg-background/40 px-1.5 py-0.5">
+                  <span className={`h-1.5 w-1.5 rounded-full ${
+                    railState === "CONNECTED" ? "bg-success animate-pulse"
+                    : railState === "DEGRADED" ? "bg-warning animate-pulse"
+                    : railState === "OFFLINE" ? "bg-destructive"
+                    : "bg-muted-foreground"
+                  }`} />
+                  {railState}
+                </span>
               </p>
               <div className="flex items-center gap-2">
                 {result && (
