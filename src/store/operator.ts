@@ -69,6 +69,9 @@ export type OperatorIdentity = {
   funded: boolean;
   provisionedAt: string;
   token: string;
+  provisioningTxHash?: string | null;
+  provisioningLedger?: number | null;
+  settlementStatus?: string | null;
 };
 
 type OperatorState = {
