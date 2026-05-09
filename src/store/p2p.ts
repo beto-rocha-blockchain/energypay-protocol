@@ -1,16 +1,22 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type { OperatorIdentity, ParticipantRole } from "@/store/operator";
+import { isValidPublicKey } from "@/lib/stellar";
 
 export type P2PAsset = "EPWR" | "XLM";
 
+/**
+ * Settlement lifecycle states for the direct rail. The backend is the
+ * authority for transitions; the frontend renders the operator-facing
+ * sequence and never advances state on its own past PREPARING/SIGNING.
+ */
 export type P2PTransferState =
   | "DRAFT"
-  | "AUTHORIZING"
+  | "PREPARING"
   | "SIGNING"
   | "BROADCASTING"
-  | "CONFIRMED"
-  | "SETTLED"
+  | "CONFIRMING"
+  | "FINALIZED"
   | "FAILED";
 
 export type P2PTransfer = {
@@ -27,6 +33,7 @@ export type P2PTransfer = {
   latencyMs: number;
   state: P2PTransferState;
   operatorId: string;
+  explorerLink?: string;
 };
 
 export type P2PCounterparty = {
@@ -38,7 +45,6 @@ export type P2PCounterparty = {
 
 export type P2PAuthorization = {
   sourcePublicKey: string;
-  sourceSecret?: string;
   destinationPublicKey: string;
   asset: P2PAsset;
   amount: number;
@@ -49,16 +55,23 @@ export type P2PAuthorization = {
   preparedAt: string;
 };
 
-import { generateKeypair, isValidPublicKey } from "@/lib/stellar";
-
-const stellarG = () => generateKeypair().publicKey;
+// Static valid Stellar Testnet ed25519 public keys for the demo counterparty
+// registry. The frontend never generates or stores secret keys — these are
+// placeholders surfaced until the backend exposes /api/counterparties.
+const COUNTERPARTY_KEYS = [
+  "GA5757OJNNAYHQTY2Y2T5QGMLRMDWZA4GGDXSYWZUT7SVJOW433TUUFV",
+  "GBVSRXQLLLNHMXHTBUU23INIGCFLEEGLEIM4RKMH75526L5ONPYDPBY5",
+  "GBZOUX5YKE2YW7UUUKJ2762AGDD6O3MTPUIG6NAGWCVHDZ763MXK4YFB",
+  "GBT32LXQZNV2USNKVZU5EYH26BTH32QRIAZ7JV2F4NHRMLXP56CSRF2E",
+  "GCTIYQERAOME4BMJXJKFTA6Q5YZGBHTLCW5YFBEBE23E7DDEW47TQKUQ",
+];
 
 const seedCounterparties: P2PCounterparty[] = [
-  { organization: "Aurora Grid Energy", role: "GENERATOR", jurisdiction: "BR-PR", settlementAddress: stellarG() },
-  { organization: "Nexa Commercial Energy", role: "SELLER", jurisdiction: "BR-RJ", settlementAddress: stellarG() },
-  { organization: "Atlas Energy Holdings", role: "INVESTOR", jurisdiction: "BR-SP", settlementAddress: stellarG() },
-  { organization: "Metro Distribution Group", role: "USER", jurisdiction: "BR-MG", settlementAddress: stellarG() },
-  { organization: "Horizon Power Exchange", role: "SELLER", jurisdiction: "BR-DF", settlementAddress: stellarG() },
+  { organization: "Aurora Grid Energy",       role: "GENERATOR", jurisdiction: "BR-PR", settlementAddress: COUNTERPARTY_KEYS[0] },
+  { organization: "Nexa Commercial Energy",   role: "SELLER",    jurisdiction: "BR-RJ", settlementAddress: COUNTERPARTY_KEYS[1] },
+  { organization: "Atlas Energy Holdings",    role: "INVESTOR",  jurisdiction: "BR-SP", settlementAddress: COUNTERPARTY_KEYS[2] },
+  { organization: "Metro Distribution Group", role: "USER",      jurisdiction: "BR-MG", settlementAddress: COUNTERPARTY_KEYS[3] },
+  { organization: "Horizon Power Exchange",   role: "SELLER",    jurisdiction: "BR-DF", settlementAddress: COUNTERPARTY_KEYS[4] },
 ];
 
 type P2PState = {
@@ -77,7 +90,7 @@ export const useP2P = create<P2PState>()(
       reset: () => set({ transfers: [], counterparties: seedCounterparties }),
     }),
     {
-      name: "energypay.p2p.v1",
+      name: "energypay.p2p.v2",
       storage: createJSONStorage(() =>
         typeof window !== "undefined" ? window.localStorage : (undefined as unknown as Storage),
       ),

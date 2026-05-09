@@ -102,7 +102,7 @@ function P2PPage() {
     setRunning(true);
     setResult(null);
     setLogs([]);
-    setState("AUTHORIZING");
+    setState("PREPARING");
 
     const startedAt = Date.now();
     const transferId = `P2P-${Math.floor(100000 + Math.random() * 899999)}`;
@@ -117,22 +117,23 @@ function P2PPage() {
     const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
     try {
-      append("AUTHORIZING", `→ direct settlement initiated · ${transferId}`);
+      append("PREPARING", `→ direct settlement initiated · ${transferId}`);
+      await wait(140);
+      append("PREPARING", `authorizing operator · ${operator.operatorId} · roles=[${roleLabel}]`);
       await wait(160);
-      append("AUTHORIZING", `authorizing operator · ${operator.operatorId} · roles=[${roleLabel}]`);
-      await wait(180);
-      append("AUTHORIZING", `✓ transfer authority verified · counterparty ${destinationOrg}`, "ok");
-      await wait(180);
+      append("PREPARING", `✓ transfer authority verified · counterparty ${destinationOrg}`, "ok");
+      await wait(160);
       append("SIGNING", `binding execution signer · source=${signer}`);
-      await wait(200);
-      append("SIGNING", `signing payload (ed25519) · ${authorization.amount} ${authorization.asset} → ${recipient}`);
-      await wait(220);
-      append("BROADCASTING", `→ submitting to Stellar Testnet horizon.stellar.org`, "info");
+      await wait(160);
+      append("SIGNING", `delegating ed25519 signing to backend custody · in-memory only`);
+      await wait(180);
+      append("BROADCASTING", `→ POST /api/p2p/transfer · backend signs & broadcasts to Horizon`, "info");
 
       // Backend submits the real Stellar Testnet transaction using the
-      // operator's custodial keypair. Frontend never holds secrets.
+      // operator's server-side custodial keypair. Frontend never holds secrets.
       const submission = await apiSubmitP2PTransfer({
-        destination_public_key: authorization.destinationPublicKey,
+        sender_user_id: operator.operatorId,
+        recipient_public_key: authorization.destinationPublicKey,
         asset: authorization.asset,
         amount: authorization.asset === "XLM"
           ? Number(authorization.amount.toFixed(7))
@@ -140,15 +141,26 @@ function P2PPage() {
         memo: authorization.memo || transferId,
       });
 
-      append("CONFIRMED", `✓ tx confirmed · ledger #${submission.ledger.toLocaleString("en-US")}`, "ok");
-      append("CONFIRMED", `tx hash: ${submission.tx_hash}`);
-      await wait(160);
-      append("SETTLED", `✓ settlement finality reached · direct rail closed`, "ok");
+      if (submission.status === "FAILED") {
+        const msg = submission.error || "Backend reported settlement failure";
+        append("FAILED", `✗ ${msg}`, "warn");
+        setRunning(false);
+        toast.error("Direct settlement failed", { description: msg });
+        return;
+      }
 
+      append("CONFIRMING", `awaiting Horizon confirmation · ledger pending`);
+      await wait(140);
+      append("CONFIRMING", `✓ tx confirmed · ledger #${submission.ledger.toLocaleString("en-US")}`, "ok");
+      append("CONFIRMING", `tx hash: ${submission.tx_hash}`);
+      await wait(140);
+      append("FINALIZED", `✓ settlement finality reached · direct rail closed`, "ok");
+
+      const explorer = submission.explorer_link || stellarExpertTx(submission.tx_hash);
       const transfer: P2PTransfer = {
-        id: transferId,
-        ts: new Date().toISOString().slice(0, 16).replace("T", " "),
-        sourcePublicKey: operator.wallet.publicKey,
+        id: submission.transfer_id || transferId,
+        ts: (submission.timestamp ?? new Date().toISOString()).slice(0, 16).replace("T", " "),
+        sourcePublicKey: submission.source_public_key || operator.wallet.publicKey,
         destinationPublicKey: authorization.destinationPublicKey,
         destinationOrg,
         asset: authorization.asset,
@@ -156,9 +168,10 @@ function P2PPage() {
         memo: authorization.memo,
         txHash: submission.tx_hash,
         ledger: submission.ledger,
-        latencyMs: Date.now() - startedAt,
-        state: "SETTLED",
+        latencyMs: submission.finality_ms ?? Date.now() - startedAt,
+        state: "FINALIZED",
         operatorId: operator.operatorId,
+        explorerLink: explorer,
       };
       recordTransfer(transfer);
       setResult(transfer);
@@ -198,7 +211,7 @@ function P2PPage() {
 
   const stateBadge =
     state === "DRAFT" ? "IDLE"
-    : state === "SETTLED" ? "● FINALIZED"
+    : state === "FINALIZED" ? "● FINALIZED"
     : state === "FAILED" ? "● FAILED"
     : `● ${state}`;
 
@@ -453,7 +466,7 @@ function P2PPage() {
                 <Meta k="Counterparty" v={result.destinationOrg} />
                 <Meta k="Ledger #" v={result.ledger.toLocaleString("en-US")} />
                 <Meta k="Finality" v={`${(result.latencyMs / 1000).toFixed(2)}s`} />
-                <Meta k="Status" v="SETTLED" highlight />
+                <Meta k="Status" v="FINALIZED" highlight />
               </dl>
               <div>
                 <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
@@ -476,7 +489,7 @@ function P2PPage() {
                 </div>
               </div>
               <a
-                href={stellarExpertTx(result.txHash)}
+                href={result.explorerLink || stellarExpertTx(result.txHash)}
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex items-center gap-1.5 text-xs text-accent hover:underline"
