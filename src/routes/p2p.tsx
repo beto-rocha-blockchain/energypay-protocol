@@ -399,8 +399,15 @@ function P2PPage() {
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   placeholder="0.00"
-                  className="bg-input font-mono"
+                  className={`bg-input font-mono ${
+                    fieldError?.field === "amount" ? "border-destructive" : ""
+                  }`}
                 />
+                {fieldError?.field === "amount" && (
+                  <p className="font-mono text-[10px] text-destructive">
+                    server · {fieldError.message}
+                  </p>
+                )}
               </div>
               <div className="space-y-1.5">
                 <Label className="text-[11px] uppercase tracking-widest text-muted-foreground">
