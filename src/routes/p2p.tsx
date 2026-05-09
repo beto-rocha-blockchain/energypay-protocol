@@ -515,6 +515,9 @@ function P2PPage() {
         </Card>
       </div>
 
+      {/* Live transfer status — submitted → confirmed → settled (backend feed) */}
+      <P2PLiveStatusPanel data={live} />
+
       {/* Execution console + result */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card className="border-border bg-card p-0 lg:col-span-2">
