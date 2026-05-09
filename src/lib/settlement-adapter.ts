@@ -101,9 +101,10 @@ export async function executeSettlement(
   const t0 = Date.now();
 
   // ── 1. validation ───────────────────────────────────────────────────
+  const raw = (input ?? {}) as Record<string, unknown>;
   opsLog("validation", "validating settlement payload", {
-    sender: input.sender_user_id,
-    asset: input.asset,
+    sender: typeof raw.sender_user_id === "string" ? raw.sender_user_id : null,
+    asset: typeof raw.asset === "string" ? raw.asset : null,
   });
   const v = validateP2PTransfer(input);
   if (!v.ok) {
