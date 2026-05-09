@@ -180,3 +180,54 @@ export const useOperator = create<OperatorState>()(
 
 export const maskAddress = (addr: string) =>
   addr.length > 12 ? `${addr.slice(0, 6)}…${addr.slice(-4)}` : addr;
+
+/* ------------------------------------------------------------------ */
+/*  Settlement Authorization — operator-bound signing payload          */
+/* ------------------------------------------------------------------ */
+
+export type SettlementAuthorizationPayload = {
+  // identity
+  operatorId: string;
+  organization: string;
+  roles: ParticipantRole[];
+  accessLevel: AccessLevel;
+  permissions: string[];
+  // signer (MVP — temporary session-based signing)
+  sourcePublicKey: string;
+  sourceSecret: string;
+  network: "STELLAR_TESTNET";
+  // settlement payload (to be consumed by backend / Horizon submitter)
+  settlementPayload: {
+    contractId: string;
+    settlementId: string;
+    counterparty: string;
+    amountBRL: number;
+    pld: number;
+    window: string;
+    memo: string;
+    requestedAt: string;
+  };
+};
+
+export const buildSettlementAuthorization = (
+  operator: OperatorIdentity,
+  settlement: SettlementAuthorizationPayload["settlementPayload"],
+): SettlementAuthorizationPayload => ({
+  operatorId: operator.operatorId,
+  organization: operator.organization,
+  roles: operator.roles,
+  accessLevel: operator.accessLevel,
+  permissions: operator.permissions,
+  sourcePublicKey: operator.wallet.publicKey,
+  sourceSecret: operator.wallet.secretKey,
+  network: operator.wallet.network,
+  settlementPayload: settlement,
+});
+
+export const canExecuteSettlement = (op: OperatorIdentity | null) =>
+  !!op &&
+  (op.permissions.includes("settlements.execute") ||
+    op.roles.includes("SELLER") ||
+    op.accessLevel !== "OPERATOR" ||
+    op.roles.includes("GENERATOR"));
+
