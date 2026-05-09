@@ -101,5 +101,4 @@ export const buildP2PAuthorization = (
   preparedAt: new Date().toISOString(),
 });
 
-export const isValidStellarPublicKey = (k: string) =>
-  /^G[A-Z2-7]{55}$/.test(k.trim());
+export const isValidStellarPublicKey = (k: string) => isValidPublicKey(k);
