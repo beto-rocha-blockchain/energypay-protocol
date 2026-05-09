@@ -77,7 +77,7 @@ export function OperatorBadge() {
           <div>
             <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
               <ShieldCheck className="h-3 w-3" />
-              Settlement Public Key
+              Signer Address · Active Settlement Authority
             </div>
             <div className="mt-1 flex items-center gap-1.5">
               <code className="flex-1 truncate rounded-md border border-border bg-background/60 px-2 py-1 font-mono text-[11px] text-foreground">
