@@ -8,7 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { useOperator, maskAddress, ROLE_META } from "@/store/operator";
 import {
   Copy, LogOut, ShieldCheck, Activity, Building2, Mail, Hash, Check,
-  KeyRound, Eye, EyeOff, MapPin,
+  KeyRound, MapPin,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -17,7 +17,6 @@ export function OperatorBadge() {
   const logout = useOperator((s) => s.logout);
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
-  const [revealSecret, setRevealSecret] = useState(false);
 
   if (!operator) return null;
 
@@ -96,20 +95,13 @@ export function OperatorBadge() {
           <div>
             <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
               <KeyRound className="h-3 w-3" />
-              Secret Key
+              Signer custody
             </div>
-            <div className="mt-1 flex items-center gap-1.5">
-              <code className="flex-1 truncate rounded-md border border-border bg-background/60 px-2 py-1 font-mono text-[11px] text-foreground">
-                {revealSecret ? operator.wallet.secretKey : "•".repeat(56)}
-              </code>
-              <Button type="button" variant="outline" size="sm"
-                onClick={() => setRevealSecret((v) => !v)}
-                className="h-7 px-2 font-mono text-[10px] uppercase tracking-widest">
-                {revealSecret ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-              </Button>
+            <div className="mt-1 rounded-md border border-border bg-background/60 px-2 py-1.5 font-mono text-[11px] text-foreground">
+              Backend custody · ed25519 · {operator.wallet.status}
             </div>
-            <div className="mt-1 font-mono text-[10px] text-warning">
-              ⚠ Sensitive — store offline. Never share with the clearing network.
+            <div className="mt-1 font-mono text-[10px] text-muted-foreground">
+              Secret seed is held by the EnergyPay backend. Settlement signing is performed server-side on Stellar Testnet.
             </div>
           </div>
 

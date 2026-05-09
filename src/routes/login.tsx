@@ -20,7 +20,7 @@ function LoginPage() {
 
   const [email, setEmail] = useState("");
   const [organization, setOrganization] = useState("");
-  const [accessKey, setAccessKey] = useState("");
+  const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -29,18 +29,17 @@ function LoginPage() {
 
   const onAccess = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !organization || !accessKey) {
-      toast.error("Operational credentials incomplete.");
+    if (!email || !password) {
+      toast.error("Operator email and password are required.");
       return;
     }
     setBusy(true);
-    await new Promise((r) => setTimeout(r, 700));
     try {
-      const id = await login({ email, organization, accessKey });
+      const id = await login({ email, password, organization: organization || undefined });
       toast.success(`Operator ${id.operatorId} connected · Stellar Testnet active`);
       navigate({ to: "/" });
     } catch (err) {
-      toast.error((err as Error).message);
+      toast.error((err as Error).message || "Authentication failed");
     } finally {
       setBusy(false);
     }
@@ -136,16 +135,16 @@ function LoginPage() {
 
             <div className="space-y-1.5">
               <Label htmlFor="key" className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-                Access Key
+                Password
               </Label>
               <div className="relative">
                 <KeyRound className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                <Input id="key" type="password" autoComplete="current-password" value={accessKey}
-                  onChange={(e) => setAccessKey(e.target.value)}
+                <Input id="key" type="password" autoComplete="current-password" value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••••••••••" className="h-9 pl-8 font-mono text-xs tracking-widest" />
               </div>
               <p className="text-[10px] font-mono text-muted-foreground">
-                Access keys are scoped per operator and rotated by the clearing admin.
+                Authenticated against the EnergyPay clearing backend. Sessions are scoped to this browser tab.
               </p>
             </div>
 

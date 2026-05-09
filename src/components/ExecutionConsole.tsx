@@ -9,15 +9,14 @@ import { useOps } from "@/store/operations";
 import {
   useOperator,
   maskAddress,
-  buildSettlementAuthorization,
   canExecuteSettlement,
   ROLE_META,
 } from "@/store/operator";
-import { submitTestnetPayment, signPayloadHex, stellarExpertTx, stellarExpertAccount } from "@/lib/stellar";
+import { apiExecuteSettlement, type SettlementResult } from "@/lib/api";
+import { stellarExpertTx, stellarExpertAccount } from "@/lib/stellar";
 import { toast } from "sonner";
 
 type LogLine = { ts: string; text: string; level?: "info" | "ok" | "warn" };
-
 
 const fmtTs = (d: Date) =>
   `${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}:${d
@@ -51,11 +50,12 @@ export function ExecutionConsole({
   const [latency, setLatency] = useState<number | null>(null);
   const [running, setRunning] = useState(false);
   const [done, setDone] = useState(false);
-  const [authPayload, setAuthPayload] = useState<ReturnType<typeof buildSettlementAuthorization> | null>(null);
+  const [failed, setFailed] = useState<string | null>(null);
+  const [result, setResult] = useState<SettlementResult | null>(null);
   const startRef = useRef<number>(0);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const appendLog = useOps((s) => s.appendLog);
+  const appendOpsLog = useOps((s) => s.appendLog);
   const updateContractState = useOps((s) => s.updateContractState);
   const recordSettlement = useOps((s) => s.recordSettlement);
 
@@ -80,94 +80,84 @@ export function ExecutionConsole({
     setLedger(null);
     setLatency(null);
     setDone(false);
+    setFailed(null);
+    setResult(null);
     setRunning(true);
     startRef.current = Date.now();
 
     const settlementId = `STL-${90220 + Math.floor(Math.random() * 80)}`;
-
-    // Build the operator-bound authorization payload (consumed by backend)
-    const payload = buildSettlementAuthorization(operator, {
-      contractId: contract.id,
-      settlementId,
-      counterparty: contract.seller,
-      amountBRL: amount,
-      pld,
-      window: contract.window,
-      memo: `EPAY ${contract.id} ${settlementId}`,
-      requestedAt: new Date().toISOString(),
-    });
-    setAuthPayload(payload);
-
     const signer = maskAddress(operator.wallet.publicKey);
     const roleLabel = operator.roles.map((r) => ROLE_META[r].label).join(", ") || "operator";
-    const sigHex = signPayloadHex(operator.wallet.secretKey, JSON.stringify(payload.settlementPayload));
 
     let cancelled = false;
-
     const log = (s: SettlementState, text: string, level: "info" | "ok" | "warn" = "info") => {
       if (cancelled) return;
       setState(s);
       setLogs((l) => [...l, { ts: fmtTs(new Date()), text, level }]);
       updateContractState(contract.id, s);
-      appendLog({ contractId: contract.id, settlementId, state: s, level, message: text });
+      appendOpsLog({ contractId: contract.id, settlementId, state: s, level, message: text });
     };
-
     const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
     (async () => {
       log("CREATED", `→ session opened · operator=${operator.operatorId} · ${operator.organization}`);
-      await wait(180);
+      await wait(160);
       log("CREATED", `authorizing identity · roles=[${roleLabel}] · access=${operator.accessLevel}`);
+      await wait(160);
+      log("CREATED", `binding execution signer · source=${signer}`, "ok");
       await wait(180);
-      log("CREATED", `✓ settlement authority verified · permissions OK`, "ok");
-      await wait(180);
-      log("CREATED", `binding execution signer · source=${signer}`);
-      await wait(220);
-      log("VALIDATED", `✓ counterparty ${contract.seller} within clearing limits`, "ok");
-      await wait(200);
       log("VALIDATED", `pld ingested from GridRef oracle feed · R$ ${pld.toFixed(2)}/MWh`);
-      await wait(200);
+      await wait(160);
       log("VALIDATED", `exposure calculated · ${fmtBRL(amount)} (${amount >= 0 ? "buyer" : "seller"} receives)`);
-      await wait(220);
-      log("PENDING_SIGNATURE", `preparing settlement transaction · ${settlementId}`);
-      await wait(220);
-      log("PENDING_SIGNATURE", `signing payload with operator keypair (ed25519) · sig=${sigHex.slice(0, 16)}…`, "ok");
-      await wait(220);
-      log("BROADCASTING", `→ submitting to Stellar Testnet horizon.stellar.org`, "info");
+      await wait(180);
+      log("PENDING_SIGNATURE", `▸ requesting backend settlement execution · ${settlementId}`);
+      log("BROADCASTING", `→ POST /api/settlements/execute · backend signs & broadcasts`, "info");
 
       try {
-        // Real Stellar submission. Settlement leg is anchored on-chain via a
-        // self-payment carrying the settlement memo, signed by the operator's
-        // real ed25519 keypair provisioned during onboarding.
-        const result = await submitTestnetPayment({
-          sourceSecret: operator.wallet.secretKey,
-          destinationPublicKey: operator.wallet.publicKey,
-          amount: "0.0000001",
-          memo: settlementId,
+        const res = await apiExecuteSettlement({
+          contract_id: contract.id,
+          settlement_id: settlementId,
+          counterparty: contract.seller,
+          amount_brl: amount,
+          pld,
+          window: contract.window,
+          memo: `EPAY ${contract.id} ${settlementId}`,
         });
         if (cancelled) return;
-        log("CONFIRMED", `✓ tx confirmed · ledger #${result.ledger.toLocaleString("en-US")}`, "ok");
-        log("CONFIRMED", `tx hash: ${result.hash}`);
-        await wait(180);
+
+        if (res.status === "FAILED") {
+          const msg = res.error || "Backend reported settlement failure";
+          log("FAILED", `✗ ${msg}`, "warn");
+          setFailed(msg);
+          setRunning(false);
+          toast.error("Settlement failed", { description: msg });
+          return;
+        }
+
+        log("CONFIRMED", `✓ tx confirmed · ledger #${res.ledger.toLocaleString("en-US")}`, "ok");
+        log("CONFIRMED", `tx hash: ${res.tx_hash}`);
+        await wait(140);
         log("SETTLED", `✓ reconciliation closed · BRL leg cleared · signer=${signer}`, "ok");
-        const lat = Date.now() - startRef.current;
+
+        const lat = res.finality_ms ?? Date.now() - startRef.current;
         log("SETTLED", `settlement finalized · finality latency ${(lat / 1000).toFixed(2)}s`, "ok");
 
-        setTx(result.hash);
-        setLedger(result.ledger);
+        setTx(res.tx_hash);
+        setLedger(res.ledger);
         setLatency(lat);
+        setResult(res);
         setRunning(false);
         setDone(true);
 
         const stl: Settlement = {
-          id: settlementId,
+          id: res.settlement_id ?? settlementId,
           contractId: contract.id,
           counterparty: contract.seller,
           amountBRL: amount,
           pld,
           date: new Date().toISOString().slice(0, 16).replace("T", " "),
-          txHash: result.hash,
-          ledger: result.ledger,
+          txHash: res.tx_hash,
+          ledger: res.ledger,
           latencyMs: lat,
           window: contract.window,
           state: "SETTLED",
@@ -175,12 +165,13 @@ export function ExecutionConsole({
         };
         recordSettlement(stl);
         toast.success("Settlement finalized", {
-          description: `Signer ${signer} · Ledger #${result.ledger}`,
+          description: `Ledger #${res.ledger} · ${(lat / 1000).toFixed(2)}s`,
         });
       } catch (err) {
         if (cancelled) return;
-        const msg = (err as Error).message || "submission failed";
-        log("FAILED", `✗ Stellar submission failed · ${msg}`, "warn");
+        const msg = (err as Error).message || "Backend submission failed";
+        log("FAILED", `✗ ${msg}`, "warn");
+        setFailed(msg);
         setRunning(false);
         toast.error("Settlement broadcast failed", { description: msg });
       }
@@ -189,7 +180,7 @@ export function ExecutionConsole({
     return () => {
       cancelled = true;
     };
-  }, [open, contract.id, contract.seller, contract.window, pld, amount, operator, authorized, appendLog, updateContractState, recordSettlement]);
+  }, [open, contract.id, contract.seller, contract.window, pld, amount, operator, authorized, appendOpsLog, updateContractState, recordSettlement]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -213,7 +204,9 @@ export function ExecutionConsole({
               <Badge
                 variant="outline"
                 className={
-                  running
+                  failed
+                    ? "border-destructive/40 bg-destructive/10 font-mono text-[10px] text-destructive"
+                    : running
                     ? "border-primary/40 bg-primary/10 font-mono text-[10px] text-primary"
                     : done
                     ? "border-success/40 bg-success/10 font-mono text-[10px] text-success"
@@ -222,7 +215,7 @@ export function ExecutionConsole({
                     : "font-mono text-[10px]"
                 }
               >
-                {!authorized ? "● UNAUTHORIZED" : running ? "● SIGNING" : done ? "● FINALIZED" : "IDLE"}
+                {!authorized ? "● UNAUTHORIZED" : failed ? "● FAILED" : running ? "● SIGNING" : done ? "● FINALIZED" : "IDLE"}
               </Badge>
             </div>
             <SheetDescription className="font-mono text-[11px] uppercase tracking-widest">
@@ -236,7 +229,7 @@ export function ExecutionConsole({
           <div className="mb-2 flex items-center justify-between">
             <p className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
               <ShieldCheck className="h-3 w-3 text-success" />
-              Execution Signer · Operator-Bound
+              Execution Signer · Backend Custody
             </p>
             {operator && (
               <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
@@ -252,7 +245,7 @@ export function ExecutionConsole({
                 label="Active Roles"
                 value={operator.roles.map((r) => ROLE_META[r].label).join(" · ") || "—"}
               />
-              <SignerCell label="Access Level" value={operator.accessLevel.replace("_", " ")} />
+              <SignerCell label="Wallet Status" value={`${operator.wallet.status}${operator.funded ? " · FUNDED" : ""}`} />
             </div>
           ) : (
             <div className="flex items-center gap-2 font-mono text-[11px] text-destructive">
@@ -301,28 +294,28 @@ export function ExecutionConsole({
             {running && (
               <div className="mt-1 flex items-center gap-2 text-muted-foreground">
                 <span className="h-2 w-1.5 animate-pulse bg-primary" />
-                <span className="text-[10px]">processing…</span>
+                <span className="text-[10px]">awaiting backend confirmation…</span>
               </div>
             )}
           </div>
         </div>
 
-        {done && tx && operator && (
+        {done && tx && operator && result && (
           <div className="border-t border-border bg-card/40 px-5 py-4">
             <p className="mb-3 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-              Settlement receipt
+              Settlement receipt · backend
             </p>
             <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-[12px]">
               <Meta k="Contract ID" v={contract.id} />
-              <Meta k="Settlement ID" v={authPayload?.settlementPayload.settlementId ?? "—"} />
+              <Meta k="Settlement ID" v={result.settlement_id} />
               <Meta k="Counterparty" v={contract.seller} />
               <Meta k="Amount" v={fmtBRL(amount)} />
               <Meta k="Ledger #" v={ledger?.toLocaleString("en-US") ?? "—"} />
               <Meta k="Finality" v={`${((latency ?? 0) / 1000).toFixed(2)}s`} />
               <Meta k="Signer Operator" v={operator.operatorId} />
-              <Meta k="Source Account" v={maskAddress(operator.wallet.publicKey)} highlight />
+              <Meta k="Source Account" v={maskAddress(result.source_public_key ?? operator.wallet.publicKey)} highlight />
               <Meta k="Window" v={contract.window} />
-              <Meta k="Status" v="SETTLED" highlight />
+              <Meta k="Status" v={result.status} highlight />
             </dl>
             <div className="mt-3">
               <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
@@ -356,7 +349,7 @@ export function ExecutionConsole({
                   View transaction on Stellar Expert <ExternalLink className="h-3 w-3" />
                 </a>
                 <a
-                  href={stellarExpertAccount(operator.wallet.publicKey)}
+                  href={stellarExpertAccount(result.source_public_key ?? operator.wallet.publicKey)}
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground hover:text-accent"
@@ -368,6 +361,19 @@ export function ExecutionConsole({
                 Close
               </Button>
             </div>
+          </div>
+        )}
+
+        {failed && (
+          <div className="border-t border-border bg-destructive/5 px-5 py-4">
+            <p className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-widest text-destructive">
+              <AlertTriangle className="h-3.5 w-3.5" />
+              Settlement broadcast failed
+            </p>
+            <p className="mt-1 font-mono text-[11px] text-muted-foreground">{failed}</p>
+            <p className="mt-1 font-mono text-[10px] text-muted-foreground">
+              Verify backend connectivity ({"http://localhost:3000"}) and Horizon network status, then retry.
+            </p>
           </div>
         )}
 
