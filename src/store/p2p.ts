@@ -49,10 +49,9 @@ export type P2PAuthorization = {
   preparedAt: string;
 };
 
-const B32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
-const rand = (n: number) =>
-  Array.from({ length: n }, () => B32[Math.floor(Math.random() * 32)]).join("");
-const stellarG = () => `G${rand(55)}`;
+import { generateKeypair, isValidPublicKey } from "@/lib/stellar";
+
+const stellarG = () => generateKeypair().publicKey;
 
 const seedCounterparties: P2PCounterparty[] = [
   { organization: "Aurora Grid Energy", role: "GENERATOR", jurisdiction: "BR-PR", settlementAddress: stellarG() },
