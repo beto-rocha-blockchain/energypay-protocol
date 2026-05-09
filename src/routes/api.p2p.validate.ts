@@ -17,24 +17,51 @@ import { createFileRoute } from "@tanstack/react-router";
 import { executeSettlement } from "@/lib/settlement-adapter";
 import { opsLog } from "@/lib/settlement-ops-log";
 
-const CORS_HEADERS: Record<string, string> = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+const buildCorsHeaders = (request: Request): Record<string, string> => {
+  const origin = request.headers.get("origin");
+  const headers: Record<string, string> = {
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    Vary: "Origin",
+  };
+  if (origin) {
+    headers["Access-Control-Allow-Origin"] = origin;
+    headers["Access-Control-Allow-Credentials"] = "true";
+  }
+  return headers;
 };
 
-const json = (status: number, body: unknown) =>
+const json = (status: number, body: unknown, cors: Record<string, string>) =>
   new Response(JSON.stringify(body), {
     status,
-    headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+    headers: { "Content-Type": "application/json", ...cors },
   });
 
 export const Route = createFileRoute("/api/p2p/validate")({
   server: {
     handlers: {
-      OPTIONS: async () => new Response(null, { status: 204, headers: CORS_HEADERS }),
+      OPTIONS: async ({ request }) =>
+        new Response(null, { status: 204, headers: buildCorsHeaders(request) }),
 
       POST: async ({ request }) => {
+        const cors = buildCorsHeaders(request);
+
+        // Auth gate: require bearer token before any further processing.
+        const auth = request.headers.get("authorization") ?? "";
+        if (!auth.toLowerCase().startsWith("bearer ") || auth.length < 16) {
+          opsLog("auth", "missing or malformed bearer token", undefined, "warn");
+          return json(
+            401,
+            {
+              code: "UNAUTHORIZED",
+              field: "authorization",
+              message: "Bearer token required.",
+            },
+            cors,
+          );
+        }
+        opsLog("auth", "bearer token attached");
+
         let body: unknown;
         try {
           body = await request.json();
@@ -43,11 +70,8 @@ export const Route = createFileRoute("/api/p2p/validate")({
             code: "INVALID_PAYLOAD",
             field: "payload",
             message: "Request body must be valid JSON.",
-          });
+          }, cors);
         }
-
-        const auth = request.headers.get("authorization") ?? undefined;
-        opsLog("auth", auth ? "bearer token attached" : "no bearer token", undefined, auth ? "info" : "warn");
 
         const result = await executeSettlement(body as Record<string, unknown>, {
           authorization: auth,
