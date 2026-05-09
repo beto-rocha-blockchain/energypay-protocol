@@ -242,6 +242,9 @@ function RegisterPage() {
                   <div className="mt-1 font-mono text-[10px] text-muted-foreground">Session preserved. Re-submit when the backend is reachable — no operator state was cleared.</div>
                 </div>
               )}
+              <div>
+                <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+                  § 01 · Operator Credentials
                 </div>
                 <div className="mt-2 grid gap-3 md:grid-cols-2">
                   <Field label="Full Name" icon={<User className="h-3.5 w-3.5" />}>
