@@ -38,7 +38,7 @@ export type P2PCounterparty = {
 
 export type P2PAuthorization = {
   sourcePublicKey: string;
-  sourceSecret: string;
+  sourceSecret?: string;
   destinationPublicKey: string;
   asset: P2PAsset;
   amount: number;
