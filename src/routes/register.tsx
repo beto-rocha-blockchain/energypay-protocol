@@ -46,6 +46,7 @@ function RegisterPage() {
 
   const [step, setStep] = useState<Step>("form");
   const [progress, setProgress] = useState(0);
+  const [provisionError, setProvisionError] = useState<string | null>(null);
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -60,11 +61,16 @@ function RegisterPage() {
   const [geoStatus, setGeoStatus] = useState<"idle" | "requesting" | "granted" | "denied">("idle");
   const [manualLat, setManualLat] = useState("");
   const [manualLng, setManualLng] = useState("");
-  
 
+  // If a session already exists when landing on /register fresh (no in-flight
+  // provisioning), send the operator to the dashboard. Never redirect once we
+  // are mid-flow or showing the success screen — that would clobber the
+  // provisioned identity view.
   useEffect(() => {
-    if (isAuthenticated && step === "form") navigate({ to: "/" });
-  }, [isAuthenticated, step, navigate]);
+    if (isAuthenticated && step === "form" && !provisionError) {
+      navigate({ to: "/" });
+    }
+  }, [isAuthenticated, step, provisionError, navigate]);
 
   const toggleRole = (r: ParticipantRole) =>
     setRoles((prev) => (prev.includes(r) ? prev.filter((x) => x !== r) : [...prev, r]));
