@@ -380,6 +380,11 @@ function P2PPage() {
                     Invalid Stellar public key (G… 56 chars).
                   </p>
                 )}
+                {fieldError?.field === "recipient_public_key" && (
+                  <p className="font-mono text-[10px] text-destructive">
+                    server · {fieldError.message}
+                  </p>
+                )}
               </div>
             </div>
 
