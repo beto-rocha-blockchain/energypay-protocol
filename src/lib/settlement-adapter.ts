@@ -93,9 +93,11 @@ const inFlight = new Map<string, Promise<AdapterResult>>();
 /* ------------------------------------------------------------------ */
 
 export async function executeSettlement(
-  input: P2PTransferInput & { transfer_id?: string },
+  input: unknown,
   options: { authorization?: string } = {},
 ): Promise<AdapterResult> {
+  // Reference imported type for documentation/typing surface.
+  void (null as unknown as P2PTransferInput);
   const t0 = Date.now();
 
   // ── 1. validation ───────────────────────────────────────────────────
