@@ -81,15 +81,17 @@ function RootComponent() {
     }
   }, []);
 
+  const isPublicRoute = pathname === "/login" || pathname === "/register";
+
   // institutional access gate — redirect to /login when no operator session
   useEffect(() => {
-    if (!isAuthenticated && pathname !== "/login") {
+    if (!isAuthenticated && !isPublicRoute) {
       navigate({ to: "/login" });
     }
-  }, [isAuthenticated, pathname, navigate]);
+  }, [isAuthenticated, isPublicRoute, navigate]);
 
-  // login route renders without the chrome
-  if (pathname === "/login") {
+  // public auth routes render without the chrome
+  if (isPublicRoute) {
     return (
       <QueryClientProvider client={queryClient}>
         <div className="min-h-screen w-full bg-background"><Outlet /></div>
