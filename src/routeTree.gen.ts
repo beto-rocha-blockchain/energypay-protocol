@@ -17,6 +17,7 @@ import { Route as GridRouteImport } from './routes/grid'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ContractsIndexRouteImport } from './routes/contracts.index'
 import { Route as ContractsNewRouteImport } from './routes/contracts.new'
+import { Route as ApiSettlementsTelemetryRouteImport } from './routes/api.settlements.telemetry'
 import { Route as ApiP2pValidateRouteImport } from './routes/api.p2p.validate'
 
 const SettlementRoute = SettlementRouteImport.update({
@@ -59,6 +60,11 @@ const ContractsNewRoute = ContractsNewRouteImport.update({
   path: '/contracts/new',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiSettlementsTelemetryRoute = ApiSettlementsTelemetryRouteImport.update({
+  id: '/api/settlements/telemetry',
+  path: '/api/settlements/telemetry',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiP2pValidateRoute = ApiP2pValidateRouteImport.update({
   id: '/api/p2p/validate',
   path: '/api/p2p/validate',
@@ -75,6 +81,7 @@ export interface FileRoutesByFullPath {
   '/contracts/new': typeof ContractsNewRoute
   '/contracts/': typeof ContractsIndexRoute
   '/api/p2p/validate': typeof ApiP2pValidateRoute
+  '/api/settlements/telemetry': typeof ApiSettlementsTelemetryRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -86,6 +93,7 @@ export interface FileRoutesByTo {
   '/contracts/new': typeof ContractsNewRoute
   '/contracts': typeof ContractsIndexRoute
   '/api/p2p/validate': typeof ApiP2pValidateRoute
+  '/api/settlements/telemetry': typeof ApiSettlementsTelemetryRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -98,6 +106,7 @@ export interface FileRoutesById {
   '/contracts/new': typeof ContractsNewRoute
   '/contracts/': typeof ContractsIndexRoute
   '/api/p2p/validate': typeof ApiP2pValidateRoute
+  '/api/settlements/telemetry': typeof ApiSettlementsTelemetryRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -111,6 +120,7 @@ export interface FileRouteTypes {
     | '/contracts/new'
     | '/contracts/'
     | '/api/p2p/validate'
+    | '/api/settlements/telemetry'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -122,6 +132,7 @@ export interface FileRouteTypes {
     | '/contracts/new'
     | '/contracts'
     | '/api/p2p/validate'
+    | '/api/settlements/telemetry'
   id:
     | '__root__'
     | '/'
@@ -133,6 +144,7 @@ export interface FileRouteTypes {
     | '/contracts/new'
     | '/contracts/'
     | '/api/p2p/validate'
+    | '/api/settlements/telemetry'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -145,6 +157,7 @@ export interface RootRouteChildren {
   ContractsNewRoute: typeof ContractsNewRoute
   ContractsIndexRoute: typeof ContractsIndexRoute
   ApiP2pValidateRoute: typeof ApiP2pValidateRoute
+  ApiSettlementsTelemetryRoute: typeof ApiSettlementsTelemetryRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -205,6 +218,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ContractsNewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/settlements/telemetry': {
+      id: '/api/settlements/telemetry'
+      path: '/api/settlements/telemetry'
+      fullPath: '/api/settlements/telemetry'
+      preLoaderRoute: typeof ApiSettlementsTelemetryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/p2p/validate': {
       id: '/api/p2p/validate'
       path: '/api/p2p/validate'
@@ -225,7 +245,18 @@ const rootRouteChildren: RootRouteChildren = {
   ContractsNewRoute: ContractsNewRoute,
   ContractsIndexRoute: ContractsIndexRoute,
   ApiP2pValidateRoute: ApiP2pValidateRoute,
+  ApiSettlementsTelemetryRoute: ApiSettlementsTelemetryRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
