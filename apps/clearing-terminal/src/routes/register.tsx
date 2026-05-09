@@ -2,10 +2,10 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
 type UserRole =
-  | "GENERATOR"
-  | "SELLER"
-  | "INVESTOR"
-  | "CONSUMER";
+  | "Generator"
+  | "Seller"
+  | "Invesstor"
+  | "Consumer";
 
 export const Route = createFileRoute(
   "/register"
@@ -420,17 +420,17 @@ ${data.user.roles.join(", ")}`
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
-              {/* GENERATOR */}
+              {/* Generator */}
 
               <div
                 onClick={() =>
                   toggleRole(
-                    "GENERATOR"
+                    "Generator"
                   )
                 }
                 className={roleCardClass(
                   roles.includes(
-                    "GENERATOR"
+                    "Generator"
                   )
                 )}
               >
@@ -448,17 +448,17 @@ ${data.user.roles.join(", ")}`
 
               </div>
 
-              {/* SELLER */}
+              {/* Seller */}
 
               <div
                 onClick={() =>
                   toggleRole(
-                    "SELLER"
+                    "Seller"
                   )
                 }
                 className={roleCardClass(
                   roles.includes(
-                    "SELLER"
+                    "Seller"
                   )
                 )}
               >
@@ -480,12 +480,12 @@ ${data.user.roles.join(", ")}`
               <div
                 onClick={() =>
                   toggleRole(
-                    "INVESTOR"
+                    "Investor"
                   )
                 }
                 className={roleCardClass(
                   roles.includes(
-                    "INVESTOR"
+                    "Investor"
                   )
                 )}
               >

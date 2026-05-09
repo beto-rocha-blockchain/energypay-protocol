@@ -1,8 +1,8 @@
 export type UserRole =
-  | "GENERATOR"
-  | "SELLER"
-  | "INVESTOR"
-  | "CONSUMER";
+  | "Generator"
+  | "Seller"
+  | "Investor"
+  | "Consumer";
 
 export type UserProfile = {
   id: string;

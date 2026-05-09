@@ -48,6 +48,24 @@ router.post("/register", async (req, res) => {
       });
     }
 
+    const ALLOWED_ROLES = ["Generator", "Seller", "Investor", "User"];
+
+    if (!Array.isArray(roles)) {
+      return res.status(400).json({
+        success: false,
+        error: "roles must be an array",
+      });
+    }
+
+    const invalidRoles = roles.filter((r) => !ALLOWED_ROLES.includes(r));
+
+    if (invalidRoles.length > 0) {
+      return res.status(400).json({
+        success: false,
+        error: `invalid roles: ${invalidRoles.join(", ")}`,
+      });
+    }
+
     // =================================================
     // check existing user
     // =================================================
@@ -79,9 +97,7 @@ router.post("/register", async (req, res) => {
     // =================================================
 
     try {
-      await axios.get(
-        `https://friendbot.stellar.org/?addr=${publicKey}`
-      );
+      await axios.get(`https://friendbot.stellar.org/?addr=${publicKey}`);
     } catch (friendbotError) {
       console.error("Friendbot Error:", friendbotError.message);
 
@@ -176,7 +192,6 @@ router.post("/register", async (req, res) => {
         funded: true,
       },
     });
-
   } catch (err) {
     console.error(err);
 
@@ -216,10 +231,7 @@ router.post("/login", async (req, res) => {
     // validate password
     // =================================================
 
-    const validPassword = await bcrypt.compare(
-      password,
-      data.password
-    );
+    const validPassword = await bcrypt.compare(password, data.password);
 
     if (!validPassword) {
       return res.status(401).json({
@@ -246,8 +258,7 @@ router.post("/login", async (req, res) => {
 
         roles: data.roles,
 
-        stellar_public_key:
-          data.stellar_public_key,
+        stellar_public_key: data.stellar_public_key,
 
         country: data.country,
 
@@ -255,20 +266,17 @@ router.post("/login", async (req, res) => {
 
         address: data.address,
 
-        has_solar_generation:
-          data.has_solar_generation,
+        has_solar_generation: data.has_solar_generation,
       },
 
       wallet: {
-        publicKey:
-          data.stellar_public_key,
+        publicKey: data.stellar_public_key,
 
         network: "STELLAR_TESTNET",
 
         funded: true,
       },
     });
-
   } catch (err) {
     console.error(err);
 
