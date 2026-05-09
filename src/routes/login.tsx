@@ -20,7 +20,7 @@ function LoginPage() {
 
   const [email, setEmail] = useState("");
   const [organization, setOrganization] = useState("");
-  const [accessKey, setAccessKey] = useState("");
+  const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -29,18 +29,17 @@ function LoginPage() {
 
   const onAccess = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !organization || !accessKey) {
-      toast.error("Operational credentials incomplete.");
+    if (!email || !password) {
+      toast.error("Operator email and password are required.");
       return;
     }
     setBusy(true);
-    await new Promise((r) => setTimeout(r, 700));
     try {
-      const id = await login({ email, organization, accessKey });
+      const id = await login({ email, password, organization: organization || undefined });
       toast.success(`Operator ${id.operatorId} connected · Stellar Testnet active`);
       navigate({ to: "/" });
     } catch (err) {
-      toast.error((err as Error).message);
+      toast.error((err as Error).message || "Authentication failed");
     } finally {
       setBusy(false);
     }
