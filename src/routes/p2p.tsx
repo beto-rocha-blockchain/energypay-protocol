@@ -269,6 +269,12 @@ function P2PPage() {
   };
 
   const reset = () => {
+    try {
+      // Drop any cached transfer_id so the next draft mints a fresh one.
+      Object.keys(sessionStorage)
+        .filter((k) => k.startsWith("p2p_draft_"))
+        .forEach((k) => sessionStorage.removeItem(k));
+    } catch { /* sessionStorage unavailable */ }
     setResult(null);
     setLogs([]);
     setState("DRAFT");
