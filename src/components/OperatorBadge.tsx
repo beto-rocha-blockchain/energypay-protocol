@@ -17,7 +17,6 @@ export function OperatorBadge() {
   const logout = useOperator((s) => s.logout);
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
-  const [revealSecret, setRevealSecret] = useState(false);
 
   if (!operator) return null;
 
