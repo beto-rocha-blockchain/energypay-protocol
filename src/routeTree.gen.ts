@@ -17,6 +17,7 @@ import { Route as GridRouteImport } from './routes/grid'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ContractsIndexRouteImport } from './routes/contracts.index'
 import { Route as ContractsNewRouteImport } from './routes/contracts.new'
+import { Route as ApiP2pValidateRouteImport } from './routes/api.p2p.validate'
 
 const SettlementRoute = SettlementRouteImport.update({
   id: '/settlement',
@@ -58,6 +59,11 @@ const ContractsNewRoute = ContractsNewRouteImport.update({
   path: '/contracts/new',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiP2pValidateRoute = ApiP2pValidateRouteImport.update({
+  id: '/api/p2p/validate',
+  path: '/api/p2p/validate',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -68,6 +74,7 @@ export interface FileRoutesByFullPath {
   '/settlement': typeof SettlementRoute
   '/contracts/new': typeof ContractsNewRoute
   '/contracts/': typeof ContractsIndexRoute
+  '/api/p2p/validate': typeof ApiP2pValidateRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -78,6 +85,7 @@ export interface FileRoutesByTo {
   '/settlement': typeof SettlementRoute
   '/contracts/new': typeof ContractsNewRoute
   '/contracts': typeof ContractsIndexRoute
+  '/api/p2p/validate': typeof ApiP2pValidateRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -89,6 +97,7 @@ export interface FileRoutesById {
   '/settlement': typeof SettlementRoute
   '/contracts/new': typeof ContractsNewRoute
   '/contracts/': typeof ContractsIndexRoute
+  '/api/p2p/validate': typeof ApiP2pValidateRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -101,6 +110,7 @@ export interface FileRouteTypes {
     | '/settlement'
     | '/contracts/new'
     | '/contracts/'
+    | '/api/p2p/validate'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -111,6 +121,7 @@ export interface FileRouteTypes {
     | '/settlement'
     | '/contracts/new'
     | '/contracts'
+    | '/api/p2p/validate'
   id:
     | '__root__'
     | '/'
@@ -121,6 +132,7 @@ export interface FileRouteTypes {
     | '/settlement'
     | '/contracts/new'
     | '/contracts/'
+    | '/api/p2p/validate'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -132,6 +144,7 @@ export interface RootRouteChildren {
   SettlementRoute: typeof SettlementRoute
   ContractsNewRoute: typeof ContractsNewRoute
   ContractsIndexRoute: typeof ContractsIndexRoute
+  ApiP2pValidateRoute: typeof ApiP2pValidateRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -192,6 +205,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ContractsNewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/p2p/validate': {
+      id: '/api/p2p/validate'
+      path: '/api/p2p/validate'
+      fullPath: '/api/p2p/validate'
+      preLoaderRoute: typeof ApiP2pValidateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -204,7 +224,18 @@ const rootRouteChildren: RootRouteChildren = {
   SettlementRoute: SettlementRoute,
   ContractsNewRoute: ContractsNewRoute,
   ContractsIndexRoute: ContractsIndexRoute,
+  ApiP2pValidateRoute: ApiP2pValidateRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
