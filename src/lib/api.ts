@@ -181,26 +181,46 @@ export type P2PTransferPayload = {
 };
 
 export type P2PLifecycleStatus =
+  | "IDLE"
   | "PREPARING"
   | "SIGNING"
   | "BROADCASTING"
-  | "CONFIRMING"
+  | "PENDING_CONFIRMATION"
+  | "CONFIRMED"
   | "FINALIZED"
   | "FAILED";
 
-export type P2PTransferResult = {
+/**
+ * Canonical settlement receipt — the only shape the frontend renders.
+ * Sourced 1:1 from the backend adapter, which derives every field from a
+ * real Horizon submission.
+ */
+export type SettlementReceipt = {
   transfer_id: string;
-  source_public_key: string;
-  destination_public_key: string;
-  asset: "EPWR" | "XLM";
-  amount: number;
   tx_hash: string;
   ledger: number;
-  finality_ms: number;
+  sender: string;
+  recipient: string;
+  asset: "EPWR" | "XLM";
+  amount: number;
+  memo: string;
+  submitted_at: string;
+  finalized_at: string;
+  latency_ms: number;
+  explorer_url: string;
   status: P2PLifecycleStatus;
+  idempotent_replay?: boolean;
+  error?: string;
+};
+
+/** Backwards-compatible alias used by older call sites. */
+export type P2PTransferResult = SettlementReceipt & {
+  // mirrored fields kept for transition compatibility
+  source_public_key?: string;
+  destination_public_key?: string;
+  finality_ms?: number;
   explorer_link?: string;
   timestamp?: string;
-  error?: string;
 };
 
 export const apiSubmitP2PTransfer = (payload: P2PTransferPayload) =>
