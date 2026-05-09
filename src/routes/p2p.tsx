@@ -28,7 +28,8 @@ import {
   useP2P, buildP2PAuthorization, isValidStellarPublicKey,
   type P2PAsset, type P2PTransfer, type P2PTransferState,
 } from "@/store/p2p";
-import { submitTestnetPayment, stellarExpertTx } from "@/lib/stellar";
+import { stellarExpertTx } from "@/lib/stellar";
+import { apiSubmitP2PTransfer } from "@/lib/api";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/p2p")({
