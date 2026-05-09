@@ -63,7 +63,8 @@ export const fundWithFriendbot = async (publicKey: string): Promise<boolean> => 
  */
 export const signPayloadHex = (secretKey: string, message: string): string => {
   const kp = Keypair.fromSecret(secretKey);
-  const sig = kp.sign(Buffer.from(message, "utf-8"));
+  const data = new TextEncoder().encode(message);
+  const sig = kp.sign(data as unknown as Buffer);
   return Array.from(sig).map((b) => b.toString(16).padStart(2, "0")).join("");
 };
 
