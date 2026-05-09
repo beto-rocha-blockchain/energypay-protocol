@@ -60,7 +60,7 @@ function RegisterPage() {
   const [geoStatus, setGeoStatus] = useState<"idle" | "requesting" | "granted" | "denied">("idle");
   const [manualLat, setManualLat] = useState("");
   const [manualLng, setManualLng] = useState("");
-  const [revealSecret, setRevealSecret] = useState(false);
+  
 
   useEffect(() => {
     if (isAuthenticated && step === "form") navigate({ to: "/" });
