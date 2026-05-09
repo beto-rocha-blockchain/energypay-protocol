@@ -97,11 +97,43 @@ function RegisterPage() {
       setProgress(i + 1);
     }
     try {
-      register({ email, password, fullName, organization, country, city, roles, fund });
+      register({ email, password, fullName, organization, country, city, roles, fund, coords });
       setStep("success");
     } catch (err) {
       toast.error((err as Error).message);
       setStep("form");
+    }
+  };
+
+  const requestGeo = () => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setGeoStatus("denied");
+      toast.error("Geolocation unavailable on this device.");
+      return;
+    }
+    setGeoStatus("requesting");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setCoordsLocal({ lat: pos.coords.latitude, lng: pos.coords.longitude, source: "GPS" });
+        setGeoStatus("granted");
+        toast.success("Operational coordinates bound to identity.");
+      },
+      () => {
+        setGeoStatus("denied");
+        toast.error("GPS denied — provide a region manually.");
+      },
+      { enableHighAccuracy: false, timeout: 8000 },
+    );
+  };
+
+  const applyManual = () => {
+    const lat = parseFloat(manualLat);
+    const lng = parseFloat(manualLng);
+    if (Number.isFinite(lat) && Number.isFinite(lng)) {
+      setCoordsLocal({ lat, lng, source: "MANUAL" });
+      toast.success("Manual region recorded.");
+    } else {
+      toast.error("Enter valid latitude/longitude.");
     }
   };
 
