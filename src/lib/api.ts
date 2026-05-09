@@ -173,11 +173,20 @@ export const apiExecuteSettlement = (payload: SettlementExecutePayload) =>
 /* ------------------------------------------------------------------ */
 
 export type P2PTransferPayload = {
-  destination_public_key: string;
+  sender_user_id: string;
+  recipient_public_key: string;
   asset: "EPWR" | "XLM";
   amount: number;
   memo?: string;
 };
+
+export type P2PLifecycleStatus =
+  | "PREPARING"
+  | "SIGNING"
+  | "BROADCASTING"
+  | "CONFIRMING"
+  | "FINALIZED"
+  | "FAILED";
 
 export type P2PTransferResult = {
   transfer_id: string;
@@ -188,7 +197,9 @@ export type P2PTransferResult = {
   tx_hash: string;
   ledger: number;
   finality_ms: number;
-  status: "SETTLED" | "FAILED" | "PENDING";
+  status: P2PLifecycleStatus;
+  explorer_link?: string;
+  timestamp?: string;
   error?: string;
 };
 
