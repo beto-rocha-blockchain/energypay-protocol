@@ -36,7 +36,7 @@ function LoginPage() {
     setBusy(true);
     await new Promise((r) => setTimeout(r, 700));
     try {
-      const id = login({ email, organization, accessKey });
+      const id = await login({ email, organization, accessKey });
       toast.success(`Operator ${id.operatorId} connected · Stellar Testnet active`);
       navigate({ to: "/" });
     } catch (err) {
