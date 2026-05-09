@@ -129,20 +129,19 @@ function P2PPage() {
       await wait(220);
       append("BROADCASTING", `→ submitting to Stellar Testnet horizon.stellar.org`, "info");
 
-      // Real Stellar Testnet submission. For XLM, payment is native; for EPWR
-      // we anchor a minimal native payment carrying the EPWR memo until the
-      // EPWR issuer asset is provisioned on-chain.
-      const submission = await submitTestnetPayment({
-        sourceSecret: operator.wallet.secretKey,
-        destinationPublicKey: authorization.destinationPublicKey,
+      // Backend submits the real Stellar Testnet transaction using the
+      // operator's custodial keypair. Frontend never holds secrets.
+      const submission = await apiSubmitP2PTransfer({
+        destination_public_key: authorization.destinationPublicKey,
+        asset: authorization.asset,
         amount: authorization.asset === "XLM"
-          ? authorization.amount.toFixed(7)
-          : "0.0000001",
+          ? Number(authorization.amount.toFixed(7))
+          : authorization.amount,
         memo: authorization.memo || transferId,
       });
 
       append("CONFIRMED", `✓ tx confirmed · ledger #${submission.ledger.toLocaleString("en-US")}`, "ok");
-      append("CONFIRMED", `tx hash: ${submission.hash}`);
+      append("CONFIRMED", `tx hash: ${submission.tx_hash}`);
       await wait(160);
       append("SETTLED", `✓ settlement finality reached · direct rail closed`, "ok");
 
