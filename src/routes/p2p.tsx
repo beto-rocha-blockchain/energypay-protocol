@@ -260,6 +260,17 @@ function P2PPage() {
     setMemo("");
     setDestinationOrg("");
     setDestinationAddress("");
+    setFieldError(null);
+    setLive({
+      phase: null,
+      state: "DRAFT",
+      txHash: null,
+      ledger: null,
+      finalityMs: null,
+      explorerLink: null,
+      startedAt: null,
+      errorMessage: null,
+    });
   };
 
   if (!operator) {
