@@ -28,6 +28,7 @@ import {
   useP2P, buildP2PAuthorization, isValidStellarPublicKey,
   type P2PAsset, type P2PTransfer, type P2PTransferState,
 } from "@/store/p2p";
+import { submitTestnetPayment, stellarExpertTx } from "@/lib/stellar";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/p2p")({
@@ -95,7 +96,7 @@ function P2PPage() {
     setDestinationAddress(c.settlementAddress);
   };
 
-  const execute = () => {
+  const execute = async () => {
     if (!operator || !canExecute || !authorization) return;
     setRunning(true);
     setResult(null);
@@ -104,37 +105,46 @@ function P2PPage() {
 
     const startedAt = Date.now();
     const transferId = `P2P-${Math.floor(100000 + Math.random() * 899999)}`;
-    const txHash = Array.from({ length: 64 }, () =>
-      "0123456789abcdef"[Math.floor(Math.random() * 16)]
-    ).join("");
-    const ledger = 58922000 + Math.floor(Math.random() * 400);
     const signer = maskAddress(operator.wallet.publicKey);
     const recipient = maskAddress(authorization.destinationPublicKey);
     const roleLabel = operator.roles.map((r) => ROLE_META[r].label).join(" · ") || "operator";
 
-    const steps: Array<{ delay: number; state: P2PTransferState; text: string; level?: "info"|"ok"|"warn" }> = [
-      { delay: 0,    state: "AUTHORIZING",  text: `→ direct settlement initiated · ${transferId}` },
-      { delay: 160,  state: "AUTHORIZING",  text: `authorizing operator · ${operator.operatorId} · roles=[${roleLabel}]` },
-      { delay: 340,  state: "AUTHORIZING",  text: `✓ transfer authority verified · counterparty ${destinationOrg}`, level: "ok" },
-      { delay: 520,  state: "SIGNING",      text: `binding execution signer · source=${signer}` },
-      { delay: 720,  state: "SIGNING",      text: `signing payload (ed25519) · ${authorization.amount} ${authorization.asset} → ${recipient}` },
-      { delay: 940,  state: "BROADCASTING", text: `→ broadcasting to Stellar Testnet horizon.stellar.org`, level: "info" },
-      { delay: 1240, state: "BROADCASTING", text: `awaiting confirmation · ledger window…` },
-      { delay: 1700, state: "CONFIRMED",    text: `✓ tx confirmed · ledger #${ledger.toLocaleString("en-US")}`, level: "ok" },
-      { delay: 1880, state: "CONFIRMED",    text: `tx hash: ${txHash.slice(0, 16)}…${txHash.slice(-8)}` },
-      { delay: 2080, state: "SETTLED",      text: `✓ settlement finality reached · direct rail closed`, level: "ok" },
-    ];
+    const append = (s: P2PTransferState, text: string, level: "info"|"ok"|"warn" = "info") => {
+      setState(s);
+      setLogs((l) => [...l, { ts: fmtTs(new Date()), text, level }]);
+    };
+    const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
-    const timers: number[] = [];
-    steps.forEach((s) => {
-      const t = window.setTimeout(() => {
-        setState(s.state);
-        setLogs((l) => [...l, { ts: fmtTs(new Date()), text: s.text, level: s.level ?? "info" }]);
-      }, s.delay);
-      timers.push(t);
-    });
+    try {
+      append("AUTHORIZING", `→ direct settlement initiated · ${transferId}`);
+      await wait(160);
+      append("AUTHORIZING", `authorizing operator · ${operator.operatorId} · roles=[${roleLabel}]`);
+      await wait(180);
+      append("AUTHORIZING", `✓ transfer authority verified · counterparty ${destinationOrg}`, "ok");
+      await wait(180);
+      append("SIGNING", `binding execution signer · source=${signer}`);
+      await wait(200);
+      append("SIGNING", `signing payload (ed25519) · ${authorization.amount} ${authorization.asset} → ${recipient}`);
+      await wait(220);
+      append("BROADCASTING", `→ submitting to Stellar Testnet horizon.stellar.org`, "info");
 
-    const finish = window.setTimeout(() => {
+      // Real Stellar Testnet submission. For XLM, payment is native; for EPWR
+      // we anchor a minimal native payment carrying the EPWR memo until the
+      // EPWR issuer asset is provisioned on-chain.
+      const submission = await submitTestnetPayment({
+        sourceSecret: operator.wallet.secretKey,
+        destinationPublicKey: authorization.destinationPublicKey,
+        amount: authorization.asset === "XLM"
+          ? authorization.amount.toFixed(7)
+          : "0.0000001",
+        memo: authorization.memo || transferId,
+      });
+
+      append("CONFIRMED", `✓ tx confirmed · ledger #${submission.ledger.toLocaleString("en-US")}`, "ok");
+      append("CONFIRMED", `tx hash: ${submission.hash}`);
+      await wait(160);
+      append("SETTLED", `✓ settlement finality reached · direct rail closed`, "ok");
+
       const transfer: P2PTransfer = {
         id: transferId,
         ts: new Date().toISOString().slice(0, 16).replace("T", " "),
@@ -144,8 +154,8 @@ function P2PPage() {
         asset: authorization.asset,
         amount: authorization.amount,
         memo: authorization.memo,
-        txHash,
-        ledger,
+        txHash: submission.hash,
+        ledger: submission.ledger,
         latencyMs: Date.now() - startedAt,
         state: "SETTLED",
         operatorId: operator.operatorId,
@@ -156,8 +166,12 @@ function P2PPage() {
       toast.success("Direct settlement finalized", {
         description: `${transfer.amount} ${transfer.asset} → ${recipient}`,
       });
-    }, 2200);
-    timers.push(finish);
+    } catch (err) {
+      const msg = (err as Error).message || "submission failed";
+      append("FAILED", `✗ Stellar submission failed · ${msg}`, "warn");
+      setRunning(false);
+      toast.error("Direct settlement failed", { description: msg });
+    }
   };
 
   const reset = () => {
@@ -462,7 +476,7 @@ function P2PPage() {
                 </div>
               </div>
               <a
-                href={`https://stellar.expert/explorer/testnet/tx/${result.txHash}`}
+                href={stellarExpertTx(result.txHash)}
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex items-center gap-1.5 text-xs text-accent hover:underline"
@@ -532,7 +546,7 @@ function P2PPage() {
                     </td>
                     <td className="px-5 py-2.5 text-right">
                       <a
-                        href={`https://stellar.expert/explorer/testnet/tx/${t.txHash}`}
+                        href={stellarExpertTx(t.txHash)}
                         target="_blank"
                         rel="noreferrer"
                         className="inline-flex items-center gap-1 text-[10px] text-accent hover:underline"

@@ -13,16 +13,11 @@ import {
   canExecuteSettlement,
   ROLE_META,
 } from "@/store/operator";
+import { submitTestnetPayment, signPayloadHex, stellarExpertTx, stellarExpertAccount } from "@/lib/stellar";
 import { toast } from "sonner";
 
 type LogLine = { ts: string; text: string; level?: "info" | "ok" | "warn" };
 
-type Step = {
-  delay: number;
-  state: SettlementState;
-  log: string;
-  level?: "info" | "ok" | "warn";
-};
 
 const fmtTs = (d: Date) =>
   `${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}:${d
@@ -89,10 +84,6 @@ export function ExecutionConsole({
     startRef.current = Date.now();
 
     const settlementId = `STL-${90220 + Math.floor(Math.random() * 80)}`;
-    const txHash = Array.from({ length: 64 }, () =>
-      "0123456789abcdef"[Math.floor(Math.random() * 16)]
-    ).join("");
-    const ledgerNum = 58921450 + Math.floor(Math.random() * 200);
 
     // Build the operator-bound authorization payload (consumed by backend)
     const payload = buildSettlementAuthorization(operator, {
@@ -109,72 +100,95 @@ export function ExecutionConsole({
 
     const signer = maskAddress(operator.wallet.publicKey);
     const roleLabel = operator.roles.map((r) => ROLE_META[r].label).join(", ") || "operator";
+    const sigHex = signPayloadHex(operator.wallet.secretKey, JSON.stringify(payload.settlementPayload));
 
-    const steps: Step[] = [
-      { delay: 0, state: "CREATED", log: `→ session opened · operator=${operator.operatorId} · ${operator.organization}` },
-      { delay: 180, state: "CREATED", log: `authorizing identity · roles=[${roleLabel}] · access=${operator.accessLevel}` },
-      { delay: 360, state: "CREATED", log: `✓ settlement authority verified · permissions OK`, level: "ok" },
-      { delay: 540, state: "CREATED", log: `binding execution signer · source=${signer}` },
-      { delay: 720, state: "CREATED", log: `validating contract ${contract.id} against clearing pool…` },
-      { delay: 940, state: "VALIDATED", log: `✓ counterparty ${contract.seller} within clearing limits`, level: "ok" },
-      { delay: 1140, state: "VALIDATED", log: `pld ingested from GridRef oracle feed · R$ ${pld.toFixed(2)}/MWh` },
-      { delay: 1320, state: "VALIDATED", log: `exposure calculated · ${fmtBRL(amount)} (${amount >= 0 ? "buyer" : "seller"} receives)` },
-      { delay: 1540, state: "PENDING_SIGNATURE", log: `preparing settlement transaction · ${settlementId}` },
-      { delay: 1760, state: "PENDING_SIGNATURE", log: `▸ awaiting operator signature · source=${operator.wallet.publicKey.slice(0, 12)}…` },
-      { delay: 2020, state: "PENDING_SIGNATURE", log: `signing payload with operator keypair (ed25519) · session-bound`, level: "ok" },
-      { delay: 2220, state: "BROADCASTING", log: `→ broadcasting to Stellar Testnet horizon.stellar.org`, level: "info" },
-      { delay: 2520, state: "BROADCASTING", log: `awaiting confirmation · ledger window…` },
-      { delay: 2980, state: "CONFIRMED", log: `✓ tx confirmed · ledger #${ledgerNum.toLocaleString("en-US")}`, level: "ok" },
-      { delay: 3120, state: "CONFIRMED", log: `tx hash: ${txHash.slice(0, 16)}…${txHash.slice(-8)}` },
-      { delay: 3300, state: "SETTLED", log: `✓ reconciliation closed · BRL leg cleared · signer=${signer}`, level: "ok" },
-      { delay: 3450, state: "SETTLED", log: `settlement finalized · finality latency 2.4s`, level: "ok" },
-    ];
+    let cancelled = false;
 
-    const timers: number[] = [];
-    steps.forEach((s) => {
-      const t = window.setTimeout(() => {
-        setState(s.state);
-        setLogs((l) => [...l, { ts: fmtTs(new Date()), text: s.log, level: s.level ?? "info" }]);
-        updateContractState(contract.id, s.state);
-        appendLog({
-          contractId: contract.id,
-          settlementId,
-          state: s.state,
-          level: (s.level ?? "info") as "info" | "ok" | "warn",
-          message: s.log,
+    const log = (s: SettlementState, text: string, level: "info" | "ok" | "warn" = "info") => {
+      if (cancelled) return;
+      setState(s);
+      setLogs((l) => [...l, { ts: fmtTs(new Date()), text, level }]);
+      updateContractState(contract.id, s);
+      appendLog({ contractId: contract.id, settlementId, state: s, level, message: text });
+    };
+
+    const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+    (async () => {
+      log("CREATED", `→ session opened · operator=${operator.operatorId} · ${operator.organization}`);
+      await wait(180);
+      log("CREATED", `authorizing identity · roles=[${roleLabel}] · access=${operator.accessLevel}`);
+      await wait(180);
+      log("CREATED", `✓ settlement authority verified · permissions OK`, "ok");
+      await wait(180);
+      log("CREATED", `binding execution signer · source=${signer}`);
+      await wait(220);
+      log("VALIDATED", `✓ counterparty ${contract.seller} within clearing limits`, "ok");
+      await wait(200);
+      log("VALIDATED", `pld ingested from GridRef oracle feed · R$ ${pld.toFixed(2)}/MWh`);
+      await wait(200);
+      log("VALIDATED", `exposure calculated · ${fmtBRL(amount)} (${amount >= 0 ? "buyer" : "seller"} receives)`);
+      await wait(220);
+      log("PENDING_SIGNATURE", `preparing settlement transaction · ${settlementId}`);
+      await wait(220);
+      log("PENDING_SIGNATURE", `signing payload with operator keypair (ed25519) · sig=${sigHex.slice(0, 16)}…`, "ok");
+      await wait(220);
+      log("BROADCASTING", `→ submitting to Stellar Testnet horizon.stellar.org`, "info");
+
+      try {
+        // Real Stellar submission. Settlement leg is anchored on-chain via a
+        // self-payment carrying the settlement memo, signed by the operator's
+        // real ed25519 keypair provisioned during onboarding.
+        const result = await submitTestnetPayment({
+          sourceSecret: operator.wallet.secretKey,
+          destinationPublicKey: operator.wallet.publicKey,
+          amount: "0.0000001",
+          memo: settlementId,
         });
-      }, s.delay);
-      timers.push(t);
-    });
-    const finish = window.setTimeout(() => {
-      setTx(txHash);
-      setLedger(ledgerNum);
-      const lat = Date.now() - startRef.current;
-      setLatency(lat);
-      setRunning(false);
-      setDone(true);
-      const stl: Settlement = {
-        id: settlementId,
-        contractId: contract.id,
-        counterparty: contract.seller,
-        amountBRL: amount,
-        pld,
-        date: new Date().toISOString().slice(0, 16).replace("T", " "),
-        txHash,
-        ledger: ledgerNum,
-        latencyMs: lat,
-        window: contract.window,
-        state: "SETTLED",
-        status: "CONFIRMED",
-      };
-      recordSettlement(stl);
-      toast.success("Settlement finalized", {
-        description: `Signer ${signer} · Ledger #${ledgerNum}`,
-      });
-    }, 3550);
-    timers.push(finish);
+        if (cancelled) return;
+        log("CONFIRMED", `✓ tx confirmed · ledger #${result.ledger.toLocaleString("en-US")}`, "ok");
+        log("CONFIRMED", `tx hash: ${result.hash}`);
+        await wait(180);
+        log("SETTLED", `✓ reconciliation closed · BRL leg cleared · signer=${signer}`, "ok");
+        const lat = Date.now() - startRef.current;
+        log("SETTLED", `settlement finalized · finality latency ${(lat / 1000).toFixed(2)}s`, "ok");
 
-    return () => timers.forEach((t) => clearTimeout(t));
+        setTx(result.hash);
+        setLedger(result.ledger);
+        setLatency(lat);
+        setRunning(false);
+        setDone(true);
+
+        const stl: Settlement = {
+          id: settlementId,
+          contractId: contract.id,
+          counterparty: contract.seller,
+          amountBRL: amount,
+          pld,
+          date: new Date().toISOString().slice(0, 16).replace("T", " "),
+          txHash: result.hash,
+          ledger: result.ledger,
+          latencyMs: lat,
+          window: contract.window,
+          state: "SETTLED",
+          status: "CONFIRMED",
+        };
+        recordSettlement(stl);
+        toast.success("Settlement finalized", {
+          description: `Signer ${signer} · Ledger #${result.ledger}`,
+        });
+      } catch (err) {
+        if (cancelled) return;
+        const msg = (err as Error).message || "submission failed";
+        log("FAILED", `✗ Stellar submission failed · ${msg}`, "warn");
+        setRunning(false);
+        toast.error("Settlement broadcast failed", { description: msg });
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [open, contract.id, contract.seller, contract.window, pld, amount, operator, authorized, appendLog, updateContractState, recordSettlement]);
 
   useEffect(() => {
@@ -334,15 +348,15 @@ export function ExecutionConsole({
             <div className="mt-4 flex items-center justify-between gap-2">
               <div className="flex flex-col gap-1">
                 <a
-                  href={`https://stellar.expert/explorer/testnet/tx/${tx}`}
+                  href={stellarExpertTx(tx)}
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex items-center gap-1.5 text-xs text-accent hover:underline"
                 >
-                  View transaction <ExternalLink className="h-3 w-3" />
+                  View transaction on Stellar Expert <ExternalLink className="h-3 w-3" />
                 </a>
                 <a
-                  href={`https://stellar.expert/explorer/testnet/account/${operator.wallet.publicKey}`}
+                  href={stellarExpertAccount(operator.wallet.publicKey)}
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground hover:text-accent"

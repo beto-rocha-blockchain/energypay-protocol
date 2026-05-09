@@ -22,10 +22,9 @@ export type GridNode = {
   uptime: number; // 0..100
 };
 
-const B32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
-const rand = (n: number) =>
-  Array.from({ length: n }, () => B32[Math.floor(Math.random() * 32)]).join("");
-const G = () => `G${rand(55)}`;
+import { generateKeypair } from "@/lib/stellar";
+
+const G = () => generateKeypair().publicKey;
 
 const seedNodes: GridNode[] = [
   {

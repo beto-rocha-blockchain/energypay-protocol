@@ -1,5 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { generateKeypair, fundWithFriendbot } from "@/lib/stellar";
+
 
 export type AccessLevel = "OPERATOR" | "SUPERVISOR" | "CLEARING_ADMIN";
 
@@ -63,7 +65,7 @@ export type OperatorIdentity = {
 type OperatorState = {
   operator: OperatorIdentity | null;
   isAuthenticated: boolean;
-  login: (input: { email: string; organization: string; accessKey: string }) => OperatorIdentity;
+  login: (input: { email: string; organization: string; accessKey: string }) => Promise<OperatorIdentity>;
   register: (input: {
     email: string;
     password: string;
@@ -74,25 +76,22 @@ type OperatorState = {
     roles: ParticipantRole[];
     coords?: OperatorCoords;
     fund?: boolean;
-  }) => OperatorIdentity;
+  }) => Promise<OperatorIdentity>;
   setRoles: (roles: ParticipantRole[]) => void;
   setCoords: (coords: OperatorCoords | undefined) => void;
   logout: () => void;
 };
 
-const B32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
-const rand = (n: number, alphabet: string) =>
-  Array.from({ length: n }, () => alphabet[Math.floor(Math.random() * alphabet.length)]).join("");
-
-export const generateStellarAddress = () => `G${rand(55, B32)}`;
-export const generateStellarSecret = () => `S${rand(55, B32)}`;
-export const generateStellarKeypair = (funded = true): StellarKeypair => ({
-  publicKey: generateStellarAddress(),
-  secretKey: generateStellarSecret(),
-  network: "STELLAR_TESTNET",
-  funded,
-  createdAt: new Date().toISOString(),
-});
+export const generateStellarKeypair = (funded = false): StellarKeypair => {
+  const { publicKey, secretKey } = generateKeypair();
+  return {
+    publicKey,
+    secretKey,
+    network: "STELLAR_TESTNET",
+    funded,
+    createdAt: new Date().toISOString(),
+  };
+};
 
 const orgToCode = (org: string) =>
   (org.replace(/[^A-Za-z0-9]/g, "").toUpperCase().slice(0, 4) || "OPER").padEnd(4, "X");
@@ -118,11 +117,13 @@ export const useOperator = create<OperatorState>()(
     (set, get) => ({
       operator: null,
       isAuthenticated: false,
-      login: ({ email, organization, accessKey }) => {
+      login: async ({ email, organization, accessKey }) => {
         if (!email || !organization || !accessKey) {
           throw new Error("Operational credentials incomplete.");
         }
-        const wallet = generateStellarKeypair(true);
+        const wallet = generateStellarKeypair(false);
+        const funded = await fundWithFriendbot(wallet.publicKey);
+        wallet.funded = funded;
         const roles: ParticipantRole[] = ["SELLER"];
         const id: OperatorIdentity = {
           operatorId: makeOperatorId(organization),
@@ -138,15 +139,21 @@ export const useOperator = create<OperatorState>()(
           permissions: buildPermissions(roles),
           network: "STELLAR_TESTNET",
           networkStatus: "ACTIVE",
-          funded: true,
+          funded,
           provisionedAt: new Date().toISOString(),
         };
         set({ operator: id, isAuthenticated: true });
         return id;
       },
-      register: ({ email, fullName, organization, country, city, roles, coords, fund }) => {
+      register: async ({ email, fullName, organization, country, city, roles, coords, fund }) => {
         if (!roles.length) throw new Error("Select at least one market participant role.");
-        const wallet = generateStellarKeypair(fund ?? true);
+        const shouldFund = fund ?? true;
+        const wallet = generateStellarKeypair(false);
+        let funded = false;
+        if (shouldFund) {
+          funded = await fundWithFriendbot(wallet.publicKey);
+        }
+        wallet.funded = funded;
         const id: OperatorIdentity = {
           operatorId: makeOperatorId(organization),
           email,
@@ -162,7 +169,7 @@ export const useOperator = create<OperatorState>()(
           permissions: buildPermissions(roles),
           network: "STELLAR_TESTNET",
           networkStatus: "ACTIVE",
-          funded: fund ?? true,
+          funded,
           provisionedAt: new Date().toISOString(),
         };
         set({ operator: id, isAuthenticated: true });
