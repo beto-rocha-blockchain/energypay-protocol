@@ -82,13 +82,12 @@ export const Route = createFileRoute("/api/p2p/validate")({
             code: result.code,
             field: result.field,
             message: result.message,
-          });
+          }, cors);
         }
 
         // Canonical receipt shape — frontend renders directly from this.
         const r = result.receipt;
         return json(200, {
-          // Canonical receipt
           transfer_id: r.transfer_id,
           tx_hash: r.tx_hash,
           ledger: r.ledger,
@@ -103,14 +102,12 @@ export const Route = createFileRoute("/api/p2p/validate")({
           explorer_url: r.explorer_url,
           status: r.status,
           idempotent_replay: result.idempotent_replay,
-
-          // Backwards-compatible mirror fields used by the existing UI
           source_public_key: r.sender,
           destination_public_key: r.recipient,
           finality_ms: r.latency_ms,
           explorer_link: r.explorer_url,
           timestamp: r.finalized_at,
-        });
+        }, cors);
       },
     },
   },
