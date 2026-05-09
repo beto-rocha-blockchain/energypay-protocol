@@ -97,6 +97,9 @@ export type ApiUser = {
   funded?: boolean;
   network?: string;
   coords?: { lat: number; lng: number; source?: "GPS" | "MANUAL" } | null;
+  provisioning_tx_hash?: string | null;
+  provisioning_ledger?: number | null;
+  settlement_status?: string | null;
 };
 
 export type AuthResponse = {

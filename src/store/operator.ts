@@ -69,6 +69,9 @@ export type OperatorIdentity = {
   funded: boolean;
   provisionedAt: string;
   token: string;
+  provisioningTxHash?: string | null;
+  provisioningLedger?: number | null;
+  settlementStatus?: string | null;
 };
 
 type OperatorState = {
@@ -142,6 +145,9 @@ const identityFromSession = (session: AuthSession): OperatorIdentity => {
     funded: !!u.funded,
     provisionedAt: session.createdAt,
     token: session.token,
+    provisioningTxHash: u.provisioning_tx_hash ?? null,
+    provisioningLedger: u.provisioning_ledger ?? null,
+    settlementStatus: u.settlement_status ?? (u.funded ? "FUNDED" : "PROVISIONED"),
   };
 };
 

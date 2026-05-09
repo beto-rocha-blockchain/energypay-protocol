@@ -46,6 +46,7 @@ function RegisterPage() {
 
   const [step, setStep] = useState<Step>("form");
   const [progress, setProgress] = useState(0);
+  const [provisionError, setProvisionError] = useState<string | null>(null);
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -60,11 +61,16 @@ function RegisterPage() {
   const [geoStatus, setGeoStatus] = useState<"idle" | "requesting" | "granted" | "denied">("idle");
   const [manualLat, setManualLat] = useState("");
   const [manualLng, setManualLng] = useState("");
-  
 
+  // If a session already exists when landing on /register fresh (no in-flight
+  // provisioning), send the operator to the dashboard. Never redirect once we
+  // are mid-flow or showing the success screen — that would clobber the
+  // provisioned identity view.
   useEffect(() => {
-    if (isAuthenticated && step === "form") navigate({ to: "/" });
-  }, [isAuthenticated, step, navigate]);
+    if (isAuthenticated && step === "form" && !provisionError) {
+      navigate({ to: "/" });
+    }
+  }, [isAuthenticated, step, provisionError, navigate]);
 
   const toggleRole = (r: ParticipantRole) =>
     setRoles((prev) => (prev.includes(r) ? prev.filter((x) => x !== r) : [...prev, r]));
@@ -90,6 +96,7 @@ function RegisterPage() {
       toast.error("Operational credentials incomplete.");
       return;
     }
+    setProvisionError(null);
     setStep("provisioning");
     setProgress(0);
     for (let i = 0; i < PROVISIONING_STEPS.length; i++) {
@@ -98,9 +105,13 @@ function RegisterPage() {
     }
     try {
       await register({ email, password, fullName, organization, country, city, roles, fund, coords });
+      setProvisionError(null);
       setStep("success");
     } catch (err) {
-      toast.error((err as Error).message);
+      const reason = (err as Error)?.message || "Settlement Network unreachable.";
+      setProvisionError(reason);
+      // Do NOT clear session, do NOT redirect to /login — keep operator on
+      // the form with an inline institutional error banner.
       setStep("form");
     }
   };
@@ -218,6 +229,19 @@ function RegisterPage() {
 
           {step === "form" && (
             <form onSubmit={submit} className="space-y-5 p-5">
+              {provisionError && (
+                <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3">
+                  <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-widest text-destructive">
+                    <span className="flex items-center gap-1.5">
+                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-destructive" />
+                      Provisioning Failed · Settlement Rail
+                    </span>
+                    <button type="button" onClick={() => setProvisionError(null)} className="text-destructive/80 hover:text-destructive">DISMISS</button>
+                  </div>
+                  <div className="mt-1.5 font-mono text-[11px] text-foreground break-words">{provisionError}</div>
+                  <div className="mt-1 font-mono text-[10px] text-muted-foreground">Session preserved. Re-submit when the backend is reachable — no operator state was cleared.</div>
+                </div>
+              )}
               <div>
                 <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
                   § 01 · Operator Credentials
@@ -480,8 +504,33 @@ function RegisterPage() {
                 </div>
               </div>
 
+              <div className="rounded-md border border-border bg-background/60 p-3">
+                <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                  Network Settlement Receipt
+                </div>
+                <div className="mt-2 grid gap-2">
+                  <KeyRow
+                    label="Provisioning Tx Hash"
+                    value={operator.provisioningTxHash || "PENDING · awaiting backend confirmation"}
+                    icon={<Terminal className="h-3 w-3" />}
+                  />
+                  <div className="grid grid-cols-2 gap-2 font-mono text-[10px] uppercase tracking-widest">
+                    <Mini
+                      label="Ledger Sequence"
+                      value={operator.provisioningLedger != null ? `#${operator.provisioningLedger}` : "PENDING"}
+                      tone={operator.provisioningLedger != null ? "success" : undefined}
+                    />
+                    <Mini
+                      label="Settlement Status"
+                      value={(operator.settlementStatus || operator.wallet.status || "PROVISIONED").toUpperCase()}
+                      tone={operator.wallet.funded ? "success" : undefined}
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-2 font-mono text-[10px] uppercase tracking-widest">
-                <Mini label="Network" value="Stellar Testnet" tone="success" />
+                <Mini label="Network" value={operator.network || "Stellar Testnet"} tone="success" />
                 <Mini label="Funded" value={operator.wallet.funded ? "Yes · Friendbot" : "No · Friendbot failed"} tone={operator.wallet.funded ? "success" : undefined} />
                 <Mini label="Roles" value={operator.roles.length.toString()} />
                 <Mini label="Address" value={maskAddress(operator.wallet.publicKey)} />
