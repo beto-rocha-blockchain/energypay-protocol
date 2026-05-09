@@ -492,6 +492,15 @@ function P2PPage() {
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
               <p className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
                 <ShieldCheck className="h-3 w-3 text-success" /> Direct settlement rail · Stellar finality ~2s
+                <span className="ml-2 inline-flex items-center gap-1 rounded border border-border bg-background/40 px-1.5 py-0.5">
+                  <span className={`h-1.5 w-1.5 rounded-full ${
+                    railState === "CONNECTED" ? "bg-success animate-pulse"
+                    : railState === "DEGRADED" ? "bg-warning animate-pulse"
+                    : railState === "OFFLINE" ? "bg-destructive"
+                    : "bg-muted-foreground"
+                  }`} />
+                  {railState}
+                </span>
               </p>
               <div className="flex items-center gap-2">
                 {result && (
