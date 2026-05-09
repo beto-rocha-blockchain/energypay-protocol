@@ -56,6 +56,10 @@ function RegisterPage() {
   const [city, setCity] = useState("");
   const [roles, setRoles] = useState<ParticipantRole[]>([]);
   const [fund, setFund] = useState(true);
+  const [coords, setCoordsLocal] = useState<{ lat: number; lng: number; source: "GPS" | "MANUAL" } | undefined>(undefined);
+  const [geoStatus, setGeoStatus] = useState<"idle" | "requesting" | "granted" | "denied">("idle");
+  const [manualLat, setManualLat] = useState("");
+  const [manualLng, setManualLng] = useState("");
   const [revealSecret, setRevealSecret] = useState(false);
 
   useEffect(() => {
