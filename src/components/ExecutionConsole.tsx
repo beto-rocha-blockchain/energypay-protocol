@@ -117,7 +117,7 @@ export function ExecutionConsole({
       { delay: 540, state: "CREATED", log: `binding execution signer · source=${signer}` },
       { delay: 720, state: "CREATED", log: `validating contract ${contract.id} against clearing pool…` },
       { delay: 940, state: "VALIDATED", log: `✓ counterparty ${contract.seller} within clearing limits`, level: "ok" },
-      { delay: 1140, state: "VALIDATED", log: `pld ingested from CCEE oracle feed · R$ ${pld.toFixed(2)}/MWh` },
+      { delay: 1140, state: "VALIDATED", log: `pld ingested from GridRef oracle feed · R$ ${pld.toFixed(2)}/MWh` },
       { delay: 1320, state: "VALIDATED", log: `exposure calculated · ${fmtBRL(amount)} (${amount >= 0 ? "buyer" : "seller"} receives)` },
       { delay: 1540, state: "PENDING_SIGNATURE", log: `preparing settlement transaction · ${settlementId}` },
       { delay: 1760, state: "PENDING_SIGNATURE", log: `▸ awaiting operator signature · source=${operator.wallet.publicKey.slice(0, 12)}…` },
