@@ -486,7 +486,7 @@ function RegisterPage() {
 
               <div className="grid grid-cols-2 gap-2 font-mono text-[10px] uppercase tracking-widest">
                 <Mini label="Network" value="Stellar Testnet" tone="success" />
-                <Mini label="Funded" value={operator.wallet.funded ? "Yes · Friendbot" : "No"} />
+                <Mini label="Funded" value={operator.wallet.funded ? "Yes · Friendbot" : "No · Friendbot failed"} tone={operator.wallet.funded ? "success" : undefined} />
                 <Mini label="Roles" value={operator.roles.length.toString()} />
                 <Mini label="Address" value={maskAddress(operator.wallet.publicKey)} />
               </div>
@@ -503,6 +503,16 @@ function RegisterPage() {
                   ))}
                 </div>
               </div>
+
+              <a
+                href={`https://stellar.expert/explorer/testnet/account/${operator.wallet.publicKey}`}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center justify-between rounded-md border border-border bg-background/40 px-3 py-2 font-mono text-[10px] uppercase tracking-widest text-foreground transition hover:border-primary/50 hover:text-primary"
+              >
+                <span>Audit account on Stellar Expert</span>
+                <ArrowRight className="h-3 w-3" />
+              </a>
 
               <Button onClick={() => navigate({ to: "/" })}
                 className="h-10 w-full font-mono text-xs uppercase tracking-widest">
