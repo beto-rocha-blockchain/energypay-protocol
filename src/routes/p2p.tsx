@@ -211,7 +211,7 @@ function P2PPage() {
 
   const stateBadge =
     state === "DRAFT" ? "IDLE"
-    : state === "SETTLED" ? "● FINALIZED"
+    : state === "FINALIZED" ? "● FINALIZED"
     : state === "FAILED" ? "● FAILED"
     : `● ${state}`;
 
