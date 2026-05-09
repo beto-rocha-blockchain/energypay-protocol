@@ -467,20 +467,16 @@ function RegisterPage() {
               <div className="rounded-md border border-border bg-background/60 p-3">
                 <KeyRow label="Public Key" value={operator.wallet.publicKey} icon={<ShieldCheck className="h-3 w-3" />} />
                 <Separator className="my-2 bg-border/60" />
-                <KeyRow
-                  label="Secret Key"
-                  value={revealSecret ? operator.wallet.secretKey : "•".repeat(56)}
-                  icon={<KeyRound className="h-3 w-3" />}
-                  trailing={
-                    <Button type="button" variant="outline" size="sm"
-                      onClick={() => setRevealSecret((v) => !v)}
-                      className="h-6 px-2 font-mono text-[10px] uppercase tracking-widest">
-                      {revealSecret ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-                    </Button>
-                  }
-                />
-                <div className="mt-2 rounded-sm border border-warning/40 bg-warning/10 px-2 py-1 font-mono text-[10px] text-warning">
-                  ⚠ Secret key is shown once. Store offline — never share with the clearing network.
+                <div className="rounded-md border border-border bg-background/40 px-2 py-1.5">
+                  <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                    Signer custody
+                  </div>
+                  <div className="mt-0.5 font-mono text-[11px] text-foreground">
+                    Backend custody · ed25519 · {operator.wallet.status}
+                  </div>
+                  <div className="mt-1 font-mono text-[10px] text-muted-foreground">
+                    Secret seed is held by the EnergyPay backend. The frontend never receives the secret key.
+                  </div>
                 </div>
               </div>
 
