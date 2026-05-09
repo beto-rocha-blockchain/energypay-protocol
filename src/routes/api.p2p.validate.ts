@@ -16,6 +16,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { executeSettlement } from "@/lib/settlement-adapter";
 import { opsLog } from "@/lib/settlement-ops-log";
+import {
+  decodeBearerClaims,
+  isExpired,
+  canExecuteSettlementServer,
+  rolesFromClaims,
+} from "@/lib/jwt-claims";
 
 const buildCorsHeaders = (request: Request): Record<string, string> => {
   const origin = request.headers.get("origin");
@@ -60,7 +66,48 @@ export const Route = createFileRoute("/api/p2p/validate")({
             cors,
           );
         }
-        opsLog("auth", "bearer token attached");
+        // Decode JWT payload to derive authoritative claims. The upstream
+        // settlement backend is the only authority that verifies the
+        // signature; the proxy uses the decoded claims so it never has to
+        // trust client-supplied identity or roles on the request body.
+        const claims = decodeBearerClaims(auth);
+        if (!claims || isExpired(claims)) {
+          opsLog("auth", "bearer token rejected (malformed or expired)", undefined, "warn");
+          return json(
+            401,
+            { code: "UNAUTHORIZED", field: "authorization", message: "Invalid or expired token." },
+            cors,
+          );
+        }
+
+        const subjectId = claims.sub || claims.user_id;
+        if (!subjectId) {
+          opsLog("auth", "bearer token missing subject claim", undefined, "warn");
+          return json(
+            401,
+            { code: "UNAUTHORIZED", field: "authorization", message: "Token has no subject." },
+            cors,
+          );
+        }
+
+        const claimRoles = rolesFromClaims(claims);
+        opsLog("auth", `authenticated · sub=${subjectId} · roles=[${claimRoles.join(",") || "none"}]`);
+
+        // Server-side authorization: only roles that may execute settlements
+        // can reach the adapter. The frontend `canExecuteSettlement` helper
+        // is UX-only and is not trusted here.
+        if (!canExecuteSettlementServer(claims)) {
+          opsLog("auth", `forbidden · roles=[${claimRoles.join(",") || "none"}]`, undefined, "warn");
+          return json(
+            403,
+            {
+              code: "FORBIDDEN",
+              field: "authorization",
+              message: "Operator role is not authorized to execute settlements.",
+            },
+            cors,
+          );
+        }
 
         let body: unknown;
         try {
@@ -73,7 +120,15 @@ export const Route = createFileRoute("/api/p2p/validate")({
           }, cors);
         }
 
-        const result = await executeSettlement(body as Record<string, unknown>, {
+        // Override sender_user_id with the JWT subject so the client cannot
+        // impersonate another operator. Strip any client-supplied roles.
+        const safeBody: Record<string, unknown> =
+          body && typeof body === "object" ? { ...(body as Record<string, unknown>) } : {};
+        safeBody.sender_user_id = subjectId;
+        delete safeBody.roles;
+        delete safeBody.access_level;
+
+        const result = await executeSettlement(safeBody, {
           authorization: auth,
         });
 
