@@ -100,7 +100,7 @@ function P2PPage() {
   const numericAmount = Number(amount);
   const validAmount = numericAmount > 0;
   const canExecute =
-    !!operator && validAddress && validAmount && !running && destinationOrg.trim().length > 0;
+    !!operator && validAddress && validAmount && !running && destinationOrg.trim().length > 0 && isExecutable;
 
   const authorization = useMemo(() => {
     if (!operator || !validAddress || !validAmount) return null;
