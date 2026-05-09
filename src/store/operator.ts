@@ -143,9 +143,15 @@ export const useOperator = create<OperatorState>()(
         set({ operator: id, isAuthenticated: true });
         return id;
       },
-      register: ({ email, fullName, organization, country, city, roles, coords, fund }) => {
+      register: async ({ email, fullName, organization, country, city, roles, coords, fund }) => {
         if (!roles.length) throw new Error("Select at least one market participant role.");
-        const wallet = generateStellarKeypair(fund ?? true);
+        const shouldFund = fund ?? true;
+        const wallet = generateStellarKeypair(false);
+        let funded = false;
+        if (shouldFund) {
+          funded = await fundWithFriendbot(wallet.publicKey);
+        }
+        wallet.funded = funded;
         const id: OperatorIdentity = {
           operatorId: makeOperatorId(organization),
           email,
@@ -161,7 +167,7 @@ export const useOperator = create<OperatorState>()(
           permissions: buildPermissions(roles),
           network: "STELLAR_TESTNET",
           networkStatus: "ACTIVE",
-          funded: fund ?? true,
+          funded,
           provisionedAt: new Date().toISOString(),
         };
         set({ operator: id, isAuthenticated: true });
