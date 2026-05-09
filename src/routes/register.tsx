@@ -229,9 +229,19 @@ function RegisterPage() {
 
           {step === "form" && (
             <form onSubmit={submit} className="space-y-5 p-5">
-              <div>
-                <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-                  § 01 · Operator Credentials
+              {provisionError && (
+                <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3">
+                  <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-widest text-destructive">
+                    <span className="flex items-center gap-1.5">
+                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-destructive" />
+                      Provisioning Failed · Settlement Rail
+                    </span>
+                    <button type="button" onClick={() => setProvisionError(null)} className="text-destructive/80 hover:text-destructive">DISMISS</button>
+                  </div>
+                  <div className="mt-1.5 font-mono text-[11px] text-foreground break-words">{provisionError}</div>
+                  <div className="mt-1 font-mono text-[10px] text-muted-foreground">Session preserved. Re-submit when the backend is reachable — no operator state was cleared.</div>
+                </div>
+              )}
                 </div>
                 <div className="mt-2 grid gap-3 md:grid-cols-2">
                   <Field label="Full Name" icon={<User className="h-3.5 w-3.5" />}>
