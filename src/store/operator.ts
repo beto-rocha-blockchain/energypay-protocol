@@ -72,9 +72,11 @@ type OperatorState = {
     country: string;
     city: string;
     roles: ParticipantRole[];
+    coords?: OperatorCoords;
     fund?: boolean;
   }) => OperatorIdentity;
   setRoles: (roles: ParticipantRole[]) => void;
+  setCoords: (coords: OperatorCoords | undefined) => void;
   logout: () => void;
 };
 
