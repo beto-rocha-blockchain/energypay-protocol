@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useOperator } from "@/store/operator";
 import { toast } from "sonner";
+import { safeErrorMessage } from "@/lib/safe-error";
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,
@@ -39,7 +40,7 @@ function LoginPage() {
       toast.success(`Operator ${id.operatorId} connected · Stellar Testnet active`);
       navigate({ to: "/" });
     } catch (err) {
-      toast.error((err as Error).message || "Authentication failed");
+      toast.error(safeErrorMessage(err, "Authentication failed"));
     } finally {
       setBusy(false);
     }

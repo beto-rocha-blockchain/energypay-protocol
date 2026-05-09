@@ -6,6 +6,7 @@
  */
 
 import { useEffect, useState } from "react";
+import { getSession } from "@/lib/session";
 
 export type RailState = "CONNECTED" | "DEGRADED" | "OFFLINE" | "UNKNOWN";
 
@@ -83,7 +84,14 @@ export function useSettlementRail() {
     let cancelled = false;
     const tick = async () => {
       try {
-        const res = await fetch("/api/settlements/telemetry", { headers: { Accept: "application/json" } });
+        const token = getSession()?.token;
+        if (!token) return;
+        const res = await fetch("/api/settlements/telemetry", {
+          headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
         if (!res.ok) return;
         const data = await res.json();
         if (cancelled) return;
