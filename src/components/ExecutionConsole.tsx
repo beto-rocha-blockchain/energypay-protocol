@@ -18,12 +18,6 @@ import { toast } from "sonner";
 
 type LogLine = { ts: string; text: string; level?: "info" | "ok" | "warn" };
 
-type Step = {
-  delay: number;
-  state: SettlementState;
-  log: string;
-  level?: "info" | "ok" | "warn";
-};
 
 const fmtTs = (d: Date) =>
   `${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}:${d
