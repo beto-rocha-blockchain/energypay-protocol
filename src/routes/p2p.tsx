@@ -154,7 +154,7 @@ function P2PPage() {
         asset: authorization.asset,
         amount: authorization.amount,
         memo: authorization.memo,
-        txHash: submission.hash,
+        txHash: submission.tx_hash,
         ledger: submission.ledger,
         latencyMs: Date.now() - startedAt,
         state: "SETTLED",
