@@ -29,7 +29,9 @@ import {
   type P2PAsset, type P2PTransfer, type P2PTransferState,
 } from "@/store/p2p";
 import { stellarExpertTx } from "@/lib/stellar";
-import { apiSubmitP2PTransfer } from "@/lib/api";
+import { apiValidatedP2PTransfer, type P2PValidationError } from "@/lib/api";
+import { validateP2PTransfer } from "@/lib/p2p-validation";
+import { P2PLiveStatusPanel, type LiveStatusData, type LiveStatusPhase } from "@/components/P2PLiveStatusPanel";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/p2p")({
