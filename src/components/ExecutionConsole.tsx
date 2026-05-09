@@ -348,15 +348,15 @@ export function ExecutionConsole({
             <div className="mt-4 flex items-center justify-between gap-2">
               <div className="flex flex-col gap-1">
                 <a
-                  href={`https://stellar.expert/explorer/testnet/tx/${tx}`}
+                  href={stellarExpertTx(tx)}
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex items-center gap-1.5 text-xs text-accent hover:underline"
                 >
-                  View transaction <ExternalLink className="h-3 w-3" />
+                  View transaction on Stellar Expert <ExternalLink className="h-3 w-3" />
                 </a>
                 <a
-                  href={`https://stellar.expert/explorer/testnet/account/${operator.wallet.publicKey}`}
+                  href={stellarExpertAccount(operator.wallet.publicKey)}
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground hover:text-accent"
