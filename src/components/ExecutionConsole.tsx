@@ -13,6 +13,7 @@ import {
   canExecuteSettlement,
   ROLE_META,
 } from "@/store/operator";
+import { submitTestnetPayment, signPayloadHex, stellarExpertTx, stellarExpertAccount } from "@/lib/stellar";
 import { toast } from "sonner";
 
 type LogLine = { ts: string; text: string; level?: "info" | "ok" | "warn" };
