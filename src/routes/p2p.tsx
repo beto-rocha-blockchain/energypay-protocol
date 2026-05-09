@@ -546,7 +546,7 @@ function P2PPage() {
                     </td>
                     <td className="px-5 py-2.5 text-right">
                       <a
-                        href={`https://stellar.expert/explorer/testnet/tx/${t.txHash}`}
+                        href={stellarExpertTx(t.txHash)}
                         target="_blank"
                         rel="noreferrer"
                         className="inline-flex items-center gap-1 text-[10px] text-accent hover:underline"
