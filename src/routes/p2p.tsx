@@ -70,7 +70,24 @@ function P2PPage() {
   const [state, setState] = useState<P2PTransferState>("DRAFT");
   const [logs, setLogs] = useState<LogLine[]>([]);
   const [result, setResult] = useState<P2PTransfer | null>(null);
+  const [fieldError, setFieldError] = useState<{ field: string; message: string } | null>(null);
+  const [live, setLive] = useState<LiveStatusData>({
+    phase: null,
+    state: "DRAFT",
+    txHash: null,
+    ledger: null,
+    finalityMs: null,
+    explorerLink: null,
+    startedAt: null,
+    errorMessage: null,
+  });
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const setPhase = (
+    phase: LiveStatusPhase | null,
+    state: P2PTransferState,
+    patch: Partial<LiveStatusData> = {},
+  ) => setLive((prev) => ({ ...prev, phase, state, ...patch }));
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
