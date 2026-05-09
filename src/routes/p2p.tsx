@@ -125,7 +125,20 @@ function P2PPage() {
     setState("PREPARING");
 
     const startedAt = Date.now();
-    const transferId = `P2P-${Math.floor(100000 + Math.random() * 899999)}`;
+    // Stable transfer_id across retries / refresh — the adapter de-duplicates
+    // by this id, so the same draft can never produce two on-chain submissions.
+    const draftKey = `p2p_draft_${operator.operatorId}_${authorization.destinationPublicKey}_${authorization.amount}_${authorization.asset}`;
+    let transferId: string;
+    try {
+      const cached = sessionStorage.getItem(draftKey);
+      if (cached) transferId = cached;
+      else {
+        transferId = `P2P-${Math.floor(100000 + Math.random() * 899999)}`;
+        sessionStorage.setItem(draftKey, transferId);
+      }
+    } catch {
+      transferId = `P2P-${Math.floor(100000 + Math.random() * 899999)}`;
+    }
     const signer = maskAddress(operator.wallet.publicKey);
     const recipient = maskAddress(authorization.destinationPublicKey);
     const roleLabel = operator.roles.map((r) => ROLE_META[r].label).join(" · ") || "operator";
