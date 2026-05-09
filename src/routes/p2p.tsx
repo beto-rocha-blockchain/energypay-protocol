@@ -61,6 +61,7 @@ const ROLE_CONTEXT: Record<string, string> = {
 function P2PPage() {
   const operator = useOperator((s) => s.operator);
   const { transfers, counterparties, recordTransfer } = useP2P();
+  const { railState, isOffline, isExecutable } = useSettlementRail();
 
   const [destinationOrg, setDestinationOrg] = useState("");
   const [destinationAddress, setDestinationAddress] = useState("");
