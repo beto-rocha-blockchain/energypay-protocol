@@ -135,16 +135,16 @@ function LoginPage() {
 
             <div className="space-y-1.5">
               <Label htmlFor="key" className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-                Access Key
+                Password
               </Label>
               <div className="relative">
                 <KeyRound className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                <Input id="key" type="password" autoComplete="current-password" value={accessKey}
-                  onChange={(e) => setAccessKey(e.target.value)}
+                <Input id="key" type="password" autoComplete="current-password" value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••••••••••" className="h-9 pl-8 font-mono text-xs tracking-widest" />
               </div>
               <p className="text-[10px] font-mono text-muted-foreground">
-                Access keys are scoped per operator and rotated by the clearing admin.
+                Authenticated against the EnergyPay clearing backend. Sessions are scoped to this browser tab.
               </p>
             </div>
 
