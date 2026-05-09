@@ -144,7 +144,7 @@ export const useOperator = create<OperatorState>()(
         set({ operator: id, isAuthenticated: true });
         return id;
       },
-      register: ({ email, fullName, organization, country, city, roles, fund }) => {
+      register: ({ email, fullName, organization, country, city, roles, coords, fund }) => {
         if (!roles.length) throw new Error("Select at least one market participant role.");
         const wallet = generateStellarKeypair(fund ?? true);
         const id: OperatorIdentity = {
@@ -154,6 +154,7 @@ export const useOperator = create<OperatorState>()(
           organization,
           country,
           city,
+          coords,
           settlementAddress: wallet.publicKey,
           wallet,
           roles,
@@ -171,6 +172,11 @@ export const useOperator = create<OperatorState>()(
         const op = get().operator;
         if (!op) return;
         set({ operator: { ...op, roles, permissions: buildPermissions(roles) } });
+      },
+      setCoords: (coords) => {
+        const op = get().operator;
+        if (!op) return;
+        set({ operator: { ...op, coords } });
       },
       logout: () => set({ operator: null, isAuthenticated: false }),
     }),
