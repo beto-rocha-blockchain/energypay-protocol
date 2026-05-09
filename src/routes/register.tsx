@@ -96,6 +96,7 @@ function RegisterPage() {
       toast.error("Operational credentials incomplete.");
       return;
     }
+    setProvisionError(null);
     setStep("provisioning");
     setProgress(0);
     for (let i = 0; i < PROVISIONING_STEPS.length; i++) {
@@ -104,9 +105,13 @@ function RegisterPage() {
     }
     try {
       await register({ email, password, fullName, organization, country, city, roles, fund, coords });
+      setProvisionError(null);
       setStep("success");
     } catch (err) {
-      toast.error((err as Error).message);
+      const reason = (err as Error)?.message || "Settlement Network unreachable.";
+      setProvisionError(reason);
+      // Do NOT clear session, do NOT redirect to /login — keep operator on
+      // the form with an inline institutional error banner.
       setStep("form");
     }
   };
