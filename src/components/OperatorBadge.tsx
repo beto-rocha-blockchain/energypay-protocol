@@ -5,8 +5,11 @@ import {
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { useOperator, maskAddress } from "@/store/operator";
-import { Copy, LogOut, ShieldCheck, Activity, Building2, Mail, Hash, Check } from "lucide-react";
+import { useOperator, maskAddress, ROLE_META } from "@/store/operator";
+import {
+  Copy, LogOut, ShieldCheck, Activity, Building2, Mail, Hash, Check,
+  KeyRound, Eye, EyeOff, MapPin,
+} from "lucide-react";
 import { toast } from "sonner";
 
 export function OperatorBadge() {
@@ -14,6 +17,7 @@ export function OperatorBadge() {
   const logout = useOperator((s) => s.logout);
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
+  const [revealSecret, setRevealSecret] = useState(false);
 
   if (!operator) return null;
 
