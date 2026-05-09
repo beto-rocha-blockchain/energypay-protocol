@@ -476,7 +476,7 @@ function P2PPage() {
                 </div>
               </div>
               <a
-                href={`https://stellar.expert/explorer/testnet/tx/${result.txHash}`}
+                href={stellarExpertTx(result.txHash)}
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex items-center gap-1.5 text-xs text-accent hover:underline"
