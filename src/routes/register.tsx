@@ -504,8 +504,33 @@ function RegisterPage() {
                 </div>
               </div>
 
+              <div className="rounded-md border border-border bg-background/60 p-3">
+                <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                  Network Settlement Receipt
+                </div>
+                <div className="mt-2 grid gap-2">
+                  <KeyRow
+                    label="Provisioning Tx Hash"
+                    value={operator.provisioningTxHash || "PENDING · awaiting backend confirmation"}
+                    icon={<Terminal className="h-3 w-3" />}
+                  />
+                  <div className="grid grid-cols-2 gap-2 font-mono text-[10px] uppercase tracking-widest">
+                    <Mini
+                      label="Ledger Sequence"
+                      value={operator.provisioningLedger != null ? `#${operator.provisioningLedger}` : "PENDING"}
+                      tone={operator.provisioningLedger != null ? "success" : undefined}
+                    />
+                    <Mini
+                      label="Settlement Status"
+                      value={(operator.settlementStatus || operator.wallet.status || "PROVISIONED").toUpperCase()}
+                      tone={operator.wallet.funded ? "success" : undefined}
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-2 font-mono text-[10px] uppercase tracking-widest">
-                <Mini label="Network" value="Stellar Testnet" tone="success" />
+                <Mini label="Network" value={operator.network || "Stellar Testnet"} tone="success" />
                 <Mini label="Funded" value={operator.wallet.funded ? "Yes · Friendbot" : "No · Friendbot failed"} tone={operator.wallet.funded ? "success" : undefined} />
                 <Mini label="Roles" value={operator.roles.length.toString()} />
                 <Mini label="Address" value={maskAddress(operator.wallet.publicKey)} />
