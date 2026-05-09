@@ -65,11 +65,11 @@ function NewContract() {
             <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
               <Field label="Buyer" id="buyer">
                 <Input id="buyer" required value={form.buyer} onChange={(e) => set("buyer", e.target.value)}
-                  placeholder="e.g. Vale Energia S.A." className="bg-input" />
+                  placeholder="e.g. Metro Distribution Group" className="bg-input" />
               </Field>
               <Field label="Seller" id="seller">
                 <Input id="seller" required value={form.seller} onChange={(e) => set("seller", e.target.value)}
-                  placeholder="e.g. Engie Brasil" className="bg-input" />
+                  placeholder="e.g. Meridian Trading Desk" className="bg-input" />
               </Field>
               <Field label="Energy Volume (MWh)" id="vol">
                 <Input id="vol" type="number" required min="1" value={form.volume}

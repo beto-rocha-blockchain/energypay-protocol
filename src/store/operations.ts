@@ -105,7 +105,7 @@ const seedLogs = (): ExecutionLog[] => {
   const sample = mockContracts.slice(0, 3);
   const out: ExecutionLog[] = [];
   sample.forEach((c, ci) => {
-    const base = ["contract registered in clearing pool", "counterparty validated · KYC + collateral OK", "PLD ingested from CCEE oracle"];
+    const base = ["contract registered in clearing pool", "counterparty validated · KYC + collateral OK", "PLD ingested from GridRef oracle"];
     base.forEach((m, i) => {
       out.push({
         id: `LOG-${1000 + ci * 10 + i}`,
@@ -292,7 +292,7 @@ export const useOps = create<OpsState>()(
           const candidates: Array<Omit<AlertItem, "id" | "time">> = [
             { level: "warn", title: "Counterparty ack delay", detail: "ack pending > 60s on active settlement" },
             { level: "info", title: "Reconciliation queue normalising", detail: "pending items decreasing" },
-            { level: "warn", title: "Oracle PLD lag", detail: "CCEE feed drift 4.1s vs reference clock" },
+            { level: "warn", title: "Oracle PLD lag", detail: "GridRef feed drift 4.1s vs reference clock" },
             { level: "info", title: "New cycle window opened", detail: "D+1 17:00 BRT clearing window active" },
           ];
           get().pushAlert(candidates[Math.floor(Math.random() * candidates.length)]);

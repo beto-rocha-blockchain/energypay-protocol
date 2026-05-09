@@ -55,11 +55,11 @@ const rand = (n: number) =>
 const stellarG = () => `G${rand(55)}`;
 
 const seedCounterparties: P2PCounterparty[] = [
-  { organization: "Itaipu Renewables S.A.", role: "GENERATOR", jurisdiction: "BR-PR", settlementAddress: stellarG() },
-  { organization: "Furnas Trading Desk", role: "SELLER", jurisdiction: "BR-RJ", settlementAddress: stellarG() },
+  { organization: "Aurora Grid Energy", role: "GENERATOR", jurisdiction: "BR-PR", settlementAddress: stellarG() },
+  { organization: "Nexa Commercial Energy", role: "SELLER", jurisdiction: "BR-RJ", settlementAddress: stellarG() },
   { organization: "Atlas Energy Holdings", role: "INVESTOR", jurisdiction: "BR-SP", settlementAddress: stellarG() },
-  { organization: "CEMIG Distribution", role: "USER", jurisdiction: "BR-MG", settlementAddress: stellarG() },
-  { organization: "Eletrobras Clearing", role: "SELLER", jurisdiction: "BR-DF", settlementAddress: stellarG() },
+  { organization: "Metro Distribution Group", role: "USER", jurisdiction: "BR-MG", settlementAddress: stellarG() },
+  { organization: "Horizon Power Exchange", role: "SELLER", jurisdiction: "BR-DF", settlementAddress: stellarG() },
 ];
 
 type P2PState = {
