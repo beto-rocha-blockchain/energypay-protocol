@@ -1,5 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { generateKeypair, fundWithFriendbot } from "@/lib/stellar";
+
 
 export type AccessLevel = "OPERATOR" | "SUPERVISOR" | "CLEARING_ADMIN";
 
