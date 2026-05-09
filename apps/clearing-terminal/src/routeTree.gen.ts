@@ -11,7 +11,9 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SettlementRouteImport } from './routes/settlement'
 import { Route as RegisterRouteImport } from './routes/register'
+import { Route as P2pRouteImport } from './routes/p2p'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as GridRouteImport } from './routes/grid'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ContractsIndexRouteImport } from './routes/contracts.index'
 import { Route as ContractsNewRouteImport } from './routes/contracts.new'
@@ -26,9 +28,19 @@ const RegisterRoute = RegisterRouteImport.update({
   path: '/register',
   getParentRoute: () => rootRouteImport,
 } as any)
+const P2pRoute = P2pRouteImport.update({
+  id: '/p2p',
+  path: '/p2p',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GridRoute = GridRouteImport.update({
+  id: '/grid',
+  path: '/grid',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -49,7 +61,9 @@ const ContractsNewRoute = ContractsNewRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/grid': typeof GridRoute
   '/login': typeof LoginRoute
+  '/p2p': typeof P2pRoute
   '/register': typeof RegisterRoute
   '/settlement': typeof SettlementRoute
   '/contracts/new': typeof ContractsNewRoute
@@ -57,7 +71,9 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/grid': typeof GridRoute
   '/login': typeof LoginRoute
+  '/p2p': typeof P2pRoute
   '/register': typeof RegisterRoute
   '/settlement': typeof SettlementRoute
   '/contracts/new': typeof ContractsNewRoute
@@ -66,7 +82,9 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/grid': typeof GridRoute
   '/login': typeof LoginRoute
+  '/p2p': typeof P2pRoute
   '/register': typeof RegisterRoute
   '/settlement': typeof SettlementRoute
   '/contracts/new': typeof ContractsNewRoute
@@ -76,7 +94,9 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/grid'
     | '/login'
+    | '/p2p'
     | '/register'
     | '/settlement'
     | '/contracts/new'
@@ -84,7 +104,9 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/grid'
     | '/login'
+    | '/p2p'
     | '/register'
     | '/settlement'
     | '/contracts/new'
@@ -92,7 +114,9 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/grid'
     | '/login'
+    | '/p2p'
     | '/register'
     | '/settlement'
     | '/contracts/new'
@@ -101,7 +125,9 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  GridRoute: typeof GridRoute
   LoginRoute: typeof LoginRoute
+  P2pRoute: typeof P2pRoute
   RegisterRoute: typeof RegisterRoute
   SettlementRoute: typeof SettlementRoute
   ContractsNewRoute: typeof ContractsNewRoute
@@ -124,11 +150,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RegisterRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/p2p': {
+      id: '/p2p'
+      path: '/p2p'
+      fullPath: '/p2p'
+      preLoaderRoute: typeof P2pRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/grid': {
+      id: '/grid'
+      path: '/grid'
+      fullPath: '/grid'
+      preLoaderRoute: typeof GridRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -157,7 +197,9 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  GridRoute: GridRoute,
   LoginRoute: LoginRoute,
+  P2pRoute: P2pRoute,
   RegisterRoute: RegisterRoute,
   SettlementRoute: SettlementRoute,
   ContractsNewRoute: ContractsNewRoute,
