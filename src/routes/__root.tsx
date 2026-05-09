@@ -134,7 +134,7 @@ function RootComponent() {
                 </span>
               </div>
             </header>
-            <main className="flex-1 p-4 md:p-6 lg:p-8">
+            <main className="flex-1 space-y-4 p-4 md:p-6 lg:p-8">
               {isAuthenticated ? <Outlet /> : null}
             </main>
           </div>
