@@ -1,23 +1,21 @@
 /**
- * Server-side P2P transfer validation gateway.
+ * Server-side P2P transfer gateway.
  *
- * The frontend POSTs the settlement intent here BEFORE the Stellar Testnet
- * backend sees it. This route enforces:
- *   - destination Stellar public key (G… ed25519 + StrKey checksum)
- *   - asset whitelist (EPWR | XLM)
- *   - amount bounds and finiteness
- *   - memo shape (Stellar memo_text · 28 bytes)
- *   - transferId shape (P2P-XXXXXX)
+ * Frontend POSTs the settlement intent here. This route delegates the full
+ * lifecycle to the settlement adapter, which:
+ *   - validates the canonical Zod schema
+ *   - de-duplicates by transfer_id (retry-safe)
+ *   - signs server-side (in-memory, backend custody)
+ *   - submits to Horizon
+ *   - normalizes the Horizon response into the canonical SettlementReceipt
  *
- * On validation failure it returns 422 with a structured `{ code, field,
- * message }` payload so the settlement terminal can map errors directly to
- * the offending input. On success it forwards the payload to the configured
- * settlement backend (`P2P_BACKEND_URL`, default http://localhost:3000) and
- * proxies the Horizon response back to the client unchanged.
+ * On validation failure, returns 422 `{ code, field, message }` so the UI
+ * can map the error to the offending input.
  */
 
 import { createFileRoute } from "@tanstack/react-router";
-import { validateP2PTransfer } from "@/lib/p2p-validation";
+import { executeSettlement } from "@/lib/settlement-adapter";
+import { opsLog } from "@/lib/settlement-ops-log";
 
 const CORS_HEADERS: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
@@ -48,42 +46,47 @@ export const Route = createFileRoute("/api/p2p/validate")({
           });
         }
 
-        const result = validateP2PTransfer(body);
+        const auth = request.headers.get("authorization") ?? undefined;
+        opsLog("auth", auth ? "bearer token attached" : "no bearer token", undefined, auth ? "info" : "warn");
+
+        const result = await executeSettlement(body as Record<string, unknown>, {
+          authorization: auth,
+        });
+
         if (!result.ok) {
-          return json(422, {
+          return json(result.http_status, {
             code: result.code,
             field: result.field,
             message: result.message,
           });
         }
 
-        const backend = (process.env.P2P_BACKEND_URL ?? "http://localhost:3000")
-          .replace(/\/+$/, "");
-        const auth = request.headers.get("authorization") ?? undefined;
+        // Canonical receipt shape — frontend renders directly from this.
+        const r = result.receipt;
+        return json(200, {
+          // Canonical receipt
+          transfer_id: r.transfer_id,
+          tx_hash: r.tx_hash,
+          ledger: r.ledger,
+          sender: r.sender,
+          recipient: r.recipient,
+          asset: r.asset,
+          amount: r.amount,
+          memo: r.memo,
+          submitted_at: r.submitted_at,
+          finalized_at: r.finalized_at,
+          latency_ms: r.latency_ms,
+          explorer_url: r.explorer_url,
+          status: r.status,
+          idempotent_replay: result.idempotent_replay,
 
-        try {
-          const upstream = await fetch(`${backend}/api/p2p/transfer`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Accept: "application/json",
-              ...(auth ? { Authorization: auth } : {}),
-            },
-            body: JSON.stringify(result.data),
-          });
-          const text = await upstream.text();
-          const ctype = upstream.headers.get("content-type") ?? "application/json";
-          return new Response(text, {
-            status: upstream.status,
-            headers: { "Content-Type": ctype, ...CORS_HEADERS },
-          });
-        } catch (err) {
-          return json(502, {
-            code: "BACKEND_UNREACHABLE",
-            field: "payload",
-            message: `Settlement backend unreachable: ${(err as Error).message}`,
-          });
-        }
+          // Backwards-compatible mirror fields used by the existing UI
+          source_public_key: r.sender,
+          destination_public_key: r.recipient,
+          finality_ms: r.latency_ms,
+          explorer_link: r.explorer_url,
+          timestamp: r.finalized_at,
+        });
       },
     },
   },

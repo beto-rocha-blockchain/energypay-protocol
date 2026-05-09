@@ -125,7 +125,20 @@ function P2PPage() {
     setState("PREPARING");
 
     const startedAt = Date.now();
-    const transferId = `P2P-${Math.floor(100000 + Math.random() * 899999)}`;
+    // Stable transfer_id across retries / refresh — the adapter de-duplicates
+    // by this id, so the same draft can never produce two on-chain submissions.
+    const draftKey = `p2p_draft_${operator.operatorId}_${authorization.destinationPublicKey}_${authorization.amount}_${authorization.asset}`;
+    let transferId: string;
+    try {
+      const cached = sessionStorage.getItem(draftKey);
+      if (cached) transferId = cached;
+      else {
+        transferId = `P2P-${Math.floor(100000 + Math.random() * 899999)}`;
+        sessionStorage.setItem(draftKey, transferId);
+      }
+    } catch {
+      transferId = `P2P-${Math.floor(100000 + Math.random() * 899999)}`;
+    }
     const signer = maskAddress(operator.wallet.publicKey);
     const recipient = maskAddress(authorization.destinationPublicKey);
     const roleLabel = operator.roles.map((r) => ROLE_META[r].label).join(" · ") || "operator";
@@ -198,7 +211,10 @@ function P2PPage() {
         return;
       }
 
-      const explorer = submission.explorer_link || stellarExpertTx(submission.tx_hash);
+      // Canonical receipt fields (with backwards-compatible fallbacks).
+      const explorer = submission.explorer_url || submission.explorer_link || stellarExpertTx(submission.tx_hash);
+      const senderKey = submission.sender || submission.source_public_key || operator.wallet.publicKey;
+      const finalizedTs = submission.finalized_at || submission.timestamp || new Date().toISOString();
       append("CONFIRMING", `awaiting Horizon confirmation · ledger pending`);
       setPhase("CONFIRMED", "CONFIRMING", {
         txHash: submission.tx_hash,
@@ -210,13 +226,13 @@ function P2PPage() {
       append("CONFIRMING", `tx hash: ${submission.tx_hash}`);
       await wait(140);
       append("FINALIZED", `✓ settlement finality reached · direct rail closed`, "ok");
-      const finalityMs = submission.finality_ms ?? Date.now() - startedAt;
+      const finalityMs = submission.latency_ms ?? submission.finality_ms ?? Date.now() - startedAt;
       setPhase("SETTLED", "FINALIZED", { finalityMs });
 
       const transfer: P2PTransfer = {
         id: submission.transfer_id || transferId,
-        ts: (submission.timestamp ?? new Date().toISOString()).slice(0, 16).replace("T", " "),
-        sourcePublicKey: submission.source_public_key || operator.wallet.publicKey,
+        ts: finalizedTs.slice(0, 16).replace("T", " "),
+        sourcePublicKey: senderKey,
         destinationPublicKey: authorization.destinationPublicKey,
         destinationOrg,
         asset: authorization.asset,
@@ -253,6 +269,12 @@ function P2PPage() {
   };
 
   const reset = () => {
+    try {
+      // Drop any cached transfer_id so the next draft mints a fresh one.
+      Object.keys(sessionStorage)
+        .filter((k) => k.startsWith("p2p_draft_"))
+        .forEach((k) => sessionStorage.removeItem(k));
+    } catch { /* sessionStorage unavailable */ }
     setResult(null);
     setLogs([]);
     setState("DRAFT");
