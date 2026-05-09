@@ -209,6 +209,47 @@ export const apiSubmitP2PTransfer = (payload: P2PTransferPayload) =>
     body: payload,
   });
 
+/**
+ * Server-side validated submission. Hits the local TanStack gateway
+ * `/api/p2p/validate` (same origin), which validates the payload against the
+ * canonical Zod schema and proxies to the settlement backend on success.
+ * Returns 422 with `{ code, field, message }` for invalid payloads — the UI
+ * uses this to surface field-level errors.
+ */
+export type P2PValidationError = {
+  code: string;
+  field: string;
+  message: string;
+};
+
+export async function apiValidatedP2PTransfer(
+  payload: P2PTransferPayload & { transfer_id?: string },
+): Promise<P2PTransferResult> {
+  const session = getSession();
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  };
+  if (session?.token) headers.Authorization = `Bearer ${session.token}`;
+
+  const res = await fetch("/api/p2p/validate", {
+    method: "POST",
+    headers,
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json().catch(() => null);
+  if (!res.ok) {
+    const err = buildError(
+      res.status,
+      (data as P2PValidationError)?.message || `Settlement rejected (${res.status})`,
+      data,
+    );
+    throw err;
+  }
+  return data as P2PTransferResult;
+}
+
+
 /* ------------------------------------------------------------------ */
 /*  Registry (best-effort) — counterparties & grid nodes              */
 /* ------------------------------------------------------------------ */

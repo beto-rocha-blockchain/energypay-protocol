@@ -29,7 +29,9 @@ import {
   type P2PAsset, type P2PTransfer, type P2PTransferState,
 } from "@/store/p2p";
 import { stellarExpertTx } from "@/lib/stellar";
-import { apiSubmitP2PTransfer } from "@/lib/api";
+import { apiValidatedP2PTransfer, type P2PValidationError } from "@/lib/api";
+import { validateP2PTransfer } from "@/lib/p2p-validation";
+import { P2PLiveStatusPanel, type LiveStatusData, type LiveStatusPhase } from "@/components/P2PLiveStatusPanel";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/p2p")({
@@ -68,7 +70,24 @@ function P2PPage() {
   const [state, setState] = useState<P2PTransferState>("DRAFT");
   const [logs, setLogs] = useState<LogLine[]>([]);
   const [result, setResult] = useState<P2PTransfer | null>(null);
+  const [fieldError, setFieldError] = useState<{ field: string; message: string } | null>(null);
+  const [live, setLive] = useState<LiveStatusData>({
+    phase: null,
+    state: "DRAFT",
+    txHash: null,
+    ledger: null,
+    finalityMs: null,
+    explorerLink: null,
+    startedAt: null,
+    errorMessage: null,
+  });
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const setPhase = (
+    phase: LiveStatusPhase | null,
+    state: P2PTransferState,
+    patch: Partial<LiveStatusData> = {},
+  ) => setLive((prev) => ({ ...prev, phase, state, ...patch }));
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -99,6 +118,7 @@ function P2PPage() {
 
   const execute = async () => {
     if (!operator || !canExecute || !authorization) return;
+    setFieldError(null);
     setRunning(true);
     setResult(null);
     setLogs([]);
@@ -110,11 +130,45 @@ function P2PPage() {
     const recipient = maskAddress(authorization.destinationPublicKey);
     const roleLabel = operator.roles.map((r) => ROLE_META[r].label).join(" · ") || "operator";
 
+    setLive({
+      phase: null,
+      state: "PREPARING",
+      txHash: null,
+      ledger: null,
+      finalityMs: null,
+      explorerLink: null,
+      startedAt,
+      errorMessage: null,
+    });
+
     const append = (s: P2PTransferState, text: string, level: "info"|"ok"|"warn" = "info") => {
       setState(s);
       setLogs((l) => [...l, { ts: fmtTs(new Date()), text, level }]);
     };
     const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+    // ── Server-canonical payload + pre-flight Zod validation ──────────────
+    const payload = {
+      sender_user_id: operator.operatorId,
+      recipient_public_key: authorization.destinationPublicKey,
+      asset: authorization.asset,
+      amount:
+        authorization.asset === "XLM"
+          ? Number(authorization.amount.toFixed(7))
+          : authorization.amount,
+      memo: authorization.memo || transferId,
+      transfer_id: transferId,
+    };
+
+    const preflight = validateP2PTransfer(payload);
+    if (!preflight.ok) {
+      append("FAILED", `✗ validation rejected · ${preflight.code} · ${preflight.message}`, "warn");
+      setFieldError({ field: preflight.field, message: preflight.message });
+      setPhase(null, "FAILED", { errorMessage: preflight.message });
+      setRunning(false);
+      toast.error("Settlement payload rejected", { description: preflight.message });
+      return;
+    }
 
     try {
       append("PREPARING", `→ direct settlement initiated · ${transferId}`);
@@ -126,37 +180,39 @@ function P2PPage() {
       append("SIGNING", `binding execution signer · source=${signer}`);
       await wait(160);
       append("SIGNING", `delegating ed25519 signing to backend custody · in-memory only`);
-      await wait(180);
-      append("BROADCASTING", `→ POST /api/p2p/transfer · backend signs & broadcasts to Horizon`, "info");
+      await wait(160);
+      append("BROADCASTING", `→ POST /api/p2p/validate · server validation + Horizon broadcast`, "info");
+      setPhase("SUBMITTED", "BROADCASTING");
 
-      // Backend submits the real Stellar Testnet transaction using the
-      // operator's server-side custodial keypair. Frontend never holds secrets.
-      const submission = await apiSubmitP2PTransfer({
-        sender_user_id: operator.operatorId,
-        recipient_public_key: authorization.destinationPublicKey,
-        asset: authorization.asset,
-        amount: authorization.asset === "XLM"
-          ? Number(authorization.amount.toFixed(7))
-          : authorization.amount,
-        memo: authorization.memo || transferId,
-      });
+      // Server-validated submission. The TanStack gateway re-validates on the
+      // server with the canonical Zod schema before forwarding to the
+      // settlement backend; backend signs in-memory and submits to Horizon.
+      const submission = await apiValidatedP2PTransfer(payload);
 
       if (submission.status === "FAILED") {
         const msg = submission.error || "Backend reported settlement failure";
         append("FAILED", `✗ ${msg}`, "warn");
+        setPhase("SUBMITTED", "FAILED", { errorMessage: msg });
         setRunning(false);
         toast.error("Direct settlement failed", { description: msg });
         return;
       }
 
+      const explorer = submission.explorer_link || stellarExpertTx(submission.tx_hash);
       append("CONFIRMING", `awaiting Horizon confirmation · ledger pending`);
+      setPhase("CONFIRMED", "CONFIRMING", {
+        txHash: submission.tx_hash,
+        ledger: submission.ledger,
+        explorerLink: explorer,
+      });
       await wait(140);
       append("CONFIRMING", `✓ tx confirmed · ledger #${submission.ledger.toLocaleString("en-US")}`, "ok");
       append("CONFIRMING", `tx hash: ${submission.tx_hash}`);
       await wait(140);
       append("FINALIZED", `✓ settlement finality reached · direct rail closed`, "ok");
+      const finalityMs = submission.finality_ms ?? Date.now() - startedAt;
+      setPhase("SETTLED", "FINALIZED", { finalityMs });
 
-      const explorer = submission.explorer_link || stellarExpertTx(submission.tx_hash);
       const transfer: P2PTransfer = {
         id: submission.transfer_id || transferId,
         ts: (submission.timestamp ?? new Date().toISOString()).slice(0, 16).replace("T", " "),
@@ -168,7 +224,7 @@ function P2PPage() {
         memo: authorization.memo,
         txHash: submission.tx_hash,
         ledger: submission.ledger,
-        latencyMs: submission.finality_ms ?? Date.now() - startedAt,
+        latencyMs: finalityMs,
         state: "FINALIZED",
         operatorId: operator.operatorId,
         explorerLink: explorer,
@@ -180,8 +236,17 @@ function P2PPage() {
         description: `${transfer.amount} ${transfer.asset} → ${recipient}`,
       });
     } catch (err) {
-      const msg = (err as Error).message || "submission failed";
-      append("FAILED", `✗ Stellar submission failed · ${msg}`, "warn");
+      // Server-side validation surfaces structured errors via 422.
+      const e = err as Error & { status?: number; payload?: P2PValidationError };
+      const payloadErr = e.payload && typeof e.payload === "object" ? e.payload : null;
+      const code = payloadErr?.code;
+      const field = payloadErr?.field;
+      const msg = payloadErr?.message || e.message || "submission failed";
+      if (e.status === 422 && field) {
+        setFieldError({ field, message: msg });
+      }
+      append("FAILED", `✗ ${code ?? "submission"} · ${msg}`, "warn");
+      setPhase(null, "FAILED", { errorMessage: msg });
       setRunning(false);
       toast.error("Direct settlement failed", { description: msg });
     }
@@ -195,6 +260,17 @@ function P2PPage() {
     setMemo("");
     setDestinationOrg("");
     setDestinationAddress("");
+    setFieldError(null);
+    setLive({
+      phase: null,
+      state: "DRAFT",
+      txHash: null,
+      ledger: null,
+      finalityMs: null,
+      explorerLink: null,
+      startedAt: null,
+      errorMessage: null,
+    });
   };
 
   if (!operator) {
@@ -304,6 +380,11 @@ function P2PPage() {
                     Invalid Stellar public key (G… 56 chars).
                   </p>
                 )}
+                {fieldError?.field === "recipient_public_key" && (
+                  <p className="font-mono text-[10px] text-destructive">
+                    server · {fieldError.message}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -318,8 +399,15 @@ function P2PPage() {
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   placeholder="0.00"
-                  className="bg-input font-mono"
+                  className={`bg-input font-mono ${
+                    fieldError?.field === "amount" ? "border-destructive" : ""
+                  }`}
                 />
+                {fieldError?.field === "amount" && (
+                  <p className="font-mono text-[10px] text-destructive">
+                    server · {fieldError.message}
+                  </p>
+                )}
               </div>
               <div className="space-y-1.5">
                 <Label className="text-[11px] uppercase tracking-widest text-muted-foreground">
@@ -332,6 +420,11 @@ function P2PPage() {
                     <SelectItem value="XLM">XLM · Stellar Lumen</SelectItem>
                   </SelectContent>
                 </Select>
+                {fieldError?.field === "asset" && (
+                  <p className="font-mono text-[10px] text-destructive">
+                    server · {fieldError.message}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -343,8 +436,23 @@ function P2PPage() {
                 value={memo}
                 onChange={(e) => setMemo(e.target.value)}
                 placeholder="EPAY direct settlement note · invoice ref · operational tag"
-                className="min-h-[72px] bg-input font-mono text-xs"
+                className={`min-h-[72px] bg-input font-mono text-xs ${
+                  fieldError?.field === "memo" ? "border-destructive" : ""
+                }`}
+                maxLength={28}
               />
+              <div className="flex items-center justify-between">
+                {fieldError?.field === "memo" ? (
+                  <p className="font-mono text-[10px] text-destructive">
+                    server · {fieldError.message}
+                  </p>
+                ) : (
+                  <p className="font-mono text-[10px] text-muted-foreground">
+                    Stellar memo_text · 28 bytes max · ASCII safe
+                  </p>
+                )}
+                <p className="font-mono text-[10px] text-muted-foreground">{memo.length}/28</p>
+              </div>
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
@@ -406,6 +514,9 @@ function P2PPage() {
           </div>
         </Card>
       </div>
+
+      {/* Live transfer status — submitted → confirmed → settled (backend feed) */}
+      <P2PLiveStatusPanel data={live} />
 
       {/* Execution console + result */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
