@@ -466,7 +466,7 @@ function P2PPage() {
                 <Meta k="Counterparty" v={result.destinationOrg} />
                 <Meta k="Ledger #" v={result.ledger.toLocaleString("en-US")} />
                 <Meta k="Finality" v={`${(result.latencyMs / 1000).toFixed(2)}s`} />
-                <Meta k="Status" v="SETTLED" highlight />
+                <Meta k="Status" v="FINALIZED" highlight />
               </dl>
               <div>
                 <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
