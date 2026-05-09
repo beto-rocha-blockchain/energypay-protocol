@@ -226,7 +226,7 @@ function P2PPage() {
       append("CONFIRMING", `tx hash: ${submission.tx_hash}`);
       await wait(140);
       append("FINALIZED", `✓ settlement finality reached · direct rail closed`, "ok");
-      const finalityMs = submission.finality_ms ?? Date.now() - startedAt;
+      const finalityMs = submission.latency_ms ?? submission.finality_ms ?? Date.now() - startedAt;
       setPhase("SETTLED", "FINALIZED", { finalityMs });
 
       const transfer: P2PTransfer = {
