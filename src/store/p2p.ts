@@ -90,7 +90,6 @@ export const buildP2PAuthorization = (
   input: { destinationPublicKey: string; asset: P2PAsset; amount: number; memo: string },
 ): P2PAuthorization => ({
   sourcePublicKey: operator.wallet.publicKey,
-  sourceSecret: operator.wallet.secretKey,
   destinationPublicKey: input.destinationPublicKey,
   asset: input.asset,
   amount: input.amount,
