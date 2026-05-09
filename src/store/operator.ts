@@ -39,6 +39,8 @@ export type StellarKeypair = {
   createdAt: string;
 };
 
+export type OperatorCoords = { lat: number; lng: number; source: "GPS" | "MANUAL" };
+
 export type OperatorIdentity = {
   operatorId: string;
   email: string;
@@ -46,6 +48,7 @@ export type OperatorIdentity = {
   organization: string;
   country: string;
   city: string;
+  coords?: OperatorCoords;
   settlementAddress: string;
   wallet: StellarKeypair;
   roles: ParticipantRole[];
