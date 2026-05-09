@@ -231,8 +231,8 @@ function P2PPage() {
 
       const transfer: P2PTransfer = {
         id: submission.transfer_id || transferId,
-        ts: (submission.timestamp ?? new Date().toISOString()).slice(0, 16).replace("T", " "),
-        sourcePublicKey: submission.source_public_key || operator.wallet.publicKey,
+        ts: finalizedTs.slice(0, 16).replace("T", " "),
+        sourcePublicKey: senderKey,
         destinationPublicKey: authorization.destinationPublicKey,
         destinationOrg,
         asset: authorization.asset,
