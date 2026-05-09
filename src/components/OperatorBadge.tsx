@@ -8,7 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { useOperator, maskAddress, ROLE_META } from "@/store/operator";
 import {
   Copy, LogOut, ShieldCheck, Activity, Building2, Mail, Hash, Check,
-  KeyRound, Eye, EyeOff, MapPin,
+  KeyRound, MapPin,
 } from "lucide-react";
 import { toast } from "sonner";
 
