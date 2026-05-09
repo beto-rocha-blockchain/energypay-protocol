@@ -349,8 +349,8 @@ function P2PPage() {
         </div>
       )}
 
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
 
-        {/* LEFT — Transfer form */}
         <Card className="border-border bg-card p-6 lg:col-span-2">
           <div className="mb-5 flex items-center justify-between">
             <div className="flex items-center gap-2">
