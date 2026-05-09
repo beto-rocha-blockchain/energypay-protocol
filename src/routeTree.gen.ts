@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SettlementRouteImport } from './routes/settlement'
 import { Route as RegisterRouteImport } from './routes/register'
+import { Route as P2pRouteImport } from './routes/p2p'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ContractsIndexRouteImport } from './routes/contracts.index'
@@ -24,6 +25,11 @@ const SettlementRoute = SettlementRouteImport.update({
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
   path: '/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const P2pRoute = P2pRouteImport.update({
+  id: '/p2p',
+  path: '/p2p',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -50,6 +56,7 @@ const ContractsNewRoute = ContractsNewRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/p2p': typeof P2pRoute
   '/register': typeof RegisterRoute
   '/settlement': typeof SettlementRoute
   '/contracts/new': typeof ContractsNewRoute
@@ -58,6 +65,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/p2p': typeof P2pRoute
   '/register': typeof RegisterRoute
   '/settlement': typeof SettlementRoute
   '/contracts/new': typeof ContractsNewRoute
@@ -67,6 +75,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/p2p': typeof P2pRoute
   '/register': typeof RegisterRoute
   '/settlement': typeof SettlementRoute
   '/contracts/new': typeof ContractsNewRoute
@@ -77,6 +86,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/p2p'
     | '/register'
     | '/settlement'
     | '/contracts/new'
@@ -85,6 +95,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
+    | '/p2p'
     | '/register'
     | '/settlement'
     | '/contracts/new'
@@ -93,6 +104,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/login'
+    | '/p2p'
     | '/register'
     | '/settlement'
     | '/contracts/new'
@@ -102,6 +114,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LoginRoute: typeof LoginRoute
+  P2pRoute: typeof P2pRoute
   RegisterRoute: typeof RegisterRoute
   SettlementRoute: typeof SettlementRoute
   ContractsNewRoute: typeof ContractsNewRoute
@@ -122,6 +135,13 @@ declare module '@tanstack/react-router' {
       path: '/register'
       fullPath: '/register'
       preLoaderRoute: typeof RegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/p2p': {
+      id: '/p2p'
+      path: '/p2p'
+      fullPath: '/p2p'
+      preLoaderRoute: typeof P2pRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -158,6 +178,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LoginRoute: LoginRoute,
+  P2pRoute: P2pRoute,
   RegisterRoute: RegisterRoute,
   SettlementRoute: SettlementRoute,
   ContractsNewRoute: ContractsNewRoute,
@@ -166,3 +187,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
