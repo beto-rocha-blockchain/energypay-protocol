@@ -97,7 +97,7 @@ function RegisterPage() {
       setProgress(i + 1);
     }
     try {
-      register({ email, password, fullName, organization, country, city, roles, fund, coords });
+      await register({ email, password, fullName, organization, country, city, roles, fund, coords });
       setStep("success");
     } catch (err) {
       toast.error((err as Error).message);
