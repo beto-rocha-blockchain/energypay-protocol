@@ -39,6 +39,8 @@ export type StellarKeypair = {
   createdAt: string;
 };
 
+export type OperatorCoords = { lat: number; lng: number; source: "GPS" | "MANUAL" };
+
 export type OperatorIdentity = {
   operatorId: string;
   email: string;
@@ -46,6 +48,7 @@ export type OperatorIdentity = {
   organization: string;
   country: string;
   city: string;
+  coords?: OperatorCoords;
   settlementAddress: string;
   wallet: StellarKeypair;
   roles: ParticipantRole[];
@@ -69,9 +72,11 @@ type OperatorState = {
     country: string;
     city: string;
     roles: ParticipantRole[];
+    coords?: OperatorCoords;
     fund?: boolean;
   }) => OperatorIdentity;
   setRoles: (roles: ParticipantRole[]) => void;
+  setCoords: (coords: OperatorCoords | undefined) => void;
   logout: () => void;
 };
 
@@ -139,7 +144,7 @@ export const useOperator = create<OperatorState>()(
         set({ operator: id, isAuthenticated: true });
         return id;
       },
-      register: ({ email, fullName, organization, country, city, roles, fund }) => {
+      register: ({ email, fullName, organization, country, city, roles, coords, fund }) => {
         if (!roles.length) throw new Error("Select at least one market participant role.");
         const wallet = generateStellarKeypair(fund ?? true);
         const id: OperatorIdentity = {
@@ -149,6 +154,7 @@ export const useOperator = create<OperatorState>()(
           organization,
           country,
           city,
+          coords,
           settlementAddress: wallet.publicKey,
           wallet,
           roles,
@@ -166,6 +172,11 @@ export const useOperator = create<OperatorState>()(
         const op = get().operator;
         if (!op) return;
         set({ operator: { ...op, roles, permissions: buildPermissions(roles) } });
+      },
+      setCoords: (coords) => {
+        const op = get().operator;
+        if (!op) return;
+        set({ operator: { ...op, coords } });
       },
       logout: () => set({ operator: null, isAuthenticated: false }),
     }),

@@ -56,6 +56,10 @@ function RegisterPage() {
   const [city, setCity] = useState("");
   const [roles, setRoles] = useState<ParticipantRole[]>([]);
   const [fund, setFund] = useState(true);
+  const [coords, setCoordsLocal] = useState<{ lat: number; lng: number; source: "GPS" | "MANUAL" } | undefined>(undefined);
+  const [geoStatus, setGeoStatus] = useState<"idle" | "requesting" | "granted" | "denied">("idle");
+  const [manualLat, setManualLat] = useState("");
+  const [manualLng, setManualLng] = useState("");
   const [revealSecret, setRevealSecret] = useState(false);
 
   useEffect(() => {
@@ -93,11 +97,43 @@ function RegisterPage() {
       setProgress(i + 1);
     }
     try {
-      register({ email, password, fullName, organization, country, city, roles, fund });
+      register({ email, password, fullName, organization, country, city, roles, fund, coords });
       setStep("success");
     } catch (err) {
       toast.error((err as Error).message);
       setStep("form");
+    }
+  };
+
+  const requestGeo = () => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setGeoStatus("denied");
+      toast.error("Geolocation unavailable on this device.");
+      return;
+    }
+    setGeoStatus("requesting");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setCoordsLocal({ lat: pos.coords.latitude, lng: pos.coords.longitude, source: "GPS" });
+        setGeoStatus("granted");
+        toast.success("Operational coordinates bound to identity.");
+      },
+      () => {
+        setGeoStatus("denied");
+        toast.error("GPS denied — provide a region manually.");
+      },
+      { enableHighAccuracy: false, timeout: 8000 },
+    );
+  };
+
+  const applyManual = () => {
+    const lat = parseFloat(manualLat);
+    const lng = parseFloat(manualLng);
+    if (Number.isFinite(lat) && Number.isFinite(lng)) {
+      setCoordsLocal({ lat, lng, source: "MANUAL" });
+      toast.success("Manual region recorded.");
+    } else {
+      toast.error("Enter valid latitude/longitude.");
     }
   };
 
@@ -224,6 +260,53 @@ function RegisterPage() {
                     <Input value={city} onChange={(e) => setCity(e.target.value)}
                       placeholder="São Paulo" className="h-9 pl-8 font-mono text-xs" />
                   </Field>
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between">
+                  <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+                    § 02b · Operational Geolocation · Optional
+                  </div>
+                  <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                    {coords ? `${coords.source} · BOUND` : geoStatus === "denied" ? "GPS DENIED" : "UNBOUND"}
+                  </span>
+                </div>
+                <div className="mt-2 grid gap-2 md:grid-cols-[1fr_auto]">
+                  <div className="rounded-md border border-border bg-background/40 p-3">
+                    <div className="font-mono text-[11px] text-foreground">
+                      Bind operational coordinates to your settlement identity
+                    </div>
+                    <div className="mt-1 text-[10px] text-muted-foreground">
+                      Used for grid map placement &amp; regional liquidity attribution. Coordinates remain
+                      session-scoped and are never shared with counterparties.
+                    </div>
+                    {coords && (
+                      <div className="mt-2 font-mono text-[10px] text-success">
+                        LAT {coords.lat.toFixed(4)} · LNG {coords.lng.toFixed(4)}
+                      </div>
+                    )}
+                  </div>
+                  <Button type="button" variant="outline" onClick={requestGeo}
+                    className="h-9 self-stretch font-mono text-[10px] uppercase tracking-widest md:w-44">
+                    {geoStatus === "requesting" ? (
+                      <><Loader2 className="h-3 w-3 animate-spin" /> Requesting…</>
+                    ) : coords?.source === "GPS" ? (
+                      <><Check className="h-3 w-3" /> GPS Bound</>
+                    ) : (
+                      <><MapPin className="h-3 w-3" /> Capture GPS</>
+                    )}
+                  </Button>
+                </div>
+                <div className="mt-2 grid gap-2 md:grid-cols-[1fr_1fr_auto]">
+                  <Input value={manualLat} onChange={(e) => setManualLat(e.target.value)}
+                    placeholder="Manual Latitude (e.g. -23.55)" className="h-9 font-mono text-xs" />
+                  <Input value={manualLng} onChange={(e) => setManualLng(e.target.value)}
+                    placeholder="Manual Longitude (e.g. -46.63)" className="h-9 font-mono text-xs" />
+                  <Button type="button" variant="outline" onClick={applyManual}
+                    className="h-9 font-mono text-[10px] uppercase tracking-widest">
+                    Apply Region
+                  </Button>
                 </div>
               </div>
 
