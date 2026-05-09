@@ -65,7 +65,7 @@ export type OperatorIdentity = {
 type OperatorState = {
   operator: OperatorIdentity | null;
   isAuthenticated: boolean;
-  login: (input: { email: string; organization: string; accessKey: string }) => OperatorIdentity;
+  login: (input: { email: string; organization: string; accessKey: string }) => Promise<OperatorIdentity>;
   register: (input: {
     email: string;
     password: string;
