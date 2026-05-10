@@ -52,7 +52,7 @@ export function WalletBalancesPanel({ publicKey, organization, funded }: Props) 
     return { label: "OPERATIONAL", tone: "ok" as const };
   }, [data, error, xlmNum]);
 
-  const trustline = eprwNum > 0 || (data && Number.isFinite(eprwNum));
+  const trustline = !!data && Number.isFinite(eprwNum);
   const latency = data?.latency_ms ?? null;
 
   const handleCopy = async () => {
