@@ -502,6 +502,25 @@ function GeneratorPage() {
           </div>
         </Card>
       </div>
+
+      {/* SECTION 5 — AI Forecasting + SECTION 2 — Live Settlement Feed */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <AIForecastPanel
+            hourlySeries={telemetry.hourlySeries}
+            forecastNext24Mwh={telemetry.forecastNext24Mwh}
+            forecastEprw={telemetry.forecastEprw}
+            marketDemandIndex={telemetry.marketDemandIndex}
+            liquidityIndex={telemetry.liquidityIndex}
+          />
+        </div>
+        <LiveSettlementFeed
+          events={events}
+          loading={actLoading}
+          error={actErr}
+          fetchedAt={actFetchedAt}
+        />
+      </div>
     </div>
   );
 }
