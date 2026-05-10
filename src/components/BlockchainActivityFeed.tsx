@@ -204,7 +204,7 @@ export function BlockchainActivityFeed({ publicKey }: Props) {
 function ActivityRow({ event }: { event: ActivityEvent }) {
   const Meta = KIND_META[event.kind];
   const Icon = Meta.icon;
-  const directional =
+  const Directional =
     event.kind === "SETTLEMENT" && event.title.toLowerCase().includes("received")
       ? ArrowDownLeft
       : event.kind === "SETTLEMENT"
@@ -238,7 +238,7 @@ function ActivityRow({ event }: { event: ActivityEvent }) {
               </span>
               <span className="font-mono text-[10px] text-muted-foreground">·</span>
               <span className="flex items-center gap-1 font-display text-sm font-semibold">
-                {directional && <directional className="h-3.5 w-3.5" />}
+                {Directional && <Directional className="h-3.5 w-3.5" />}
                 {event.title}
               </span>
               {!event.successful && (
