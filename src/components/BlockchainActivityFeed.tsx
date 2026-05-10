@@ -237,10 +237,8 @@ function ActivityRow({ event }: { event: ActivityEvent }) {
                 {Meta.label}
               </span>
               <span className="font-mono text-[10px] text-muted-foreground">·</span>
-              <span className="font-display text-sm font-semibold">
-                {directional && (
-                  <directional.IconCmp />
-                )}
+              <span className="flex items-center gap-1 font-display text-sm font-semibold">
+                {directional && <directional className="h-3.5 w-3.5" />}
                 {event.title}
               </span>
               {!event.successful && (
