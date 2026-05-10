@@ -293,7 +293,16 @@ function GeneratorPage() {
         />
       </div>
 
-      {/* Stellar wallet + analytics */}
+      {/* SECTION 4 — Regional Energy Generation Map */}
+      <BrazilGridMap />
+
+      {/* SECTION 3 — Active Bilateral Contracts */}
+      <BilateralContractsPanel />
+
+      {/* SECTION 6 — Stellar Settlement Rails */}
+      <StellarRailMonitor />
+
+
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card className="border-border bg-card p-4 lg:col-span-2">
           <div className="flex items-center justify-between">
