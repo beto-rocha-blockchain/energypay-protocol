@@ -15,6 +15,7 @@ import { Route as RegisterRouteImport } from './routes/register'
 import { Route as P2pRouteImport } from './routes/p2p'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as GridRouteImport } from './routes/grid'
+import { Route as GeneratorRouteImport } from './routes/generator'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ContractsIndexRouteImport } from './routes/contracts.index'
 import { Route as ContractsNewRouteImport } from './routes/contracts.new'
@@ -52,6 +53,11 @@ const LoginRoute = LoginRouteImport.update({
 const GridRoute = GridRouteImport.update({
   id: '/grid',
   path: '/grid',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GeneratorRoute = GeneratorRouteImport.update({
+  id: '/generator',
+  path: '/generator',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -99,6 +105,7 @@ const ApiWalletPublicKeyActivityRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/generator': typeof GeneratorRoute
   '/grid': typeof GridRoute
   '/login': typeof LoginRoute
   '/p2p': typeof P2pRoute
@@ -115,6 +122,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/generator': typeof GeneratorRoute
   '/grid': typeof GridRoute
   '/login': typeof LoginRoute
   '/p2p': typeof P2pRoute
@@ -132,6 +140,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/generator': typeof GeneratorRoute
   '/grid': typeof GridRoute
   '/login': typeof LoginRoute
   '/p2p': typeof P2pRoute
@@ -150,6 +159,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/generator'
     | '/grid'
     | '/login'
     | '/p2p'
@@ -166,6 +176,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/generator'
     | '/grid'
     | '/login'
     | '/p2p'
@@ -182,6 +193,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/generator'
     | '/grid'
     | '/login'
     | '/p2p'
@@ -199,6 +211,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  GeneratorRoute: typeof GeneratorRoute
   GridRoute: typeof GridRoute
   LoginRoute: typeof LoginRoute
   P2pRoute: typeof P2pRoute
@@ -256,6 +269,13 @@ declare module '@tanstack/react-router' {
       path: '/grid'
       fullPath: '/grid'
       preLoaderRoute: typeof GridRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/generator': {
+      id: '/generator'
+      path: '/generator'
+      fullPath: '/generator'
+      preLoaderRoute: typeof GeneratorRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -319,6 +339,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  GeneratorRoute: GeneratorRoute,
   GridRoute: GridRoute,
   LoginRoute: LoginRoute,
   P2pRoute: P2pRoute,

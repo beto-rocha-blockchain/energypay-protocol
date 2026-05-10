@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, Calculator, Zap, Activity, ListChecks, FilePlus2, Send, Radio, Wallet } from "lucide-react";
+import { LayoutDashboard, Calculator, Zap, Activity, ListChecks, FilePlus2, Send, Radio, Wallet, Factory } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter,
@@ -7,6 +7,7 @@ import {
 
 const items = [
   { title: "Control Room", url: "/", icon: LayoutDashboard },
+  { title: "Generator Terminal", url: "/generator", icon: Factory },
   { title: "Contract Registry", url: "/contracts", icon: ListChecks },
   { title: "New Contract", url: "/contracts/new", icon: FilePlus2 },
   { title: "Settlement Engine", url: "/settlement", icon: Calculator },
