@@ -48,7 +48,7 @@ router.post("/register", async (req, res) => {
       });
     }
 
-    const ALLOWED_ROLES = ["Generator", "Seller", "Investor", "User"];
+    const ALLOWED_ROLES = ["GENERATOR", "SELLER", "INVESTOR", "USER"];
 
     if (!Array.isArray(roles)) {
       return res.status(400).json({
