@@ -1,12 +1,29 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import type { WalletAssetEntry } from "@/routes/api.wallet.$publicKey.balances";
+
+export type { WalletAssetEntry };
+
+export type WalletBalancesSummary = {
+  xlm: string;
+  eprw: string;
+  eprw_code?: string;
+  eprw_issuer?: string | null;
+  eprw_limit?: string | null;
+  eprw_trustline?: boolean;
+};
 
 export type WalletBalances = {
   success: true;
   wallet: string;
   network: string;
+  account_funded: boolean;
+  subentry_count: number;
+  assets: WalletAssetEntry[];
+  summary: WalletBalancesSummary;
   balances: { xlm: string; eprw: string };
   latency_ms: number;
   checked_at: string;
+  note?: string;
 };
 
 export type WalletBalancesError = {
