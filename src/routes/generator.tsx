@@ -41,6 +41,11 @@ import { useWalletActivity } from "@/hooks/useWalletActivity";
 import { useGeneratorTelemetry } from "@/hooks/useGeneratorTelemetry";
 import { useSettlementRail } from "@/hooks/useSettlementRail";
 import { stellarExpertAccount, stellarExpertTx } from "@/lib/stellar";
+import { BilateralContractsPanel } from "@/components/generator/BilateralContractsPanel";
+import { BrazilGridMap } from "@/components/generator/BrazilGridMap";
+import { AIForecastPanel } from "@/components/generator/AIForecastPanel";
+import { StellarRailMonitor } from "@/components/generator/StellarRailMonitor";
+import { LiveSettlementFeed } from "@/components/generator/LiveSettlementFeed";
 
 export const Route = createFileRoute("/generator")({
   head: () => ({
