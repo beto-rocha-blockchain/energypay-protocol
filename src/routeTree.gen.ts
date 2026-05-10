@@ -22,6 +22,7 @@ import { Route as ApiHealthRouteImport } from './routes/api.health'
 import { Route as ApiSettlementsTelemetryRouteImport } from './routes/api.settlements.telemetry'
 import { Route as ApiP2pValidateRouteImport } from './routes/api.p2p.validate'
 import { Route as ApiWalletPublicKeyBalancesRouteImport } from './routes/api.wallet.$publicKey.balances'
+import { Route as ApiWalletPublicKeyActivityRouteImport } from './routes/api.wallet.$publicKey.activity'
 
 const WalletRoute = WalletRouteImport.update({
   id: '/wallet',
@@ -89,6 +90,12 @@ const ApiWalletPublicKeyBalancesRoute =
     path: '/api/wallet/$publicKey/balances',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiWalletPublicKeyActivityRoute =
+  ApiWalletPublicKeyActivityRouteImport.update({
+    id: '/api/wallet/$publicKey/activity',
+    path: '/api/wallet/$publicKey/activity',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -103,6 +110,7 @@ export interface FileRoutesByFullPath {
   '/contracts/': typeof ContractsIndexRoute
   '/api/p2p/validate': typeof ApiP2pValidateRoute
   '/api/settlements/telemetry': typeof ApiSettlementsTelemetryRoute
+  '/api/wallet/$publicKey/activity': typeof ApiWalletPublicKeyActivityRoute
   '/api/wallet/$publicKey/balances': typeof ApiWalletPublicKeyBalancesRoute
 }
 export interface FileRoutesByTo {
@@ -118,6 +126,7 @@ export interface FileRoutesByTo {
   '/contracts': typeof ContractsIndexRoute
   '/api/p2p/validate': typeof ApiP2pValidateRoute
   '/api/settlements/telemetry': typeof ApiSettlementsTelemetryRoute
+  '/api/wallet/$publicKey/activity': typeof ApiWalletPublicKeyActivityRoute
   '/api/wallet/$publicKey/balances': typeof ApiWalletPublicKeyBalancesRoute
 }
 export interface FileRoutesById {
@@ -134,6 +143,7 @@ export interface FileRoutesById {
   '/contracts/': typeof ContractsIndexRoute
   '/api/p2p/validate': typeof ApiP2pValidateRoute
   '/api/settlements/telemetry': typeof ApiSettlementsTelemetryRoute
+  '/api/wallet/$publicKey/activity': typeof ApiWalletPublicKeyActivityRoute
   '/api/wallet/$publicKey/balances': typeof ApiWalletPublicKeyBalancesRoute
 }
 export interface FileRouteTypes {
@@ -151,6 +161,7 @@ export interface FileRouteTypes {
     | '/contracts/'
     | '/api/p2p/validate'
     | '/api/settlements/telemetry'
+    | '/api/wallet/$publicKey/activity'
     | '/api/wallet/$publicKey/balances'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -166,6 +177,7 @@ export interface FileRouteTypes {
     | '/contracts'
     | '/api/p2p/validate'
     | '/api/settlements/telemetry'
+    | '/api/wallet/$publicKey/activity'
     | '/api/wallet/$publicKey/balances'
   id:
     | '__root__'
@@ -181,6 +193,7 @@ export interface FileRouteTypes {
     | '/contracts/'
     | '/api/p2p/validate'
     | '/api/settlements/telemetry'
+    | '/api/wallet/$publicKey/activity'
     | '/api/wallet/$publicKey/balances'
   fileRoutesById: FileRoutesById
 }
@@ -197,6 +210,7 @@ export interface RootRouteChildren {
   ContractsIndexRoute: typeof ContractsIndexRoute
   ApiP2pValidateRoute: typeof ApiP2pValidateRoute
   ApiSettlementsTelemetryRoute: typeof ApiSettlementsTelemetryRoute
+  ApiWalletPublicKeyActivityRoute: typeof ApiWalletPublicKeyActivityRoute
   ApiWalletPublicKeyBalancesRoute: typeof ApiWalletPublicKeyBalancesRoute
 }
 
@@ -293,6 +307,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiWalletPublicKeyBalancesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/wallet/$publicKey/activity': {
+      id: '/api/wallet/$publicKey/activity'
+      path: '/api/wallet/$publicKey/activity'
+      fullPath: '/api/wallet/$publicKey/activity'
+      preLoaderRoute: typeof ApiWalletPublicKeyActivityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -309,8 +330,19 @@ const rootRouteChildren: RootRouteChildren = {
   ContractsIndexRoute: ContractsIndexRoute,
   ApiP2pValidateRoute: ApiP2pValidateRoute,
   ApiSettlementsTelemetryRoute: ApiSettlementsTelemetryRoute,
+  ApiWalletPublicKeyActivityRoute: ApiWalletPublicKeyActivityRoute,
   ApiWalletPublicKeyBalancesRoute: ApiWalletPublicKeyBalancesRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
