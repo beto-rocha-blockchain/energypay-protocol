@@ -1,18 +1,24 @@
-export function getSession() {
-  const session =
-    sessionStorage.getItem(
-      "energypay_session"
-    );
+const SESSION_KEY = "energypay-session";
 
-  if (!session) {
+export function getSession() {
+  const raw = sessionStorage.getItem(SESSION_KEY);
+
+  if (!raw) return null;
+
+  try {
+    return JSON.parse(raw);
+  } catch {
     return null;
   }
-
-  return JSON.parse(session);
 }
 
-export function logout() {
-  sessionStorage.clear();
+export function setSession(data: unknown) {
+  sessionStorage.setItem(
+    SESSION_KEY,
+    JSON.stringify(data)
+  );
+}
 
-  window.location.href = "/login";
+export function clearSession() {
+  sessionStorage.removeItem(SESSION_KEY);
 }

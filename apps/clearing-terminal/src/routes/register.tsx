@@ -109,8 +109,7 @@ function RegisterPage() {
       setProvisionError(null);
       setStep("success");
     } catch (err) {
-      const reason = safeErrorMessage(err, "Settlement Network unreachable.");
-      setProvisionError(reason);
+  const reason = safeErrorMessage(err);      setProvisionError(reason);
       // Do NOT clear session, do NOT redirect to /login — keep operator on
       // the form with an inline institutional error banner.
       setStep("form");

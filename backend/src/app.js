@@ -12,6 +12,8 @@ import { executeSettlement } from "./services/stellarSettlementService.js";
 
 import tokenRoutes from "./routes/tokenRoutes.js";
 
+import p2pRoutes from "./routes/p2p.js";
+
 const app = express();
 
 // ========================================
@@ -27,6 +29,7 @@ app.use(express.json());
 
 app.use("/api/wallet", walletRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/p2p", p2pRoutes);
 app.use("/api/token", tokenRoutes);
 // ========================================
 // Health Check

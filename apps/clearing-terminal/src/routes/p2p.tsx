@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { Switch } from "@/components/ui/switch";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Send,
@@ -31,7 +32,7 @@ import {
 import { stellarExpertTx } from "@/lib/stellar";
 import { apiValidatedP2PTransfer, type P2PValidationError } from "@/lib/api";
 import { validateP2PTransfer } from "@/lib/p2p-validation";
-import { P2PLiveStatusPanel, type LiveStatusData, type LiveStatusPhase } from "@/components/P2PLiveStatusPanel";
+import { P2PLiveStatusPanel } from "@/components/P2PLiveStatusPanel";
 import { SettlementRailBanner } from "@/components/SettlementRailBanner";
 import { useSettlementRail } from "@/hooks/useSettlementRail";
 import { toast } from "sonner";
@@ -61,20 +62,22 @@ const ROLE_CONTEXT: Record<string, string> = {
 function P2PPage() {
   const operator = useOperator((s) => s.operator);
   const { transfers, counterparties, recordTransfer } = useP2P();
-  const { railState, isOffline, isExecutable } = useSettlementRail();
-
+  const rail = useSettlementRail();
+  const railState = rail.connected ? "CONNECTED" : "OFFLINE";
+  const isOffline = !rail.connected;
+  const isExecutable = rail.connected;
   const [destinationOrg, setDestinationOrg] = useState("");
   const [destinationAddress, setDestinationAddress] = useState("");
   const [amount, setAmount] = useState<string>("");
   const [asset, setAsset] = useState<P2PAsset>("EPWR");
   const [memo, setMemo] = useState("");
-
   const [running, setRunning] = useState(false);
+  const [railEnabled, setRailEnabled] = useState(true);
   const [state, setState] = useState<P2PTransferState>("DRAFT");
   const [logs, setLogs] = useState<LogLine[]>([]);
   const [result, setResult] = useState<P2PTransfer | null>(null);
   const [fieldError, setFieldError] = useState<{ field: string; message: string } | null>(null);
-  const [live, setLive] = useState<LiveStatusData>({
+  const [live, setLive] = useState<any>({
     phase: null,
     state: "DRAFT",
     txHash: null,
@@ -87,10 +90,16 @@ function P2PPage() {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const setPhase = (
-    phase: LiveStatusPhase | null,
+    phase: any,
     state: P2PTransferState,
-    patch: Partial<LiveStatusData> = {},
-  ) => setLive((prev) => ({ ...prev, phase, state, ...patch }));
+    patch: any = {},
+  ) =>
+    setLive((prev: any) => ({
+      ...prev,
+      phase,
+      state,
+      ...patch,
+}));
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -100,7 +109,13 @@ function P2PPage() {
   const numericAmount = Number(amount);
   const validAmount = numericAmount > 0;
   const canExecute =
-    !!operator && validAddress && validAmount && !running && destinationOrg.trim().length > 0 && isExecutable;
+  !!operator &&
+  validAddress &&
+  validAmount &&
+  !running &&
+  railEnabled &&
+  destinationOrg.trim().length > 0 &&
+  isExecutable;
 
   const authorization = useMemo(() => {
     if (!operator || !validAddress || !validAmount) return null;
@@ -120,7 +135,14 @@ function P2PPage() {
   };
 
   const execute = async () => {
-    if (!operator || !canExecute || !authorization) return;
+  console.log("EXECUTE CLICKED");
+
+  if (!operator || !canExecute || !authorization) {
+    toast.error("Settlement unavailable");
+    return;
+  }
+
+  try {
     setFieldError(null);
     setRunning(true);
     setResult(null);
@@ -128,23 +150,37 @@ function P2PPage() {
     setState("PREPARING");
 
     const startedAt = Date.now();
-    // Stable transfer_id across retries / refresh — the adapter de-duplicates
-    // by this id, so the same draft can never produce two on-chain submissions.
+
     const draftKey = `p2p_draft_${operator.operatorId}_${authorization.destinationPublicKey}_${authorization.amount}_${authorization.asset}`;
+
     let transferId: string;
+
     try {
       const cached = sessionStorage.getItem(draftKey);
-      if (cached) transferId = cached;
-      else {
-        transferId = `P2P-${Math.floor(100000 + Math.random() * 899999)}`;
+
+      if (cached) {
+        transferId = cached;
+      } else {
+        transferId = `P2P-${Math.floor(
+          100000 + Math.random() * 899999
+        )}`;
+
         sessionStorage.setItem(draftKey, transferId);
       }
     } catch {
-      transferId = `P2P-${Math.floor(100000 + Math.random() * 899999)}`;
+      transferId = `P2P-${Math.floor(
+        100000 + Math.random() * 899999
+      )}`;
     }
+
     const signer = maskAddress(operator.wallet.publicKey);
-    const recipient = maskAddress(authorization.destinationPublicKey);
-    const roleLabel = operator.roles.map((r) => ROLE_META[r].label).join(" · ") || "operator";
+    const recipient = maskAddress(
+      authorization.destinationPublicKey
+    );
+
+    const roleLabel =
+      operator.roles.map((r) => ROLE_META[r].label).join(" · ") ||
+      "operator";
 
     setLive({
       phase: null,
@@ -157,16 +193,30 @@ function P2PPage() {
       errorMessage: null,
     });
 
-    const append = (s: P2PTransferState, text: string, level: "info"|"ok"|"warn" = "info") => {
+    const append = (
+      s: P2PTransferState,
+      text: string,
+      level: "info" | "ok" | "warn" = "info"
+    ) => {
       setState(s);
-      setLogs((l) => [...l, { ts: fmtTs(new Date()), text, level }]);
-    };
-    const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
-    // ── Server-canonical payload + pre-flight Zod validation ──────────────
+      setLogs((l) => [
+        ...l,
+        {
+          ts: fmtTs(new Date()),
+          text,
+          level,
+        },
+      ]);
+    };
+
+    const wait = (ms: number) =>
+      new Promise<void>((r) => setTimeout(r, ms));
+
     const payload = {
       sender_user_id: operator.operatorId,
-      recipient_public_key: authorization.destinationPublicKey,
+      recipient_public_key:
+        authorization.destinationPublicKey,
       asset: authorization.asset,
       amount:
         authorization.asset === "XLM"
@@ -176,100 +226,210 @@ function P2PPage() {
       transfer_id: transferId,
     };
 
-    const preflight = validateP2PTransfer(payload);
-    if (!preflight.ok) {
-      append("FAILED", `✗ validation rejected · ${preflight.code} · ${preflight.message}`, "warn");
-      setFieldError({ field: preflight.field, message: preflight.message });
-      setPhase(null, "FAILED", { errorMessage: preflight.message });
-      setRunning(false);
-      toast.error("Settlement payload rejected", { description: preflight.message });
+    const preflight: any = validateP2PTransfer(payload);
+
+if (preflight?.ok === false) {
+      append(
+        "FAILED",
+        `✗ validation rejected · ${preflight.code} · ${preflight.message}`,
+        "warn"
+      );
+
+      setFieldError({
+        field: preflight.field,
+        message: preflight.message,
+      });
+
+      setPhase(null, "FAILED", {
+        errorMessage: preflight.message,
+      });
+
+      toast.error("Settlement payload rejected", {
+        description: preflight.message,
+      });
+
       return;
     }
 
-    try {
-      append("PREPARING", `→ direct settlement initiated · ${transferId}`);
-      await wait(140);
-      append("PREPARING", `authorizing operator · ${operator.operatorId} · roles=[${roleLabel}]`);
-      await wait(160);
-      append("PREPARING", `✓ transfer authority verified · counterparty ${destinationOrg}`, "ok");
-      await wait(160);
-      append("SIGNING", `binding execution signer · source=${signer}`);
-      await wait(160);
-      append("SIGNING", `delegating ed25519 signing to backend custody · in-memory only`);
-      await wait(160);
-      append("BROADCASTING", `→ POST /api/p2p/validate · server validation + Horizon broadcast`, "info");
-      setPhase("SUBMITTED", "BROADCASTING");
+    append(
+      "PREPARING",
+      `→ direct settlement initiated · ${transferId}`
+    );
 
-      // Server-validated submission. The TanStack gateway re-validates on the
-      // server with the canonical Zod schema before forwarding to the
-      // settlement backend; backend signs in-memory and submits to Horizon.
-      const submission = await apiValidatedP2PTransfer(payload);
+    await wait(140);
 
-      if (submission.status === "FAILED") {
-        const msg = submission.error || "Backend reported settlement failure";
-        append("FAILED", `✗ ${msg}`, "warn");
-        setPhase("SUBMITTED", "FAILED", { errorMessage: msg });
-        setRunning(false);
-        toast.error("Direct settlement failed", { description: msg });
-        return;
-      }
+    append(
+      "PREPARING",
+      `authorizing operator · ${operator.operatorId} · roles=[${roleLabel}]`
+    );
 
-      // Canonical receipt fields (with backwards-compatible fallbacks).
-      const explorer = submission.explorer_url || submission.explorer_link || stellarExpertTx(submission.tx_hash);
-      const senderKey = submission.sender || submission.source_public_key || operator.wallet.publicKey;
-      const finalizedTs = submission.finalized_at || submission.timestamp || new Date().toISOString();
-      append("CONFIRMING", `awaiting Horizon confirmation · ledger pending`);
-      setPhase("CONFIRMED", "CONFIRMING", {
-        txHash: submission.tx_hash,
-        ledger: submission.ledger,
-        explorerLink: explorer,
+    await wait(160);
+
+    append(
+      "PREPARING",
+      `✓ transfer authority verified · counterparty ${destinationOrg}`,
+      "ok"
+    );
+
+    await wait(160);
+
+    append(
+      "SIGNING",
+      `binding execution signer · source=${signer}`
+    );
+
+    await wait(160);
+
+    append(
+      "SIGNING",
+      `delegating ed25519 signing to backend custody · in-memory only`
+    );
+
+    await wait(160);
+
+    append(
+      "BROADCASTING",
+      `→ POST /api/p2p/transfer · server validation + Horizon broadcast`,
+      "info"
+    );
+
+    setPhase("SUBMITTED", "BROADCASTING");
+
+    const submission: any = await apiValidatedP2PTransfer(
+      payload
+    );
+
+    if (submission.status === "FAILED") {
+      const msg =
+        submission.error ||
+        "Backend reported settlement failure";
+
+      append("FAILED", `✗ ${msg}`, "warn");
+
+      setPhase("SUBMITTED", "FAILED", {
+        errorMessage: msg,
       });
-      await wait(140);
-      append("CONFIRMING", `✓ tx confirmed · ledger #${submission.ledger.toLocaleString("en-US")}`, "ok");
-      append("CONFIRMING", `tx hash: ${submission.tx_hash}`);
-      await wait(140);
-      append("FINALIZED", `✓ settlement finality reached · direct rail closed`, "ok");
-      const finalityMs = submission.latency_ms ?? submission.finality_ms ?? Date.now() - startedAt;
-      setPhase("SETTLED", "FINALIZED", { finalityMs });
 
-      const transfer: P2PTransfer = {
-        id: submission.transfer_id || transferId,
-        ts: finalizedTs.slice(0, 16).replace("T", " "),
-        sourcePublicKey: senderKey,
-        destinationPublicKey: authorization.destinationPublicKey,
-        destinationOrg,
-        asset: authorization.asset,
-        amount: authorization.amount,
-        memo: authorization.memo,
-        txHash: submission.tx_hash,
-        ledger: submission.ledger,
-        latencyMs: finalityMs,
-        state: "FINALIZED",
-        operatorId: operator.operatorId,
-        explorerLink: explorer,
-      };
-      recordTransfer(transfer);
-      setResult(transfer);
-      setRunning(false);
-      toast.success("Direct settlement finalized", {
-        description: `${transfer.amount} ${transfer.asset} → ${recipient}`,
+      toast.error("Direct settlement failed", {
+        description: msg,
       });
-    } catch (err) {
-      // Server-side validation surfaces structured errors via 422.
-      const e = err as Error & { status?: number; payload?: P2PValidationError };
-      const payloadErr = e.payload && typeof e.payload === "object" ? e.payload : null;
-      const code = payloadErr?.code;
-      const field = payloadErr?.field;
-      const msg = payloadErr?.message || e.message || "submission failed";
-      if (e.status === 422 && field) {
-        setFieldError({ field, message: msg });
-      }
-      append("FAILED", `✗ ${code ?? "submission"} · ${msg}`, "warn");
-      setPhase(null, "FAILED", { errorMessage: msg });
-      setRunning(false);
-      toast.error("Direct settlement failed", { description: msg });
+
+      return;
     }
-  };
+
+    const explorer =
+      submission.explorer_url ||
+      submission.explorer_link ||
+      stellarExpertTx(submission.tx_hash);
+
+    const senderKey =
+      submission.sender ||
+      submission.source_public_key ||
+      operator.wallet.publicKey;
+
+    const finalizedTs =
+      submission.finalized_at ||
+      submission.timestamp ||
+      new Date().toISOString();
+
+    append(
+      "CONFIRMING",
+      `awaiting Horizon confirmation · ledger pending`
+    );
+
+    setPhase("CONFIRMED", "CONFIRMING", {
+      txHash: submission.tx_hash,
+      ledger: submission.ledger,
+      explorerLink: explorer,
+    });
+
+    await wait(140);
+
+    append(
+      "CONFIRMING",
+      `✓ tx confirmed · ledger #${submission.ledger.toLocaleString(
+        "en-US"
+      )}`,
+      "ok"
+    );
+
+    append(
+      "CONFIRMING",
+      `tx hash: ${submission.tx_hash}`
+    );
+
+    await wait(140);
+
+    append(
+      "FINALIZED",
+      `✓ settlement finality reached · direct rail closed`,
+      "ok"
+    );
+
+    const finalityMs =
+      submission.latency_ms ??
+      submission.finality_ms ??
+      Date.now() - startedAt;
+
+    setPhase("SETTLED", "FINALIZED", {
+      finalityMs,
+    });
+
+    const transfer: P2PTransfer = {
+      id: submission.transfer_id || transferId,
+      ts: finalizedTs.slice(0, 16).replace("T", " "),
+      sourcePublicKey: senderKey,
+      destinationPublicKey:
+        authorization.destinationPublicKey,
+      destinationOrg,
+      asset: authorization.asset,
+      amount: authorization.amount,
+      memo: authorization.memo,
+      txHash: submission.tx_hash,
+      ledger: submission.ledger,
+      latencyMs: finalityMs,
+      state: "FINALIZED",
+      operatorId: operator.operatorId,
+      explorerLink: explorer,
+    };
+
+    recordTransfer(transfer);
+
+    setResult(transfer);
+
+    toast.success("Direct settlement finalized", {
+      description: `${transfer.amount} ${transfer.asset} → ${recipient}`,
+    });
+  } catch (error) {
+    console.error(error);
+
+    const msg =
+      error instanceof Error
+        ? error.message
+        : "Unknown execution error";
+
+    setPhase(null, "FAILED", {
+      errorMessage: msg,
+    });
+
+    setState("FAILED");
+
+    setLogs((l) => [
+      ...l,
+      {
+        ts: fmtTs(new Date()),
+        text: `✗ ${msg}`,
+        level: "warn",
+      },
+    ]);
+
+    toast.error("Settlement execution failed", {
+      description: msg,
+    });
+  } finally {
+    setRunning(false);
+  }
+};
 
   const reset = () => {
     try {
@@ -489,31 +649,51 @@ function P2PPage() {
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
-              <p className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-                <ShieldCheck className="h-3 w-3 text-success" /> Direct settlement rail · Stellar finality ~2s
-                <span className="ml-2 inline-flex items-center gap-1 rounded border border-border bg-background/40 px-1.5 py-0.5">
-                  <span className={`h-1.5 w-1.5 rounded-full ${
-                    railState === "CONNECTED" ? "bg-success animate-pulse"
-                    : railState === "DEGRADED" ? "bg-warning animate-pulse"
-                    : railState === "OFFLINE" ? "bg-destructive"
-                    : "bg-muted-foreground"
-                  }`} />
-                  {railState}
-                </span>
-              </p>
-              <div className="flex items-center gap-2">
-                {result && (
-                  <Button size="sm" variant="outline" onClick={reset}>
-                    New transfer
-                  </Button>
-                )}
-                <Button size="lg" onClick={execute} disabled={!canExecute}>
-                  <Zap className="mr-2 h-4 w-4" /> Execute Settlement
-                </Button>
-              </div>
-            </div>
-          </div>
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
+  <div className="flex items-center gap-3">
+    <ShieldCheck className="h-3 w-3 text-success" />
+
+    <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+      Direct settlement rail • Stellar finality ~2s
+    </p>
+
+    <Badge
+      variant="outline"
+      className={`font-mono text-[10px] ${
+        railEnabled
+          ? "border-success/40 bg-success/10 text-success"
+          : "border-destructive/40 bg-destructive/10 text-destructive"
+      }`}
+    >
+      {railEnabled ? "CONNECTED" : "OFFLINE"}
+    </Badge>
+
+    <Switch
+      checked={railEnabled}
+      onCheckedChange={setRailEnabled}
+    />
+  </div>
+
+  <div className="flex items-center gap-2">
+    {result && (
+      <Button size="sm" variant="outline" onClick={reset}>
+        New transfer
+      </Button>
+    )}
+
+    <Button
+      size="lg"
+      onClick={execute}
+      disabled={!railEnabled || running}
+    >
+      <Zap className="mr-2 h-4 w-4" />
+      Execute Settlement
+    </Button>
+  </div>
+</div>  
+
+</div>
+
         </Card>
 
         {/* RIGHT — Signer / authorization panel */}
