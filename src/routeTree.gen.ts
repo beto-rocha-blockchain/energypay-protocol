@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as WalletRouteImport } from './routes/wallet'
 import { Route as SettlementRouteImport } from './routes/settlement'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as P2pRouteImport } from './routes/p2p'
@@ -20,7 +21,13 @@ import { Route as ContractsNewRouteImport } from './routes/contracts.new'
 import { Route as ApiHealthRouteImport } from './routes/api.health'
 import { Route as ApiSettlementsTelemetryRouteImport } from './routes/api.settlements.telemetry'
 import { Route as ApiP2pValidateRouteImport } from './routes/api.p2p.validate'
+import { Route as ApiWalletPublicKeyBalancesRouteImport } from './routes/api.wallet.$publicKey.balances'
 
+const WalletRoute = WalletRouteImport.update({
+  id: '/wallet',
+  path: '/wallet',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettlementRoute = SettlementRouteImport.update({
   id: '/settlement',
   path: '/settlement',
@@ -76,6 +83,12 @@ const ApiP2pValidateRoute = ApiP2pValidateRouteImport.update({
   path: '/api/p2p/validate',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiWalletPublicKeyBalancesRoute =
+  ApiWalletPublicKeyBalancesRouteImport.update({
+    id: '/api/wallet/$publicKey/balances',
+    path: '/api/wallet/$publicKey/balances',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -84,11 +97,13 @@ export interface FileRoutesByFullPath {
   '/p2p': typeof P2pRoute
   '/register': typeof RegisterRoute
   '/settlement': typeof SettlementRoute
+  '/wallet': typeof WalletRoute
   '/api/health': typeof ApiHealthRoute
   '/contracts/new': typeof ContractsNewRoute
   '/contracts/': typeof ContractsIndexRoute
   '/api/p2p/validate': typeof ApiP2pValidateRoute
   '/api/settlements/telemetry': typeof ApiSettlementsTelemetryRoute
+  '/api/wallet/$publicKey/balances': typeof ApiWalletPublicKeyBalancesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -97,11 +112,13 @@ export interface FileRoutesByTo {
   '/p2p': typeof P2pRoute
   '/register': typeof RegisterRoute
   '/settlement': typeof SettlementRoute
+  '/wallet': typeof WalletRoute
   '/api/health': typeof ApiHealthRoute
   '/contracts/new': typeof ContractsNewRoute
   '/contracts': typeof ContractsIndexRoute
   '/api/p2p/validate': typeof ApiP2pValidateRoute
   '/api/settlements/telemetry': typeof ApiSettlementsTelemetryRoute
+  '/api/wallet/$publicKey/balances': typeof ApiWalletPublicKeyBalancesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -111,11 +128,13 @@ export interface FileRoutesById {
   '/p2p': typeof P2pRoute
   '/register': typeof RegisterRoute
   '/settlement': typeof SettlementRoute
+  '/wallet': typeof WalletRoute
   '/api/health': typeof ApiHealthRoute
   '/contracts/new': typeof ContractsNewRoute
   '/contracts/': typeof ContractsIndexRoute
   '/api/p2p/validate': typeof ApiP2pValidateRoute
   '/api/settlements/telemetry': typeof ApiSettlementsTelemetryRoute
+  '/api/wallet/$publicKey/balances': typeof ApiWalletPublicKeyBalancesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -126,11 +145,13 @@ export interface FileRouteTypes {
     | '/p2p'
     | '/register'
     | '/settlement'
+    | '/wallet'
     | '/api/health'
     | '/contracts/new'
     | '/contracts/'
     | '/api/p2p/validate'
     | '/api/settlements/telemetry'
+    | '/api/wallet/$publicKey/balances'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -139,11 +160,13 @@ export interface FileRouteTypes {
     | '/p2p'
     | '/register'
     | '/settlement'
+    | '/wallet'
     | '/api/health'
     | '/contracts/new'
     | '/contracts'
     | '/api/p2p/validate'
     | '/api/settlements/telemetry'
+    | '/api/wallet/$publicKey/balances'
   id:
     | '__root__'
     | '/'
@@ -152,11 +175,13 @@ export interface FileRouteTypes {
     | '/p2p'
     | '/register'
     | '/settlement'
+    | '/wallet'
     | '/api/health'
     | '/contracts/new'
     | '/contracts/'
     | '/api/p2p/validate'
     | '/api/settlements/telemetry'
+    | '/api/wallet/$publicKey/balances'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -166,15 +191,24 @@ export interface RootRouteChildren {
   P2pRoute: typeof P2pRoute
   RegisterRoute: typeof RegisterRoute
   SettlementRoute: typeof SettlementRoute
+  WalletRoute: typeof WalletRoute
   ApiHealthRoute: typeof ApiHealthRoute
   ContractsNewRoute: typeof ContractsNewRoute
   ContractsIndexRoute: typeof ContractsIndexRoute
   ApiP2pValidateRoute: typeof ApiP2pValidateRoute
   ApiSettlementsTelemetryRoute: typeof ApiSettlementsTelemetryRoute
+  ApiWalletPublicKeyBalancesRoute: typeof ApiWalletPublicKeyBalancesRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/wallet': {
+      id: '/wallet'
+      path: '/wallet'
+      fullPath: '/wallet'
+      preLoaderRoute: typeof WalletRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settlement': {
       id: '/settlement'
       path: '/settlement'
@@ -252,6 +286,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiP2pValidateRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/wallet/$publicKey/balances': {
+      id: '/api/wallet/$publicKey/balances'
+      path: '/api/wallet/$publicKey/balances'
+      fullPath: '/api/wallet/$publicKey/balances'
+      preLoaderRoute: typeof ApiWalletPublicKeyBalancesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -262,11 +303,13 @@ const rootRouteChildren: RootRouteChildren = {
   P2pRoute: P2pRoute,
   RegisterRoute: RegisterRoute,
   SettlementRoute: SettlementRoute,
+  WalletRoute: WalletRoute,
   ApiHealthRoute: ApiHealthRoute,
   ContractsNewRoute: ContractsNewRoute,
   ContractsIndexRoute: ContractsIndexRoute,
   ApiP2pValidateRoute: ApiP2pValidateRoute,
   ApiSettlementsTelemetryRoute: ApiSettlementsTelemetryRoute,
+  ApiWalletPublicKeyBalancesRoute: ApiWalletPublicKeyBalancesRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
