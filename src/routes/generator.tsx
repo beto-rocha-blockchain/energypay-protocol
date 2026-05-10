@@ -74,7 +74,7 @@ function GeneratorPage() {
 
   const publicKey = operator.wallet.publicKey;
   const { data: balances, error: balErr } = useWalletBalances(publicKey);
-  const { events, error: actErr } = useWalletActivity(publicKey);
+  const { events, error: actErr, loading: actLoading, fetchedAt: actFetchedAt } = useWalletActivity(publicKey);
   const { railState, isOffline } = useSettlementRail();
 
   const eprwBalance = useMemo(() => {
@@ -93,10 +93,10 @@ function GeneratorPage() {
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
           <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-            Generator Operations / SCADA Terminal
+            Generator Operations · SCADA + Settlement Command Center
           </p>
           <h1 className="mt-1 font-display text-3xl font-semibold tracking-tight">
-            Generator Operations Terminal
+            Generator Operations Command Center
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Programmable settlement rail for energy producers — live generation telemetry, EPWR issuance, on-chain settlement.
