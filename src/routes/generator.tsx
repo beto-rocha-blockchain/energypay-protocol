@@ -41,6 +41,11 @@ import { useWalletActivity } from "@/hooks/useWalletActivity";
 import { useGeneratorTelemetry } from "@/hooks/useGeneratorTelemetry";
 import { useSettlementRail } from "@/hooks/useSettlementRail";
 import { stellarExpertAccount, stellarExpertTx } from "@/lib/stellar";
+import { BilateralContractsPanel } from "@/components/generator/BilateralContractsPanel";
+import { BrazilGridMap } from "@/components/generator/BrazilGridMap";
+import { AIForecastPanel } from "@/components/generator/AIForecastPanel";
+import { StellarRailMonitor } from "@/components/generator/StellarRailMonitor";
+import { LiveSettlementFeed } from "@/components/generator/LiveSettlementFeed";
 
 export const Route = createFileRoute("/generator")({
   head: () => ({
@@ -69,7 +74,7 @@ function GeneratorPage() {
 
   const publicKey = operator.wallet.publicKey;
   const { data: balances, error: balErr } = useWalletBalances(publicKey);
-  const { events, error: actErr } = useWalletActivity(publicKey);
+  const { events, error: actErr, loading: actLoading, fetchedAt: actFetchedAt } = useWalletActivity(publicKey);
   const { railState, isOffline } = useSettlementRail();
 
   const eprwBalance = useMemo(() => {
@@ -88,10 +93,10 @@ function GeneratorPage() {
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
           <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-            Generator Operations / SCADA Terminal
+            Generator Operations · SCADA + Settlement Command Center
           </p>
           <h1 className="mt-1 font-display text-3xl font-semibold tracking-tight">
-            Generator Operations Terminal
+            Generator Operations Command Center
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Programmable settlement rail for energy producers — live generation telemetry, EPWR issuance, on-chain settlement.
@@ -288,7 +293,16 @@ function GeneratorPage() {
         />
       </div>
 
-      {/* Stellar wallet + analytics */}
+      {/* SECTION 4 — Regional Energy Generation Map */}
+      <BrazilGridMap />
+
+      {/* SECTION 3 — Active Bilateral Contracts */}
+      <BilateralContractsPanel />
+
+      {/* SECTION 6 — Stellar Settlement Rails */}
+      <StellarRailMonitor />
+
+
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card className="border-border bg-card p-4 lg:col-span-2">
           <div className="flex items-center justify-between">
@@ -487,6 +501,25 @@ function GeneratorPage() {
             <Telem label="Sync" value={new Date(telemetry.syncedAt).toUTCString().slice(17, 25)} />
           </div>
         </Card>
+      </div>
+
+      {/* SECTION 5 — AI Forecasting + SECTION 2 — Live Settlement Feed */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <AIForecastPanel
+            hourlySeries={telemetry.hourlySeries}
+            forecastNext24Mwh={telemetry.forecastNext24Mwh}
+            forecastEprw={telemetry.forecastEprw}
+            marketDemandIndex={telemetry.marketDemandIndex}
+            liquidityIndex={telemetry.liquidityIndex}
+          />
+        </div>
+        <LiveSettlementFeed
+          events={events}
+          loading={actLoading}
+          error={actErr}
+          fetchedAt={actFetchedAt}
+        />
       </div>
     </div>
   );

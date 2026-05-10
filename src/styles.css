@@ -107,3 +107,37 @@
   }
   .font-mono { font-family: var(--font-mono); }
 }
+
+@layer utilities {
+  @keyframes scada-scan {
+    0% { transform: translateX(-100%); opacity: 0; }
+    50% { opacity: 0.55; }
+    100% { transform: translateX(100%); opacity: 0; }
+  }
+  @keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--primary) 45%, transparent); }
+    50% { box-shadow: 0 0 0 6px color-mix(in oklab, var(--primary) 0%, transparent); }
+  }
+  @keyframes flow-dash {
+    to { stroke-dashoffset: -32; }
+  }
+  @keyframes node-pulse {
+    0%, 100% { r: 5; opacity: 1; }
+    50% { r: 7.5; opacity: 0.65; }
+  }
+  @keyframes ticker-up {
+    from { transform: translateY(8px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  .animate-scada-scan { animation: scada-scan 3.6s ease-in-out infinite; }
+  .animate-pulse-glow { animation: pulse-glow 2.4s ease-out infinite; }
+  .animate-flow-dash { animation: flow-dash 1.4s linear infinite; }
+  .animate-node-pulse { animation: node-pulse 2.2s ease-in-out infinite; }
+  .animate-ticker-up { animation: ticker-up 0.4s ease-out; }
+  .terminal-grid-bg {
+    background-image:
+      linear-gradient(to right, color-mix(in oklab, var(--border) 60%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in oklab, var(--border) 60%, transparent) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+}
