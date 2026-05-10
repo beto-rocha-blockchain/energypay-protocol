@@ -1,5 +1,6 @@
 import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { WalletBalancesPanel } from "@/components/WalletBalancesPanel";
+import { BlockchainActivityFeed } from "@/components/BlockchainActivityFeed";
 import { useOperator } from "@/store/operator";
 
 export const Route = createFileRoute("/wallet")({
@@ -25,12 +26,13 @@ function WalletPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="mx-auto max-w-6xl space-y-6">
       <WalletBalancesPanel
         publicKey={operator.wallet.publicKey}
         organization={operator.organization}
         funded={operator.funded}
       />
+      <BlockchainActivityFeed publicKey={operator.wallet.publicKey} />
     </div>
   );
 }
