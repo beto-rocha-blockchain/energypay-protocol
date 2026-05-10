@@ -9,18 +9,19 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as WalletRouteImport } from './routes/wallet'
 import { Route as SettlementRouteImport } from './routes/settlement'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as P2pRouteImport } from './routes/p2p'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as GridRouteImport } from './routes/grid'
+import { Route as WalletRouteImport } from './routes/wallet'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ContractsIndexRouteImport } from './routes/contracts.index'
 import { Route as ContractsNewRouteImport } from './routes/contracts.new'
 import { Route as ApiHealthRouteImport } from './routes/api.health'
 import { Route as ApiSettlementsTelemetryRouteImport } from './routes/api.settlements.telemetry'
 import { Route as ApiP2pValidateRouteImport } from './routes/api.p2p.validate'
+import { Route as ApiWalletPublicKeyBalancesRouteImport } from './routes/api.wallet.$publicKey.balances'
 import { Route as ApiWalletPublicKeyBalancesRouteImport } from './routes/api.wallet.$publicKey.balances'
 
 const WalletRoute = WalletRouteImport.update({
@@ -53,6 +54,11 @@ const GridRoute = GridRouteImport.update({
   path: '/grid',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WalletRoute = WalletRouteImport.update({
+  id: '/wallet',
+  path: '/wallet',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -81,6 +87,11 @@ const ApiSettlementsTelemetryRoute = ApiSettlementsTelemetryRouteImport.update({
 const ApiP2pValidateRoute = ApiP2pValidateRouteImport.update({
   id: '/api/p2p/validate',
   path: '/api/p2p/validate',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiWalletPublicKeyBalancesRoute = ApiWalletPublicKeyBalancesRouteImport.update({
+  id: '/api/wallet/$publicKey/balances',
+  path: '/api/wallet/$publicKey/balances',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiWalletPublicKeyBalancesRoute =
