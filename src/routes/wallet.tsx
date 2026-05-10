@@ -1,5 +1,6 @@
 import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { WalletBalancesPanel } from "@/components/WalletBalancesPanel";
+import { TokenAllocationPanel } from "@/components/TokenAllocationPanel";
 import { BlockchainActivityFeed } from "@/components/BlockchainActivityFeed";
 import { useOperator } from "@/store/operator";
 
@@ -32,6 +33,7 @@ function WalletPage() {
         organization={operator.organization}
         funded={operator.funded}
       />
+      <TokenAllocationPanel publicKey={operator.wallet.publicKey} />
       <BlockchainActivityFeed publicKey={operator.wallet.publicKey} />
     </div>
   );

@@ -1,17 +1,20 @@
 /**
- * Wallet balances proxy.
+ * Wallet balances proxy — enriched.
  *
  *   GET /api/wallet/:publicKey/balances
  *
- * Forwards to the backend `GET /api/wallet/:publicKey/balances` endpoint
- * and surfaces XLM + EPRW balances along with backend latency telemetry.
+ * Reads the live account from Horizon (testnet) and returns:
+ *   - full per-asset balance entries (with issuer + trustline limit)
+ *   - convenience summary { xlm, eprw } for backwards compatibility
+ *   - account funded state, subentry count, latency telemetry
  *
- * Frontend-safe: the backend is the only caller of Horizon. We never
- * touch secret keys here.
+ * The frontend never holds secret keys — Horizon's read endpoints are public.
  */
 
 import { createFileRoute } from "@tanstack/react-router";
 import { StrKey } from "@stellar/stellar-sdk";
+
+const HORIZON_URL = "https://horizon-testnet.stellar.org";
 
 const buildCors = (request: Request): Record<string, string> => {
   const origin = request.headers.get("origin");
@@ -33,6 +36,44 @@ const json = (status: number, body: unknown, cors: Record<string, string>) =>
     headers: { "Content-Type": "application/json", ...cors },
   });
 
+export type WalletAssetEntry = {
+  asset_type: "native" | "credit_alphanum4" | "credit_alphanum12" | string;
+  asset_code: string;
+  asset_issuer: string | null;
+  balance: string;
+  limit: string | null;
+  buying_liabilities: string | null;
+  selling_liabilities: string | null;
+  is_authorized: boolean;
+  trustline: boolean;
+};
+
+type HorizonBalance = {
+  asset_type: string;
+  asset_code?: string;
+  asset_issuer?: string;
+  balance: string;
+  limit?: string;
+  buying_liabilities?: string;
+  selling_liabilities?: string;
+  is_authorized?: boolean;
+};
+
+const normalizeBalance = (b: HorizonBalance): WalletAssetEntry => {
+  const isNative = b.asset_type === "native";
+  return {
+    asset_type: b.asset_type,
+    asset_code: isNative ? "XLM" : b.asset_code ?? "—",
+    asset_issuer: isNative ? null : b.asset_issuer ?? null,
+    balance: b.balance,
+    limit: isNative ? null : b.limit ?? null,
+    buying_liabilities: b.buying_liabilities ?? null,
+    selling_liabilities: b.selling_liabilities ?? null,
+    is_authorized: b.is_authorized ?? true,
+    trustline: !isNative,
+  };
+};
+
 export const Route = createFileRoute("/api/wallet/$publicKey/balances")({
   server: {
     handlers: {
@@ -51,25 +92,41 @@ export const Route = createFileRoute("/api/wallet/$publicKey/balances")({
           );
         }
 
-        const backend = (process.env.P2P_BACKEND_URL ?? "http://localhost:3000").replace(/\/+$/, "");
         const t0 = Date.now();
         try {
-          const res = await fetch(`${backend}/api/wallet/${publicKey}/balances`, {
+          const res = await fetch(`${HORIZON_URL}/accounts/${publicKey}`, {
             method: "GET",
             headers: { Accept: "application/json" },
             signal: AbortSignal.timeout(8_000),
           });
           const latency = Date.now() - t0;
-          const body = await res.json().catch(() => null) as
-            | { success?: boolean; wallet?: string; balances?: { xlm?: string; eprw?: string }; error?: string }
-            | null;
 
-          if (!res.ok || !body?.success) {
+          if (res.status === 404) {
             return json(
-              res.status === 404 ? 404 : 502,
+              200,
+              {
+                success: true,
+                wallet: publicKey,
+                network: "STELLAR_TESTNET",
+                account_funded: false,
+                subentry_count: 0,
+                assets: [],
+                summary: { xlm: "0", eprw: "0" },
+                balances: { xlm: "0", eprw: "0" },
+                latency_ms: latency,
+                checked_at: new Date().toISOString(),
+                note: "Account not yet funded on the ledger.",
+              },
+              cors,
+            );
+          }
+
+          if (!res.ok) {
+            return json(
+              502,
               {
                 success: false,
-                error: body?.error ?? `Backend HTTP ${res.status}`,
+                error: `Horizon HTTP ${res.status}`,
                 wallet: publicKey,
                 latency_ms: latency,
               },
@@ -77,16 +134,38 @@ export const Route = createFileRoute("/api/wallet/$publicKey/balances")({
             );
           }
 
+          const acc = (await res.json()) as {
+            balances: HorizonBalance[];
+            subentry_count?: number;
+          };
+
+          const assets = (acc.balances ?? []).map(normalizeBalance);
+          const xlm = assets.find((a) => a.asset_type === "native")?.balance ?? "0";
+
+          // Match either spelling ("EPRW" backend / "EPWR" frontend) for resilience.
+          const eprw = assets.find(
+            (a) => a.asset_code === "EPRW" || a.asset_code === "EPWR",
+          );
+
           return json(
             200,
             {
               success: true,
-              wallet: body.wallet ?? publicKey,
+              wallet: publicKey,
               network: "STELLAR_TESTNET",
-              balances: {
-                xlm: body.balances?.xlm ?? "0",
-                eprw: body.balances?.eprw ?? "0",
+              account_funded: true,
+              subentry_count: acc.subentry_count ?? 0,
+              assets,
+              summary: {
+                xlm,
+                eprw: eprw?.balance ?? "0",
+                eprw_code: eprw?.asset_code ?? "EPRW",
+                eprw_issuer: eprw?.asset_issuer ?? null,
+                eprw_limit: eprw?.limit ?? null,
+                eprw_trustline: !!eprw,
               },
+              // Backwards-compat shape consumed by older clients.
+              balances: { xlm, eprw: eprw?.balance ?? "0" },
               latency_ms: latency,
               checked_at: new Date().toISOString(),
             },
@@ -97,7 +176,7 @@ export const Route = createFileRoute("/api/wallet/$publicKey/balances")({
             504,
             {
               success: false,
-              error: "BACKEND_UNREACHABLE",
+              error: "HORIZON_UNREACHABLE",
               message: (err as Error).message,
               wallet: publicKey,
               latency_ms: Date.now() - t0,
