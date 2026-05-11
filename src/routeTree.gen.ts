@@ -10,12 +10,20 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WalletRouteImport } from './routes/wallet'
+import { Route as TreasuryRouteImport } from './routes/treasury'
+import { Route as TopologyRouteImport } from './routes/topology'
 import { Route as SettlementRouteImport } from './routes/settlement'
+import { Route as RiskRouteImport } from './routes/risk'
 import { Route as RegisterRouteImport } from './routes/register'
+import { Route as ReconciliationRouteImport } from './routes/reconciliation'
 import { Route as P2pRouteImport } from './routes/p2p'
+import { Route as OracleRouteImport } from './routes/oracle'
+import { Route as OpsRouteImport } from './routes/ops'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as GridRouteImport } from './routes/grid'
 import { Route as GeneratorRouteImport } from './routes/generator'
+import { Route as ClearingRouteImport } from './routes/clearing'
+import { Route as AuditRouteImport } from './routes/audit'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ContractsIndexRouteImport } from './routes/contracts.index'
 import { Route as ContractsNewRouteImport } from './routes/contracts.new'
@@ -30,9 +38,24 @@ const WalletRoute = WalletRouteImport.update({
   path: '/wallet',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TreasuryRoute = TreasuryRouteImport.update({
+  id: '/treasury',
+  path: '/treasury',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TopologyRoute = TopologyRouteImport.update({
+  id: '/topology',
+  path: '/topology',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettlementRoute = SettlementRouteImport.update({
   id: '/settlement',
   path: '/settlement',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RiskRoute = RiskRouteImport.update({
+  id: '/risk',
+  path: '/risk',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RegisterRoute = RegisterRouteImport.update({
@@ -40,9 +63,24 @@ const RegisterRoute = RegisterRouteImport.update({
   path: '/register',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ReconciliationRoute = ReconciliationRouteImport.update({
+  id: '/reconciliation',
+  path: '/reconciliation',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const P2pRoute = P2pRouteImport.update({
   id: '/p2p',
   path: '/p2p',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OracleRoute = OracleRouteImport.update({
+  id: '/oracle',
+  path: '/oracle',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OpsRoute = OpsRouteImport.update({
+  id: '/ops',
+  path: '/ops',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -58,6 +96,16 @@ const GridRoute = GridRouteImport.update({
 const GeneratorRoute = GeneratorRouteImport.update({
   id: '/generator',
   path: '/generator',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ClearingRoute = ClearingRouteImport.update({
+  id: '/clearing',
+  path: '/clearing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuditRoute = AuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -105,12 +153,20 @@ const ApiWalletPublicKeyActivityRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/audit': typeof AuditRoute
+  '/clearing': typeof ClearingRoute
   '/generator': typeof GeneratorRoute
   '/grid': typeof GridRoute
   '/login': typeof LoginRoute
+  '/ops': typeof OpsRoute
+  '/oracle': typeof OracleRoute
   '/p2p': typeof P2pRoute
+  '/reconciliation': typeof ReconciliationRoute
   '/register': typeof RegisterRoute
+  '/risk': typeof RiskRoute
   '/settlement': typeof SettlementRoute
+  '/topology': typeof TopologyRoute
+  '/treasury': typeof TreasuryRoute
   '/wallet': typeof WalletRoute
   '/api/health': typeof ApiHealthRoute
   '/contracts/new': typeof ContractsNewRoute
@@ -122,12 +178,20 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/audit': typeof AuditRoute
+  '/clearing': typeof ClearingRoute
   '/generator': typeof GeneratorRoute
   '/grid': typeof GridRoute
   '/login': typeof LoginRoute
+  '/ops': typeof OpsRoute
+  '/oracle': typeof OracleRoute
   '/p2p': typeof P2pRoute
+  '/reconciliation': typeof ReconciliationRoute
   '/register': typeof RegisterRoute
+  '/risk': typeof RiskRoute
   '/settlement': typeof SettlementRoute
+  '/topology': typeof TopologyRoute
+  '/treasury': typeof TreasuryRoute
   '/wallet': typeof WalletRoute
   '/api/health': typeof ApiHealthRoute
   '/contracts/new': typeof ContractsNewRoute
@@ -140,12 +204,20 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/audit': typeof AuditRoute
+  '/clearing': typeof ClearingRoute
   '/generator': typeof GeneratorRoute
   '/grid': typeof GridRoute
   '/login': typeof LoginRoute
+  '/ops': typeof OpsRoute
+  '/oracle': typeof OracleRoute
   '/p2p': typeof P2pRoute
+  '/reconciliation': typeof ReconciliationRoute
   '/register': typeof RegisterRoute
+  '/risk': typeof RiskRoute
   '/settlement': typeof SettlementRoute
+  '/topology': typeof TopologyRoute
+  '/treasury': typeof TreasuryRoute
   '/wallet': typeof WalletRoute
   '/api/health': typeof ApiHealthRoute
   '/contracts/new': typeof ContractsNewRoute
@@ -159,12 +231,20 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/audit'
+    | '/clearing'
     | '/generator'
     | '/grid'
     | '/login'
+    | '/ops'
+    | '/oracle'
     | '/p2p'
+    | '/reconciliation'
     | '/register'
+    | '/risk'
     | '/settlement'
+    | '/topology'
+    | '/treasury'
     | '/wallet'
     | '/api/health'
     | '/contracts/new'
@@ -176,12 +256,20 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/audit'
+    | '/clearing'
     | '/generator'
     | '/grid'
     | '/login'
+    | '/ops'
+    | '/oracle'
     | '/p2p'
+    | '/reconciliation'
     | '/register'
+    | '/risk'
     | '/settlement'
+    | '/topology'
+    | '/treasury'
     | '/wallet'
     | '/api/health'
     | '/contracts/new'
@@ -193,12 +281,20 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/audit'
+    | '/clearing'
     | '/generator'
     | '/grid'
     | '/login'
+    | '/ops'
+    | '/oracle'
     | '/p2p'
+    | '/reconciliation'
     | '/register'
+    | '/risk'
     | '/settlement'
+    | '/topology'
+    | '/treasury'
     | '/wallet'
     | '/api/health'
     | '/contracts/new'
@@ -211,12 +307,20 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuditRoute: typeof AuditRoute
+  ClearingRoute: typeof ClearingRoute
   GeneratorRoute: typeof GeneratorRoute
   GridRoute: typeof GridRoute
   LoginRoute: typeof LoginRoute
+  OpsRoute: typeof OpsRoute
+  OracleRoute: typeof OracleRoute
   P2pRoute: typeof P2pRoute
+  ReconciliationRoute: typeof ReconciliationRoute
   RegisterRoute: typeof RegisterRoute
+  RiskRoute: typeof RiskRoute
   SettlementRoute: typeof SettlementRoute
+  TopologyRoute: typeof TopologyRoute
+  TreasuryRoute: typeof TreasuryRoute
   WalletRoute: typeof WalletRoute
   ApiHealthRoute: typeof ApiHealthRoute
   ContractsNewRoute: typeof ContractsNewRoute
@@ -236,11 +340,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WalletRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/treasury': {
+      id: '/treasury'
+      path: '/treasury'
+      fullPath: '/treasury'
+      preLoaderRoute: typeof TreasuryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/topology': {
+      id: '/topology'
+      path: '/topology'
+      fullPath: '/topology'
+      preLoaderRoute: typeof TopologyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settlement': {
       id: '/settlement'
       path: '/settlement'
       fullPath: '/settlement'
       preLoaderRoute: typeof SettlementRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/risk': {
+      id: '/risk'
+      path: '/risk'
+      fullPath: '/risk'
+      preLoaderRoute: typeof RiskRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/register': {
@@ -250,11 +375,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RegisterRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reconciliation': {
+      id: '/reconciliation'
+      path: '/reconciliation'
+      fullPath: '/reconciliation'
+      preLoaderRoute: typeof ReconciliationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/p2p': {
       id: '/p2p'
       path: '/p2p'
       fullPath: '/p2p'
       preLoaderRoute: typeof P2pRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/oracle': {
+      id: '/oracle'
+      path: '/oracle'
+      fullPath: '/oracle'
+      preLoaderRoute: typeof OracleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -276,6 +422,20 @@ declare module '@tanstack/react-router' {
       path: '/generator'
       fullPath: '/generator'
       preLoaderRoute: typeof GeneratorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/clearing': {
+      id: '/clearing'
+      path: '/clearing'
+      fullPath: '/clearing'
+      preLoaderRoute: typeof ClearingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/audit': {
+      id: '/audit'
+      path: '/audit'
+      fullPath: '/audit'
+      preLoaderRoute: typeof AuditRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -339,12 +499,20 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuditRoute: AuditRoute,
+  ClearingRoute: ClearingRoute,
   GeneratorRoute: GeneratorRoute,
   GridRoute: GridRoute,
   LoginRoute: LoginRoute,
+  OpsRoute: OpsRoute,
+  OracleRoute: OracleRoute,
   P2pRoute: P2pRoute,
+  ReconciliationRoute: ReconciliationRoute,
   RegisterRoute: RegisterRoute,
+  RiskRoute: RiskRoute,
   SettlementRoute: SettlementRoute,
+  TopologyRoute: TopologyRoute,
+  TreasuryRoute: TreasuryRoute,
   WalletRoute: WalletRoute,
   ApiHealthRoute: ApiHealthRoute,
   ContractsNewRoute: ContractsNewRoute,
