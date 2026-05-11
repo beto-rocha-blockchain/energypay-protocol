@@ -1,92 +1,89 @@
-## EnergyPay Institutional Operating System — Build Plan
+# EnergyPay — Institutional Realism + Architecture + Polish Pass
 
-A unified, institution-grade operations suite layered onto the existing TanStack Start app. Eight connected modules sharing one design system, one navigation shell, and a coherent data layer that reuses what already exists (`useWalletBalances`, `useWalletActivity`, `useSettlementRail`, `useGeneratorTelemetry`, settlement telemetry endpoints) and extends it with realistic institutional datasets.
+This is a large, multi-area pass. To keep it surgical and reviewable, I'll execute in three focused phases over the existing codebase. No new backend logic, no fake APIs — only shape the frontend for real integration.
 
-### Design System (foundation, done first)
+## Phase 1 — Institutional Realism
 
-- Refresh `src/styles.css` tokens for an ultra-institutional dark palette:
-  - background: deep blue-black (`oklch(0.14 0.02 250)`)
-  - surface / surface-elevated: graphite layers
-  - primary: muted cyan (operational accent)
-  - success: settlement green; warning: amber; destructive: critical red
-  - mono grid lines, thin 1px borders, no glassmorphism, no gradients-as-decoration
-- Typography: keep `font-display` (institutional sans) + `font-mono` (terminal). Add `.label-op` (uppercase, tracking-widest, 10px) utility, `.kpi-num` (tabular nums, tight).
-- Shared widgets in `src/components/ops/`:
-  - `OpsShell` (sidebar + topbar + status rail)
-  - `KpiTile`, `KpiStrip`, `Sparkline`
-  - `TelemetryBar`, `StatusDot`, `SeverityBadge`
-  - `DataTable` (dense, sortable, sticky header, zebra-off, monospace numerics)
-  - `TimelineRail`, `StateMachineView`
-  - `AlertStream`, `AuditEntry`
+Goal: remove crypto/hackathon aesthetic, enforce clearing-house language and formatting everywhere visible.
 
-### Navigation Shell
+Files touched (existing): `src/lib/institutional-data.ts`, `src/lib/mock-data.ts`, `src/lib/settlement-*.ts`, all `src/routes/{ops,clearing,reconciliation,oracle,risk,treasury,audit,topology,generator,wallet}.tsx`, `src/components/ops/*`, `src/components/generator/*`, `src/components/BlockchainActivityFeed.tsx`, `src/components/TokenAllocationPanel.tsx`.
 
-- Rework `src/components/AppSidebar.tsx` into an institutional left rail grouped by domain:
-  - Operations: Market Ops, Clearing House, Network Topology
-  - Risk & Data: Reconciliation, Oracles & Market Data, Risk & Collateral
-  - Settlement: Treasury & Rails, Audit & Compliance
-  - Existing: Wallet, Generator Terminal, P2P, Settlement, Grid, Contracts
-- Persistent top status bar showing rail state, Horizon latency, session operator, UTC clock — fed by `useSettlementRail`.
+Changes:
+- Centralize terminology constants in new `src/lib/terminology.ts`:
+  - Lifecycle states: `INTAKE → VALIDATED → MATCHED → ANCHORED → CLEARED → SETTLED | REJECTED | REVERSED`.
+  - Severities: `NOMINAL | ELEVATED | DEGRADED | CRITICAL`.
+  - Submercados: `SE/CO, S, NE, N` with canonical labels.
+  - Counterparty registry (Eletrobras, Engie Brasil, EDP, CPFL, Cemig, Equatorial, Copel, Neoenergia, Auren, Light) with operator codes (e.g. `ELET3-OP`, `ENGI3-OP`).
+- New formatters in `src/lib/formatters.ts`:
+  - `fmtTxHash(hash)` → first 6 / last 4 with monospace ellipsis.
+  - `fmtLedger(seq)` → `#<seq>` zero-padded to 9.
+  - `fmtUtc(ts)` → `YYYY-MM-DD HH:mm:ss.SSS UTC`.
+  - `fmtLatency(ms)` → realistic clearing latencies (180–2400 ms typical).
+  - `fmtMWh`, `fmtBRL`, `fmtEPWR`, `fmtPct` with tabular-num.
+- Replace ad-hoc statuses (`SUCCESS/PENDING/FAILED`) with new lifecycle pills via existing `SeverityBadge`, plus new `LifecycleBadge` in `src/components/ops/primitives.tsx`.
+- Audit trail metadata: add `operatorId`, `sessionId`, `ipMasked`, `correlationId`, `parentEventId` to mock audit rows.
+- Reconciliation rows: add `mismatchDelta`, `tolerance`, `retryCount`, `fallbackChannel`, `oracleSignerCount`.
+- PLD references unified: `PLD_SE_CO_HOUR`, etc., with realistic R$/MWh ranges per submercado and time-of-day curve from `institutional-data.ts`.
+- Exposure calculation helper `computeExposure({notional, mtm, margin, haircut})` and reuse on `/risk`, `/ops`, `/clearing`.
+- Remove emoji / cartoon iconography from feeds; replace with `lucide-react` minimal icons + status dots.
 
-### Modules (one route each)
+## Phase 2 — Architecture Prep (no fake APIs)
 
-1. `/ops` Market Operations Center — `src/routes/ops.tsx`
-   - KPI strip: cleared notional (24h), settlement throughput (tx/min), open exposure, intraday PLD, reconciliation health %, p95 finality.
-   - Live throughput chart (recharts area) + counterparty activity heatstrip.
-   - Operational alerts feed (severity-coded) + liquidity stress gauge.
+Goal: separate UI from mock data, define normalized schemas, ready for real backend.
 
-2. `/clearing` Clearing House Console — `src/routes/clearing.tsx`
-   - Bilateral contract lifecycle table (reuse `BilateralContractsPanel` enriched with margin & exposure columns).
-   - Settlement queue with state machine view (NEW → VALIDATED → SIGNED → BROADCAST → FINALIZED / FAILED) using existing `settlement-state-machine`.
-   - Margin monitoring panel, audit checkpoint timeline, ledger anchoring (Stellar tx hashes via `stellarExpertTx`).
+New files:
+- `src/types/domain.ts` — canonical schemas (Zod) and TS types: `SettlementEvent`, `BilateralContract`, `Counterparty`, `OperatorIdentity`, `AuditEvent`, `ReconciliationRow`, `OracleSample`, `RiskExposure`, `TreasuryBalance`, `LedgerOperation`, plus `LifecycleState` and `Severity` enums.
+- `src/services/` adapter layer (interface + mock impl):
+  - `settlements.service.ts`, `clearing.service.ts`, `reconciliation.service.ts`, `oracle.service.ts`, `risk.service.ts`, `audit.service.ts`, `treasury.service.ts`, `topology.service.ts`.
+  - Each exports `{ list, get, subscribe }` with a `MockAdapter` implementation; real adapter to be wired later. `subscribe` returns an unsubscribe fn — currently backed by `setInterval`, swappable for WebSocket.
+- `src/services/transport.ts` — single seam: `httpAdapter` (fetch wrapper) and `wsAdapter` (no-op now, ready for real socket). All services consume `transport` only — no direct fetch in routes/components.
+- `src/store/` (Zustand) integration points:
+  - `useUiStore` (sidebar, density, theme) — already partial, normalize.
+  - `useSelectionStore` (selected contract, selected counterparty, selected tx) for cross-panel drill-down.
+  - `useLiveStore` (per-channel last update timestamps + connection health). Keep mock state out of these stores.
+- `src/lib/query-keys.ts` — typed key factory (`qk.settlements.list(filter)`, etc.) for TanStack Query.
+- `src/lib/optimistic.ts` — `applyOptimistic`, `rollback`, `withCorrelationId` helpers for future mutations.
+- Reusable async patterns in `src/components/ops/AsyncStates.tsx`:
+  - `<LoadingRows rows count />`, `<EmptyState title hint />`, `<DegradedBanner reason retryAt />`, `<RetryInline onRetry />`.
+- Table primitive `src/components/ops/LiveTable.tsx` — accepts a `subscribe` adapter, renders sticky-header dense table with row-level "updated" pulse; used to replace inline tables in `/clearing`, `/reconciliation`, `/audit`, `/risk`.
 
-3. `/topology` Energy Network Topology — `src/routes/topology.tsx`
-   - SVG SCADA map (extend `BrazilGridMap`) with node types: Generator, Distributor, Trader, Consumer, Investor.
-   - Animated corridor flows, regional node status (ONLINE/DEGRADED/OFFLINE), side panel with selected-node telemetry.
+Routes reorganization:
+- Group operational routes under a `_ops` layout (`src/routes/_ops.tsx`) sharing `StatusRail` + sidebar context: ops, clearing, reconciliation, oracle, risk, treasury, audit, topology.
+- Keep `/wallet`, `/generator`, `/register`, `/login` outside this layout.
+- This is a non-breaking move — child files renamed to `_ops.ops.tsx` etc. so URLs stay identical.
 
-4. `/reconciliation` Reconciliation Engine — `src/routes/reconciliation.tsx`
-   - Pipeline stages (Ingest → Match → Verify → Anchor → Confirm) with throughput per stage.
-   - Mismatch queue table, oracle verification panel, retry/fallback controls, audit trail explorer.
+Out of scope (explicit): No real HTTP calls, no schema changes to existing API routes, no auth changes, no swapping the existing `useWalletBalances` / `useWalletActivity` server fns — they already are the "real" adapter for wallet data.
 
-5. `/oracle` Oracle & Market Data Center — `src/routes/oracle.tsx`
-   - PLD feed monitor (4 submercados SE/S/NE/N), latency per feed, divergence alerts.
-   - Historical PLD line chart, fallback oracle indicator, regional pricing tiles.
+## Phase 3 — Production Polish
 
-6. `/risk` Risk & Collateral Management — `src/routes/risk.tsx`
-   - Counterparty risk table with exposure / collateral ratio / settlement confidence.
-   - Exposure heatmap (counterparty × tenor), default simulation card, liquidity reserves bar.
+Goal: Bloomberg-grade density and consistency.
 
-7. `/treasury` Treasury & Settlement Rails — `src/routes/treasury.tsx`
-   - Integrates `WalletBalancesPanel`, `TokenAllocationPanel`, `StellarRailMonitor`, `LiveSettlementFeed`.
-   - Adds payment routing diagram (Generator → Clearing → BRL settlement leg), broadcast/finality stats, custody operations log.
+- `src/styles.css`:
+  - Tighten spacing scale: panel padding `12/16/20`, row height `28px` dense / `32px` default.
+  - Typography hierarchy tokens: `.h-section` (13px semibold tracking-wide), `.h-panel` (11px label-op), `.kpi-num` 22px tabular, `.kpi-num-sm` 16px, `.num` 12px mono tabular.
+  - Contrast pass: bump `--muted-foreground` to `oklch(0.66 0.02 250)` and table border to `oklch(0.22 0.018 252)` for readability on dark.
+  - Subtle animation tokens: `--ease-ops: cubic-bezier(.2,.7,.2,1)`, durations 120/180/240ms. Remove any `glow`/`pulse` on non-status elements.
+- Sidebar (`AppSidebar.tsx`):
+  - Information architecture: `MARKET OPS` (Ops, Clearing, Topology) / `RISK & DATA` (Risk, Reconciliation, Oracle, Audit) / `SETTLEMENT` (Treasury, Wallet) / `TERMINALS` (Generator). Compact 11px section labels, 13px items, 4px row gap, active indicator = 2px left bar.
+  - Persistent footer: operator id, session, version, build hash (mock now).
+- Status / lifecycle badges standardized via single `LifecycleBadge` + `SeverityBadge` components — replace all ad-hoc colored spans.
+- Data tables: sticky header, zebra-off, 1px hairline rows, right-aligned numerics, monospace hashes/ids, hover row highlight `oklch(0.18 0.02 252)`, focusable rows for keyboard nav.
+- KPI hierarchy: primary KPIs `kpi-num` + sparkline + delta chip; secondary in `KpiStripCompact` (new variant) below.
+- Transaction explorer presentation: tx rows show `LEDGER #` · `HASH` · `OP TYPE` · `COUNTERPARTY` · `NOTIONAL` · `LIFECYCLE` · `LATENCY` · open-in-Stellar-Expert icon; modal drill-down `<TxDetailSheet>` (right-side sheet, 480px) with operations list and audit chain.
+- Modals: standardize via shadcn `Sheet` for drill-downs, `Dialog` only for confirmations. Z-index scale documented in `styles.css`.
+- Animations: only `opacity` + `translateY(2px)` 180ms on row enter; status dot pulse only when `state === ACTIVE`. No flow-dashes on non-topology surfaces.
 
-8. `/audit` Audit & Compliance Center — `src/routes/audit.tsx`
-   - Immutable audit log table (driven by `opsTail()` via existing `/api/settlements/telemetry`).
-   - Operator action feed, KYC status board, regulatory report generator (mock export buttons), provenance drill-down for any tx hash.
+## Execution order
 
-### Data Layer
+1. Phase 1 — terminology, formatters, lifecycle badge, audit/recon/PLD enrichment in `institutional-data.ts`.
+2. Phase 2 — `types/domain.ts`, `services/*`, `store/*`, `query-keys`, `AsyncStates`, `LiveTable`, route layout grouping.
+3. Phase 3 — `styles.css` tokens, sidebar IA, table primitive adoption, KPI variants, `TxDetailSheet`, modal/animation cleanup.
 
-- New helper `src/lib/institutional-data.ts` — deterministic seeded generators for counterparties, PLD curves, reconciliation exceptions, risk exposures. Single source of truth across modules so numbers tie together.
-- Reuse server functions: `/api/wallet/:pk/balances`, `/api/wallet/:pk/activity`, `/api/settlements/telemetry`, `/api/health`.
-- No new backend logic — institutional datasets are derived/simulated client-side from the operator's wallet + telemetry counters so everything still updates live from the real settlement rail.
+After each phase: spot-check `/ops`, `/clearing`, `/reconciliation`, `/risk`, `/audit`, `/treasury`, `/topology`, `/oracle`, `/generator`, `/wallet` build clean and render without regressions.
 
-### Visual Rules Enforced
+## Technical notes
 
-- Only semantic tokens; no hard-coded colors in components.
-- All tables: monospace numerics, right-aligned, 11–12px, sticky header, 1px borders.
-- All labels: `.label-op` (uppercase tracking-widest 10px muted).
-- No glass, no neon glow on decorative-only surfaces (glow reserved for active operational indicators).
-- Dense grids, generous information hierarchy, narrow line-height.
-
-### Out of Scope (deliberately)
-
-- Backend schema changes / new server functions (existing endpoints suffice).
-- Auth role model changes.
-- Mobile-first layout — institutional desktop first (≥1280px), graceful at 1024px.
-
-### Acceptance
-
-- 8 new routes mounted, sidebar grouped, top status rail live.
-- Every page renders with live data hooks where available, deterministic seeded data otherwise.
-- Build passes (`routeTree.gen.ts` regenerated by plugin).
-- Visual QA on `/ops`, `/clearing`, `/topology`, `/treasury` matches institutional aesthetic.
+- No new dependencies. Zod, Zustand, TanStack Query, recharts, shadcn already installed.
+- Mock adapters live under `src/services/*/mock.ts` and re-export from a single `index.ts` per domain; real adapter implementations will drop in beside them later with no route/component changes.
+- All time values normalized to ISO UTC strings in the domain layer; formatting only at the render boundary.
+- Latency simulation uses log-normal distribution seeded by `institutional-data.ts` PRNG for reproducibility.

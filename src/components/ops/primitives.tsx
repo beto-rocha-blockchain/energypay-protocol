@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import type { ReactNode } from "react";
+import type { LifecycleState, Severity } from "@/lib/terminology";
 
 /* -------- StatusDot -------- */
 export function StatusDot({
