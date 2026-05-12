@@ -14,7 +14,11 @@ import {
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
-import { computeExposure, contractOperationalTimeline, type Contract, type ContractStatus } from "@/lib/mock-data";
+import {
+  computeExposure, contractOperationalTimeline,
+  contractStartDate, contractEndDate, contractDurationDays, contractPeriodStatus,
+  type Contract, type ContractStatus, type ContractPeriodStatus,
+} from "@/lib/mock-data";
 import { useOps } from "@/store/operations";
 import { StateMachine } from "@/components/StateMachine";
 import { CheckCircle2 } from "lucide-react";
@@ -32,7 +36,7 @@ export const Route = createFileRoute("/contracts/")({
 const fmtBRL = (n: number) =>
   n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 
-type SortKey = "id" | "volumeMWh" | "priceBRL" | "pldBRL" | "exposure" | "settlementDate";
+type SortKey = "id" | "volumeMWh" | "priceBRL" | "pldBRL" | "exposure" | "settlementDate" | "startDate" | "endDate";
 
 function StatusBadge({ status }: { status: ContractStatus }) {
   const map: Record<ContractStatus, string> = {
@@ -40,6 +44,19 @@ function StatusBadge({ status }: { status: ContractStatus }) {
     PENDING: "border-warning/40 bg-warning/10 text-warning",
     SETTLED: "border-accent/40 bg-accent/10 text-accent",
     FAILED: "border-destructive/40 bg-destructive/10 text-destructive",
+  };
+  return (
+    <Badge variant="outline" className={`${map[status]} font-mono text-[10px]`}>
+      ● {status}
+    </Badge>
+  );
+}
+
+function PeriodBadge({ status }: { status: ContractPeriodStatus }) {
+  const map: Record<ContractPeriodStatus, string> = {
+    UPCOMING: "border-warning/40 bg-warning/10 text-warning",
+    ACTIVE: "border-success/40 bg-success/10 text-success",
+    EXPIRED: "border-muted/40 bg-muted/10 text-muted-foreground",
   };
   return (
     <Badge variant="outline" className={`${map[status]} font-mono text-[10px]`}>
