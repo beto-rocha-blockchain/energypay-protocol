@@ -54,7 +54,8 @@ type OpsState = {
 
   /* mutations */
   registerContract: (input: {
-    buyer: string; seller: string; volumeMWh: number; priceBRL: number; settlementDate: string;
+    buyer: string; seller: string; volumeMWh: number; priceBRL: number;
+    settlementDate: string; startDate?: string; endDate?: string;
   }) => Contract;
 
   appendLog: (l: Omit<ExecutionLog, "id" | "ts"> & { ts?: string }) => void;
