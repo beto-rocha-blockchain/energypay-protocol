@@ -82,9 +82,15 @@ function ContractsList() {
       const matchS = statusFilter === "ALL" || c.status === statusFilter;
       return matchQ && matchS;
     });
+    const accessor = (c: Contract, key: SortKey): number | string => {
+      if (key === "exposure") return computeExposure(c);
+      if (key === "startDate") return contractStartDate(c);
+      if (key === "endDate") return contractEndDate(c);
+      return (c as any)[key];
+    };
     r = [...r].sort((a, b) => {
-      const va = sort.key === "exposure" ? computeExposure(a) : (a as any)[sort.key];
-      const vb = sort.key === "exposure" ? computeExposure(b) : (b as any)[sort.key];
+      const va = accessor(a, sort.key);
+      const vb = accessor(b, sort.key);
       if (va < vb) return sort.dir === "asc" ? -1 : 1;
       if (va > vb) return sort.dir === "asc" ? 1 : -1;
       return 0;
