@@ -136,15 +136,21 @@ export const useOps = create<OpsState>()(
       getContract: (id) => get().contracts.find((c) => c.id === id),
       getLogsFor: (cid) => get().logs.filter((l) => l.contractId === cid),
 
-      registerContract: ({ buyer, seller, volumeMWh, priceBRL, settlementDate }) => {
+      registerContract: ({ buyer, seller, volumeMWh, priceBRL, settlementDate, startDate, endDate }) => {
         const c = get();
         const epc = c.counters.epc + 1;
         const id = `EPC-${epc}`;
+        const resolvedEnd = endDate ?? settlementDate;
+        const today = new Date().toISOString().slice(0, 10);
+        const status: Contract["status"] =
+          startDate && startDate > today ? "PENDING" : "ACTIVE";
         const contract: Contract = {
           id, buyer, seller, volumeMWh, priceBRL,
           pldBRL: priceBRL,
-          settlementDate,
-          status: "ACTIVE",
+          settlementDate: resolvedEnd,
+          startDate,
+          endDate: resolvedEnd,
+          status,
           state: "CREATED",
           ledger: 0,
           latencyMs: 0,
