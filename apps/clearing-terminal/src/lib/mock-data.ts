@@ -26,11 +26,19 @@ export type Contract = {
   priceBRL: number;
   pldBRL: number;
   settlementDate: string;
+
   status: ContractStatus;
+
   txHash: string;
+
+  explorerLink: string;
+
   state: SettlementState;
+
   ledger: number;
+
   latencyMs: number;
+
   window: string;
 };
 
@@ -52,22 +60,131 @@ export type Settlement = {
 };
 
 export const mockContracts: Contract[] = [
-  { id: "EPC-2041", buyer: "Metro Distribution Group", seller: "Meridian Trading Desk", volumeMWh: 2400, priceBRL: 248.5, pldBRL: 271.2, settlementDate: "2026-05-12", status: "ACTIVE", state: "PENDING_SIGNATURE", ledger: 58921412, latencyMs: 2380, window: "D+1 17:00 BRT", txHash: "a3f9c1e240b8d7f4a3f9c1e240b8d7f4a3f9c1e240b8d7f4a3f9c1e240b8d7f4" },
-  { id: "EPC-2040", buyer: "Voltix Energy Markets", seller: "Horizon Power Exchange", volumeMWh: 1800, priceBRL: 252.1, pldBRL: 264.8, settlementDate: "2026-05-10", status: "ACTIVE", state: "VALIDATED", ledger: 58921388, latencyMs: 2120, window: "D+1 17:00 BRT", txHash: "b8d4e2912ca5b8d4e2912ca5b8d4e2912ca5b8d4e2912ca5b8d4e2912ca5b8d4" },
-  { id: "EPC-2039", buyer: "Nexa Commercial Energy", seller: "Aurora Grid Energy", volumeMWh: 5200, priceBRL: 241.8, pldBRL: 258.0, settlementDate: "2026-05-09", status: "PENDING", state: "CREATED", ledger: 58921301, latencyMs: 2640, window: "D+1 17:00 BRT", txHash: "c1a7f03e8b91c1a7f03e8b91c1a7f03e8b91c1a7f03e8b91c1a7f03e8b91c1a7" },
-  { id: "EPC-2038", buyer: "UrbanGrid Cooperative", seller: "NovaHydro Power", volumeMWh: 3600, priceBRL: 239.4, pldBRL: 278.4, settlementDate: "2026-05-08", status: "SETTLED", state: "SETTLED", ledger: 58920871, latencyMs: 2210, window: "D+0 17:00 BRT", txHash: "d9b3e877c1f2d9b3e877c1f2d9b3e877c1f2d9b3e877c1f2d9b3e877c1f2d9b3" },
-  { id: "EPC-2037", buyer: "Delta Industrial Load", seller: "Solaris Renewables", volumeMWh: 980, priceBRL: 256.7, pldBRL: 237.1, settlementDate: "2026-05-07", status: "SETTLED", state: "SETTLED", ledger: 58920512, latencyMs: 1980, window: "D+0 17:00 BRT", txHash: "e2f7a188d310e2f7a188d310e2f7a188d310e2f7a188d310e2f7a188d310e2f7" },
-  { id: "EPC-2036", buyer: "Northline Utilities", seller: "Atlas Generation", volumeMWh: 1450, priceBRL: 244.2, pldBRL: 261.5, settlementDate: "2026-05-06", status: "ACTIVE", state: "BROADCASTING", ledger: 58921450, latencyMs: 2540, window: "D+1 17:00 BRT", txHash: "f1c9b327ae84f1c9b327ae84f1c9b327ae84f1c9b327ae84f1c9b327ae84f1c9" },
-  { id: "EPC-2035", buyer: "Northline Utilities", seller: "NovaHydro Power", volumeMWh: 2100, priceBRL: 246.0, pldBRL: 246.0, settlementDate: "2026-05-05", status: "FAILED", state: "FAILED", ledger: 0, latencyMs: 0, window: "D-1 17:00 BRT", txHash: "0000000000000000000000000000000000000000000000000000000000000000" },
+  {
+    id: "EPC-2041",
+    buyer: "Metro Distribution Group",
+    seller: "Meridian Trading Desk",
+    volumeMWh: 2400,
+    priceBRL: 248.5,
+    pldBRL: 271.2,
+    settlementDate: "2026-05-12",
+    status: "ACTIVE",
+    state: "PENDING_SIGNATURE",
+    ledger: 58921412,
+    latencyMs: 2380,
+    window: "D+1 17:00 BRT",
+    txHash: "a3f9c1e240b8d7f4a3f9c1e240b8d7f4a3f9c1e240b8d7f4a3f9c1e240b8d7f4",
+    explorerLink: "https://stellar.expert/explorer/testnet/tx/a3f9c1e240b8d7f4a3f9c1e240b8d7f4a3f9c1e240b8d7f4a3f9c1e240b8d7f4",
+  },
+
+  {
+    id: "EPC-2040",
+    buyer: "Voltix Energy Markets",
+    seller: "Horizon Power Exchange",
+    volumeMWh: 1800,
+    priceBRL: 252.1,
+    pldBRL: 264.8,
+    settlementDate: "2026-05-10",
+    status: "ACTIVE",
+    state: "VALIDATED",
+    ledger: 58921388,
+    latencyMs: 2120,
+    window: "D+1 17:00 BRT",
+    txHash: "b8d4e2912ca5b8d4e2912ca5b8d4e2912ca5b8d4e2912ca5b8d4e2912ca5b8d4",
+    explorerLink: "https://stellar.expert/explorer/testnet/tx/b8d4e2912ca5b8d4e2912ca5b8d4e2912ca5b8d4e2912ca5b8d4e2912ca5b8d4",
+  },
+
+  {
+    id: "EPC-2039",
+    buyer: "Nexa Commercial Energy",
+    seller: "Aurora Grid Energy",
+    volumeMWh: 5200,
+    priceBRL: 241.8,
+    pldBRL: 258.0,
+    settlementDate: "2026-05-09",
+    status: "PENDING",
+    state: "CREATED",
+    ledger: 58921301,
+    latencyMs: 2640,
+    window: "D+1 17:00 BRT",
+    txHash: "c1a7f03e8b91c1a7f03e8b91c1a7f03e8b91c1a7f03e8b91c1a7f03e8b91c1a7",
+    explorerLink: "https://stellar.expert/explorer/testnet/tx/c1a7f03e8b91c1a7f03e8b91c1a7f03e8b91c1a7f03e8b91c1a7f03e8b91c1a7",
+  },
+
+  {
+    id: "EPC-2038",
+    buyer: "UrbanGrid Cooperative",
+    seller: "NovaHydro Power",
+    volumeMWh: 3600,
+    priceBRL: 239.4,
+    pldBRL: 278.4,
+    settlementDate: "2026-05-08",
+    status: "SETTLED",
+    state: "SETTLED",
+    ledger: 58920871,
+    latencyMs: 2210,
+    window: "D+0 17:00 BRT",
+    txHash: "d9b3e877c1f2d9b3e877c1f2d9b3e877c1f2d9b3e877c1f2d9b3e877c1f2d9b3",
+    explorerLink: "https://stellar.expert/explorer/testnet/tx/d9b3e877c1f2d9b3e877c1f2d9b3e877c1f2d9b3e877c1f2d9b3e877c1f2d9b3",
+  },
+
+  {
+    id: "EPC-2037",
+    buyer: "Delta Industrial Load",
+    seller: "Solaris Renewables",
+    volumeMWh: 980,
+    priceBRL: 256.7,
+    pldBRL: 237.1,
+    settlementDate: "2026-05-07",
+    status: "SETTLED",
+    state: "SETTLED",
+    ledger: 58920512,
+    latencyMs: 1980,
+    window: "D+0 17:00 BRT",
+    txHash: "e2f7a188d310e2f7a188d310e2f7a188d310e2f7a188d310e2f7a188d310e2f7",
+    explorerLink: "https://stellar.expert/explorer/testnet/tx/e2f7a188d310e2f7a188d310e2f7a188d310e2f7a188d310e2f7a188d310e2f7",
+  },
+
+  {
+    id: "EPC-2036",
+    buyer: "Northline Utilities",
+    seller: "Atlas Generation",
+    volumeMWh: 1450,
+    priceBRL: 244.2,
+    pldBRL: 261.5,
+    settlementDate: "2026-05-06",
+    status: "ACTIVE",
+    state: "BROADCASTING",
+    ledger: 58921450,
+    latencyMs: 2540,
+    window: "D+1 17:00 BRT",
+    txHash: "f1c9b327ae84f1c9b327ae84f1c9b327ae84f1c9b327ae84f1c9b327ae84f1c9",
+    explorerLink: "https://stellar.expert/explorer/testnet/tx/f1c9b327ae84f1c9b327ae84f1c9b327ae84f1c9b327ae84f1c9b327ae84f1c9",
+  },
+
+  {
+    id: "EPC-2035",
+    buyer: "Northline Utilities",
+    seller: "NovaHydro Power",
+    volumeMWh: 2100,
+    priceBRL: 246.0,
+    pldBRL: 246.0,
+    settlementDate: "2026-05-05",
+    status: "FAILED",
+    state: "FAILED",
+    ledger: 0,
+    latencyMs: 0,
+    window: "D-1 17:00 BRT",
+    txHash: "0000000000000000000000000000000000000000000000000000000000000000",
+    explorerLink: "https://stellar.expert/explorer/testnet/tx/0000000000000000000000000000000000000000000000000000000000000000",
+  },
 ];
 
-export const mockSettlements: Settlement[] = [
-  { id: "STL-90211", contractId: "EPC-2038", counterparty: "NovaHydro Power", amountBRL: 862400, pld: 278.4, date: "2026-05-05 14:22", txHash: "a3f9c1e240b8d7f4a3f9c1e240b8d7f4a3f9c1e240b8d7f4a3f9c1e240b8d7f4", ledger: 58920871, latencyMs: 2210, window: "D+0 17:00 BRT", state: "SETTLED", status: "CONFIRMED" },
-  { id: "STL-90210", contractId: "EPC-2037", counterparty: "Solaris Renewables", amountBRL: -19208, pld: 237.1, date: "2026-05-05 11:08", txHash: "b8d4e2912ca5b8d4e2912ca5b8d4e2912ca5b8d4e2912ca5b8d4e2912ca5b8d4", ledger: 58920512, latencyMs: 1980, window: "D+0 17:00 BRT", state: "SETTLED", status: "CONFIRMED" },
-  { id: "STL-90209", contractId: "EPC-2035", counterparty: "Atlas Generation", amountBRL: 412900, pld: 268.0, date: "2026-05-04 17:54", txHash: "c1a7f03e8b91c1a7f03e8b91c1a7f03e8b91c1a7f03e8b91c1a7f03e8b91c1a7", ledger: 58919944, latencyMs: 2410, window: "D-1 17:00 BRT", state: "SETTLED", status: "CONFIRMED" },
-  { id: "STL-90208", contractId: "EPC-2034", counterparty: "Meridian Trading Desk", amountBRL: 218750, pld: 261.5, date: "2026-05-04 09:31", txHash: "d9b3e877c1f2d9b3e877c1f2d9b3e877c1f2d9b3e877c1f2d9b3e877c1f2d9b3", ledger: 58919712, latencyMs: 2080, window: "D-1 17:00 BRT", state: "SETTLED", status: "CONFIRMED" },
-  { id: "STL-90207", contractId: "EPC-2033", counterparty: "Horizon Power Exchange", amountBRL: 154600, pld: 254.9, date: "2026-05-03 16:12", txHash: "e2f7a188d310e2f7a188d310e2f7a188d310e2f7a188d310e2f7a188d310e2f7", ledger: 58919210, latencyMs: 2330, window: "D-2 17:00 BRT", state: "SETTLED", status: "CONFIRMED" },
-];
+export let mockSettlements: Settlement[] = [];
+
+export function addSettlement(settlement: Settlement) {
+  mockSettlements.unshift(settlement);
+}
 
 export const volumeSeries = [
   { day: "Apr 28", volume: 12400, settled: 11800 },
@@ -150,4 +267,41 @@ export const recentSettlementFeed: FeedItem[] = [
   { id: "STL-90210", counterparty: "Atlas Generation", amount: 412900, ago: "6m ago" },
   { id: "STL-90209", counterparty: "Meridian Trading Desk", amount: 218750, ago: "11m ago" },
   { id: "STL-90208", counterparty: "Horizon Power Exchange", amount: 154600, ago: "18m ago" },
+];
+export type Counterparty = {
+  organization: string;
+  role: "GENERATOR" | "SELLER" | "INVESTOR" | "USER";
+  settlementAddress: string;
+};
+
+export const counterparties: Counterparty[] = [
+  {
+    organization: "Meridian Trading Desk",
+    role: "SELLER",
+    settlementAddress: "GBRPYHIL2C6YJ7V5A4L7KQ4Q7Y3B4W4R6M2Y2N4M5M7KQWZ4F3M5YQ4A",
+  },
+
+  {
+    organization: "Horizon Power Exchange",
+    role: "SELLER",
+    settlementAddress: "GA5R7N4Y8K2M4Q9W8P6L3X2D5F7G1H4J8K9L2P5T7Y3U6I1O4A9S8D2F",
+  },
+
+  {
+    organization: "Aurora Grid Energy",
+    role: "SELLER",
+    settlementAddress: "GBVJ6L2K8Q4W9P3F5D7S1A6H8J2K4L9M3N5P7Q1R4T8Y2U6I9O3A5S7D",
+  },
+
+  {
+    organization: "NovaHydro Power",
+    role: "GENERATOR",
+    settlementAddress: "GCX7N2M5Q8W1E4R6T9Y3U5I7O2P4A6S8D1F3G5H7J9K2L4Z6X8C1V3B",
+  },
+
+  {
+    organization: "Nexa Commercial Energy",
+    role: "SELLER",
+    settlementAddress: "GDQ7M2N5B8V1C4X6Z9L3K5J7H2G4F6D8S1A3P5O7I9U2Y4T6R8E1W3Q",
+  },
 ];

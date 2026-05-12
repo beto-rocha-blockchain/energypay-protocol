@@ -1,3 +1,5 @@
+import { useOps } from "@/store/operations";
+import { counterparties } from "@/lib/mock-data";
 import {
   initEnergyCore,
   executeSettlement
@@ -34,6 +36,7 @@ import {
   type P2PAsset, type P2PTransfer, type P2PTransferState,
 } from "@/store/p2p";
 import { stellarExpertTx } from "@/lib/stellar";
+import { addSettlement } from "@/lib/mock-data";
 import { apiValidatedP2PTransfer, type P2PValidationError } from "@/lib/api";
 import { validateP2PTransfer } from "@/lib/p2p-validation";
 import { P2PLiveStatusPanel } from "@/components/P2PLiveStatusPanel";
@@ -70,13 +73,48 @@ function P2PPage() {
   }, []);
   
   const operator = useOperator((s) => s.operator);
-  const { transfers, counterparties, recordTransfer } = useP2P();
-  const rail = useSettlementRail();
+  const { transfers, recordTransfer } = useP2P();  const rail = useSettlementRail();
   const railState = rail.connected ? "CONNECTED" : "OFFLINE";
   const isOffline = !rail.connected;
   const isExecutable = rail.connected;
   const [destinationOrg, setDestinationOrg] = useState("");
   const [destinationAddress, setDestinationAddress] = useState("");
+  const [walletStatus, setWalletStatus] = useState<
+    "idle" | "checking" | "valid" | "invalid"
+  >("idle");
+
+  const [walletInfo, setWalletInfo] = useState<any>(null);
+  const validateWallet = async (address: string) => {
+    if (!address.startsWith("G")) {
+      setWalletStatus("invalid");
+      return;
+    }
+
+    try {
+      setWalletStatus("checking");
+
+      const response = await fetch(
+      `https://horizon-testnet.stellar.org/accounts/${address}`
+      );
+
+      if (!response.ok) {
+        setWalletStatus("invalid");
+        return;
+      }
+
+      const data = await response.json();
+
+      setWalletInfo(data);
+
+      setWalletStatus("valid");
+
+      console.log("Horizon account:", data);
+    }  catch (error) {
+      console.error(error);
+
+      setWalletStatus("invalid");
+    }
+  };
   const [amount, setAmount] = useState<string>("");
   const [asset, setAsset] = useState<P2PAsset>("EPWR");
   const [memo, setMemo] = useState("");
@@ -146,15 +184,7 @@ function P2PPage() {
   const execute = async () => {
   console.log("EXECUTE CLICKED");
 
-  const wasmSettlement = await executeSettlement(
-    Number(amount),
-    0.65
-  );
-
-  console.log(
-    "WASM Settlement Engine:",
-    wasmSettlement
-  );
+  console.log("Settlement engine mocked for Sprint 2");
 
   if (!operator || !canExecute || !authorization) {
     toast.error("Settlement unavailable");
@@ -414,7 +444,28 @@ if (preflight?.ok === false) {
 
     recordTransfer(transfer);
 
+    addSettlement({
+      id: transfer.id,
+      contractId: `P2P-${Date.now()}`,
+      counterparty: destinationOrg,
+      amountBRL: Number(authorization.amount),
+      pld: Number(authorization.amount),
+      date: new Date().toISOString(),
+      txHash: submission.tx_hash,
+      ledger: submission.ledger,
+      latencyMs: finalityMs,
+      window: "D+0 REALTIME",
+      state: "SETTLED",
+      status: "CONFIRMED",
+    });
+
     setResult(transfer);
+      useOps.getState().attachSettlementToContract("EPC-2048", {
+      txHash: transfer.txHash,
+      ledger: transfer.ledger,
+      explorerUrl: `https://stellar.expert/explorer/testnet/tx/${transfer.txHash}`,
+      finalityMs: transfer.latencyMs,
+    });
 
     toast.success("Direct settlement finalized", {
       description: `${transfer.amount} ${transfer.asset} → ${recipient}`,
@@ -582,7 +633,17 @@ if (preflight?.ok === false) {
                 </Label>
                 <Input
                   value={destinationAddress}
-                  onChange={(e) => setDestinationAddress(e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+
+                    setDestinationAddress(value);
+
+                    if (value.length >= 56) {
+                      validateWallet(value);
+                    } else {
+                      setWalletStatus("idle");
+                    }
+                  }}
                   placeholder="G… (Stellar public key)"
                   className={`bg-input font-mono text-xs ${
                     destinationAddress && !validAddress ? "border-destructive" : ""
@@ -598,6 +659,24 @@ if (preflight?.ok === false) {
                     server · {fieldError.message}
                   </p>
                 )}
+
+                                  {walletStatus === "checking" && (
+                    <p className="text-yellow-400 text-xs mt-2">
+                      Checking Horizon account...
+                    </p>
+                  )}
+
+                  {walletStatus === "valid" && (
+                    <p className="text-green-400 text-xs mt-2">
+                      Stellar account active
+                    </p>
+                  )}
+
+                  {walletStatus === "invalid" && (
+                    <p className="text-red-400 text-xs mt-2">
+                      Invalid Stellar account
+                    </p>
+                  )}
               </div>
             </div>
 

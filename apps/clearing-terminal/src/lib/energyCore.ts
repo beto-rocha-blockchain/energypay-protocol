@@ -1,32 +1,15 @@
-import init, {
-  execute_settlement
-} from "@/wasm/energy_core";
-
-let initialized = false;
-
 export async function initEnergyCore() {
-  if (!initialized) {
-    await init();
-
-    initialized = true;
-
-    console.log(
-      "EnergyCore WASM initialized"
-    );
-  }
+  console.log("EnergyCore mocked for hackathon build");
+  return true;
 }
 
-export async function executeSettlement(
-  amountKwh: number,
-  pricePerKwh: number
-) {
+export async function executeSettlement(payload: any) {
+  console.log("Mock settlement execution:", payload);
 
-  if (!initialized) {
-    await initEnergyCore();
-  }
-
-  return execute_settlement(
-    amountKwh,
-    pricePerKwh
-  );
+  return {
+    success: true,
+    executionTime: "2.4s",
+    exposure: 0,
+    engine: "mocked-engine",
+  };
 }

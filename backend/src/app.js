@@ -1,3 +1,7 @@
+import {
+  executeEPWRSettlement
+} from "./lib/stellar.js";
+
 import dotenv from "dotenv";
 
 dotenv.config();

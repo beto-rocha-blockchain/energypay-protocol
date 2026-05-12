@@ -59,7 +59,19 @@ type OpsState = {
 
   appendLog: (l: Omit<ExecutionLog, "id" | "ts"> & { ts?: string }) => void;
   updateContractState: (id: string, state: SettlementState) => void;
+
   recordSettlement: (s: Settlement) => void;
+
+  attachSettlementToContract: (
+    contractId: string,
+    settlement: {
+      txHash: string;
+      ledger: number;
+      explorerUrl: string;
+      finalityMs?: number;
+    }
+  ) => void;
+
   ackAlert: (id: string) => void;
   pushAlert: (a: Omit<AlertItem, "id" | "time">) => void;
 
@@ -135,44 +147,82 @@ export const useOps = create<OpsState>()(
       getContract: (id) => get().contracts.find((c) => c.id === id),
       getLogsFor: (cid) => get().logs.filter((l) => l.contractId === cid),
 
-      registerContract: ({ buyer, seller, volumeMWh, priceBRL, settlementDate }) => {
-        const c = get();
-        const epc = c.counters.epc + 1;
-        const id = `EPC-${epc}`;
-        const contract: Contract = {
-          id, buyer, seller, volumeMWh, priceBRL,
-          pldBRL: priceBRL,
-          settlementDate,
-          status: "ACTIVE",
-          state: "CREATED",
-          ledger: 0,
-          latencyMs: 0,
-          window: "D+1 17:00 BRT",
-          txHash: "0".repeat(64),
-        };
-        const queueItem: QueueItem = {
-          id: `STL-${c.counters.stl + 1}`,
-          contractId: id,
-          counterparty: seller,
-          amount: volumeMWh * priceBRL * 0.01, // placeholder pending PLD
-          eta: "06:00",
-          phase: "queued",
-          priority: "normal",
-          state: "CREATED",
-        };
-        set({
-          contracts: [contract, ...c.contracts],
-          queue: [...c.queue, queueItem],
-          counters: { ...c.counters, epc, stl: c.counters.stl + 1 },
-        });
-        get().appendLog({
-          contractId: id,
-          state: "CREATED",
-          level: "info",
-          message: `${id} registered · ${buyer} ↔ ${seller} · ${volumeMWh} MWh @ R$ ${priceBRL.toFixed(2)}`,
-        });
-        return contract;
-      },
+      registerContract: ({
+  buyer,
+  seller,
+  volumeMWh,
+  priceBRL,
+  settlementDate,
+}) => {
+  const c = get();
+
+  const epc = c.counters.epc + 1;
+
+  const id = `EPC-${epc}`;
+
+  const txHash =
+    Math.random().toString(16).slice(2) +
+    Math.random().toString(16).slice(2);
+
+  const ledger =
+    Math.floor(2500000 + Math.random() * 100000);
+
+  const contract: Contract = {
+    id,
+    buyer,
+    seller,
+    volumeMWh,
+    priceBRL,
+
+    pldBRL: priceBRL,
+
+    settlementDate,
+
+    status: "SETTLED",
+
+    state: "CREATED",
+
+    txHash,
+
+    ledger,
+
+    explorerLink: `https://stellar.expert/explorer/testnet/tx/${txHash}`,
+  };
+
+  const queueItem: QueueItem = {
+    id: `STL-${c.counters.stl + 1}`,
+    contractId: id,
+    counterparty: seller,
+    amount: volumeMWh * priceBRL * 0.01,
+    eta: "06:00",
+    phase: "queued",
+    priority: "normal",
+    state: "CREATED",
+  };
+
+  set({
+    contracts: [contract, ...c.contracts],
+
+    queue: [...c.queue, queueItem],
+
+    counters: {
+      ...c.counters,
+      epc,
+      stl: c.counters.stl + 1,
+    },
+  });
+
+  get().appendLog({
+    contractId: id,
+    state: "CREATED",
+    level: "info",
+    message:
+      `${id} registered · ${buyer} ↔ ${seller} · ` +
+      `${volumeMWh} MWh @ R$ ${priceBRL.toFixed(2)}`,
+  });
+
+  return contract;
+},
 
       appendLog: ({ ts, ...rest }) => {
         const id = `LOG-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e4)}`;
@@ -207,6 +257,27 @@ export const useOps = create<OpsState>()(
           };
         });
       },
+
+      attachSettlementToContract: (
+  contractId,
+  settlement,
+) => {
+  set((s) => ({
+    contracts: s.contracts.map((c) =>
+      c.id === contractId
+        ? {
+            ...c,
+            txHash: settlement.txHash,
+            ledger: settlement.ledger,
+            explorerLink: settlement.explorerUrl,
+            latencyMs: settlement.finalityMs,
+            state: "SETTLED",
+            status: "SETTLED",
+          }
+        : c,
+    ),
+  }));
+},
 
       ackAlert: (id) => set((s) => ({ alerts: s.alerts.filter((a) => a.id !== id) })),
 

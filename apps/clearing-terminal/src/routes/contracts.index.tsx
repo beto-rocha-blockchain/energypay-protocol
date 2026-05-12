@@ -178,7 +178,11 @@ function ContractsList() {
                     <TableCell className="font-mono text-[11px] text-muted-foreground">{c.settlementDate}</TableCell>
                     <TableCell className="font-mono text-[10px] text-muted-foreground">{c.ledger ? `#${c.ledger.toLocaleString("en-US")}` : "—"}</TableCell>
                     <TableCell className="font-mono text-[10px] text-muted-foreground">
-                      {c.status === "FAILED" ? "—" : `${c.txHash.slice(0, 6)}…${c.txHash.slice(-6)}`}
+                      {c.status === "FAILED"
+                        ? "—"
+                        : c.txHash
+                          ? `${c.txHash.slice(0, 6)}…${c.txHash.slice(-6)}`
+                          : "PENDING"}
                     </TableCell>
                   </TableRow>
                 );
