@@ -267,6 +267,8 @@ function ContractsList() {
                       <KV k="Contract price" v={`R$ ${selected.priceBRL.toFixed(2)}`} mono />
                       <KV k="PLD reference" v={`R$ ${selected.pldBRL.toFixed(2)}`} mono />
                       <KV k="Settlement window" v={selected.window} mono />
+                      <KV k="Active period" v={`${contractStartDate(selected)} → ${contractEndDate(selected)}`} mono />
+                      <KV k="Duration" v={`${contractDurationDays(selected)} days`} mono />
                       <KV k="Settlement date" v={selected.settlementDate} mono />
                       <KV k="Ledger #" v={selected.ledger ? selected.ledger.toLocaleString("en-US") : "—"} mono />
                       <KV k="Finality latency" v={selected.latencyMs ? `${(selected.latencyMs / 1000).toFixed(2)}s` : "—"} mono />
