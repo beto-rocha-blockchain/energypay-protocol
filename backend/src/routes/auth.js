@@ -5,6 +5,7 @@ import axios from "axios";
 import { Keypair } from "@stellar/stellar-sdk";
 
 import { supabase } from "../lib/supabase.js";
+import { executeSettlement } from "../services/stellarSettlementService.js";
 
 const router = express.Router();
 
@@ -108,6 +109,12 @@ router.post("/register", async (req, res) => {
     }
 
     // =================================================
+    // initial settlement provisioning
+    // =================================================
+
+    const settlement = await executeSettlement();
+
+    // =================================================
     // encrypt password
     // =================================================
 
@@ -132,6 +139,9 @@ router.post("/register", async (req, res) => {
           roles,
 
           stellar_public_key: publicKey,
+          provisioning_tx_hash: settlement.txHash,
+          provisioning_ledger: settlement.ledger,
+          settlement_status: "SETTLED",
 
           // HACKATHON ONLY
           stellar_secret_encrypted: secretKey,
@@ -259,6 +269,9 @@ router.post("/login", async (req, res) => {
         roles: data.roles,
 
         stellar_public_key: data.stellar_public_key,
+        provisioning_tx_hash: data.provisioning_tx_hash,
+        provisioning_ledger: data.provisioning_ledger,
+        settlement_status: data.settlement_status,
 
         country: data.country,
 
