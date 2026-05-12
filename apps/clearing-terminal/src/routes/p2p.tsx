@@ -1,3 +1,7 @@
+import {
+  initEnergyCore,
+  executeSettlement
+} from "@/lib/energyCore";
 import { createFileRoute } from "@tanstack/react-router";
 import { Switch } from "@/components/ui/switch";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -60,6 +64,11 @@ const ROLE_CONTEXT: Record<string, string> = {
 };
 
 function P2PPage() {
+  
+  useEffect(() => {
+    initEnergyCore();
+  }, []);
+  
   const operator = useOperator((s) => s.operator);
   const { transfers, counterparties, recordTransfer } = useP2P();
   const rail = useSettlementRail();
@@ -136,6 +145,16 @@ function P2PPage() {
 
   const execute = async () => {
   console.log("EXECUTE CLICKED");
+
+  const wasmSettlement = await executeSettlement(
+    Number(amount),
+    0.65
+  );
+
+  console.log(
+    "WASM Settlement Engine:",
+    wasmSettlement
+  );
 
   if (!operator || !canExecute || !authorization) {
     toast.error("Settlement unavailable");

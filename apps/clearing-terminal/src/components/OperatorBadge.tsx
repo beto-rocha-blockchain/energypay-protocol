@@ -52,10 +52,20 @@ export function OperatorBadge() {
         </button>
       </PopoverTrigger>
       <PopoverContent
-        align="end"
-        sideOffset={8}
-        className="w-[340px] border-border bg-card/95 p-0 backdrop-blur"
-      >
+  align="end"
+  sideOffset={10}
+  className="
+    w-[340px]
+    max-h-[85vh]
+    overflow-y-auto
+    border-border
+    bg-card/95
+    p-0
+    backdrop-blur-xl
+    scrollbar-thin
+    scrollbar-thumb-white/10
+  "
+>
         <div className="flex items-center justify-between border-b border-border bg-background/40 px-3 py-2">
           <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
             Operator Profile
@@ -146,7 +156,7 @@ export function OperatorBadge() {
           </div>
         </div>
 
-        <div className="flex items-center justify-between border-t border-border bg-background/40 px-3 py-2">
+        <div className="sticky bottom-0 flex items-center justify-between border-t border-border bg-background/95 px-3 py-2 backdrop-blur">
           <span className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
             <Activity className="h-3 w-3 text-success" />
             Session active

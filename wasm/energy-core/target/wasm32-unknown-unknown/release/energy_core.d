@@ -1,0 +1,1 @@
+C:\Users\rober\OneDrive\Documents\GitHub\energypay-protocol\wasm\energy-core\target\wasm32-unknown-unknown\release\energy_core.wasm: C:\Users\rober\OneDrive\Documents\GitHub\energypay-protocol\wasm\energy-core\src\lib.rs
