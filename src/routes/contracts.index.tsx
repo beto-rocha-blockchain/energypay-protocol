@@ -240,6 +240,7 @@ function ContractsList() {
                   <span>Contract</span>
                   <span className="font-mono text-base text-primary">{selected.id}</span>
                   <StatusBadge status={selected.status} />
+                  <PeriodBadge status={contractPeriodStatus(selected)} />
                 </DialogTitle>
                 <DialogDescription className="text-xs">
                   Bilateral PPA · operational state, exposure & settlement finality
