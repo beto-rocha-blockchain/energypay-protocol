@@ -172,6 +172,10 @@ function ContractsList() {
                 <SortableHead k="pldBRL" label="PLD" align="right" />
                 <SortableHead k="exposure" label="Exposure" align="right" />
                 <TableHead className="text-[10px] uppercase tracking-wider">Status</TableHead>
+                <TableHead className="text-[10px] uppercase tracking-wider">Period</TableHead>
+                <SortableHead k="startDate" label="Start" />
+                <SortableHead k="endDate" label="End" />
+                <TableHead className="text-[10px] uppercase tracking-wider text-right">Duration</TableHead>
                 <TableHead className="text-[10px] uppercase tracking-wider">State</TableHead>
                 <SortableHead k="settlementDate" label="Settles" />
                 <TableHead className="text-[10px] uppercase tracking-wider">Ledger</TableHead>
@@ -181,6 +185,10 @@ function ContractsList() {
             <TableBody>
               {rows.map((c) => {
                 const exp = computeExposure(c);
+                const period = contractPeriodStatus(c);
+                const start = contractStartDate(c);
+                const end = contractEndDate(c);
+                const duration = contractDurationDays(c);
                 return (
                   <TableRow
                     key={c.id}
@@ -197,6 +205,10 @@ function ContractsList() {
                       {exp >= 0 ? "+" : ""}{fmtBRL(exp)}
                     </TableCell>
                     <TableCell><StatusBadge status={c.status} /></TableCell>
+                    <TableCell><PeriodBadge status={period} /></TableCell>
+                    <TableCell className="font-mono text-[11px] text-muted-foreground">{start}</TableCell>
+                    <TableCell className="font-mono text-[11px] text-muted-foreground">{end}</TableCell>
+                    <TableCell className="text-right font-mono text-[11px] text-muted-foreground">{duration}d</TableCell>
                     <TableCell className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">{c.state}</TableCell>
                     <TableCell className="font-mono text-[11px] text-muted-foreground">{c.settlementDate}</TableCell>
                     <TableCell className="font-mono text-[10px] text-muted-foreground">{c.ledger ? `#${c.ledger.toLocaleString("en-US")}` : "—"}</TableCell>
@@ -207,7 +219,7 @@ function ContractsList() {
                 );
               })}
               {rows.length === 0 && (
-                <TableRow><TableCell colSpan={12} className="py-10 text-center text-xs text-muted-foreground">No contracts match the current filters.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={16} className="py-10 text-center text-xs text-muted-foreground">No contracts match the current filters.</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
