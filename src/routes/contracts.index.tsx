@@ -5,19 +5,19 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import {
-  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  computeExposure, contractOperationalTimeline,
-  contractStartDate, contractEndDate, contractDurationDays, contractPeriodStatus,
-  type Contract, type ContractStatus, type ContractPeriodStatus,
+  computeExposure,
+  contractOperationalTimeline,
+  contractStartDate,
+  contractEndDate,
+  contractDurationDays,
+  contractPeriodStatus,
+  type Contract,
+  type ContractStatus,
+  type ContractPeriodStatus,
 } from "@/lib/mock-data";
 import { useOps } from "@/store/operations";
 import { StateMachine } from "@/components/StateMachine";
@@ -98,15 +98,11 @@ function ContractsList() {
     return r;
   }, [contracts, q, statusFilter, sort]);
 
-  const toggle = (key: SortKey) =>
-    setSort((s) => ({ key, dir: s.key === key && s.dir === "asc" ? "desc" : "asc" }));
+  const toggle = (key: SortKey) => setSort((s) => ({ key, dir: s.key === key && s.dir === "asc" ? "desc" : "asc" }));
 
   const SortableHead = ({ k, label, align = "left" }: { k: SortKey; label: string; align?: "left" | "right" }) => (
     <TableHead className={`text-[11px] uppercase tracking-wider ${align === "right" ? "text-right" : ""}`}>
-      <button
-        onClick={() => toggle(k)}
-        className="inline-flex items-center gap-1 hover:text-foreground"
-      >
+      <button onClick={() => toggle(k)} className="inline-flex items-center gap-1 hover:text-foreground">
         {label} <ArrowUpDown className="h-3 w-3 opacity-60" />
       </button>
     </TableHead>
@@ -132,7 +128,9 @@ function ContractsList() {
             </span>
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-success" />
           </div>
-          <Badge variant="outline" className="font-mono text-[10px]">{rows.length} / {contracts.length} contracts</Badge>
+          <Badge variant="outline" className="font-mono text-[10px]">
+            {rows.length} / {contracts.length} contracts
+          </Badge>
         </div>
 
         <div className="flex flex-col gap-2 border-b border-border bg-background/20 px-4 py-2.5 md:flex-row md:items-center md:justify-between">
@@ -148,7 +146,9 @@ function ContractsList() {
           <div className="flex items-center gap-2">
             <Filter className="h-3.5 w-3.5 text-muted-foreground" />
             <Select value={statusFilter} onValueChange={(v: any) => setStatusFilter(v)}>
-              <SelectTrigger className="h-8 w-[160px] bg-input text-xs"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-8 w-[160px] bg-input text-xs">
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="ALL">All statuses</SelectItem>
                 <SelectItem value="ACTIVE">Active</SelectItem>
@@ -198,20 +198,37 @@ function ContractsList() {
                     <TableCell className="font-mono text-[11px]">{c.id}</TableCell>
                     <TableCell className="text-xs">{c.buyer}</TableCell>
                     <TableCell className="text-xs text-muted-foreground">{c.seller}</TableCell>
-                    <TableCell className="text-right font-mono text-xs">{c.volumeMWh.toLocaleString("pt-BR")}</TableCell>
-                    <TableCell className="text-right font-mono text-xs">{c.priceBRL.toFixed(2)}</TableCell>
-                    <TableCell className="text-right font-mono text-xs text-muted-foreground">{c.pldBRL.toFixed(2)}</TableCell>
-                    <TableCell className={`text-right font-mono text-xs font-medium ${exp >= 0 ? "text-success" : "text-destructive"}`}>
-                      {exp >= 0 ? "+" : ""}{fmtBRL(exp)}
+                    <TableCell className="text-right font-mono text-xs">
+                      {c.volumeMWh.toLocaleString("pt-BR")}
                     </TableCell>
-                    <TableCell><StatusBadge status={c.status} /></TableCell>
-                    <TableCell><PeriodBadge status={period} /></TableCell>
+                    <TableCell className="text-right font-mono text-xs">{c.priceBRL.toFixed(2)}</TableCell>
+                    <TableCell className="text-right font-mono text-xs text-muted-foreground">
+                      {c.pldBRL.toFixed(2)}
+                    </TableCell>
+                    <TableCell
+                      className={`text-right font-mono text-xs font-medium ${exp >= 0 ? "text-success" : "text-destructive"}`}
+                    >
+                      {exp >= 0 ? "+" : ""}
+                      {fmtBRL(exp)}
+                    </TableCell>
+                    <TableCell>
+                      <StatusBadge status={c.status} />
+                    </TableCell>
+                    <TableCell>
+                      <PeriodBadge status={period} />
+                    </TableCell>
                     <TableCell className="font-mono text-[11px] text-muted-foreground">{start}</TableCell>
                     <TableCell className="font-mono text-[11px] text-muted-foreground">{end}</TableCell>
-                    <TableCell className="text-right font-mono text-[11px] text-muted-foreground">{duration}d</TableCell>
-                    <TableCell className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">{c.state}</TableCell>
+                    <TableCell className="text-right font-mono text-[11px] text-muted-foreground">
+                      {duration}d
+                    </TableCell>
+                    <TableCell className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                      {c.state}
+                    </TableCell>
                     <TableCell className="font-mono text-[11px] text-muted-foreground">{c.settlementDate}</TableCell>
-                    <TableCell className="font-mono text-[10px] text-muted-foreground">{c.ledger ? `#${c.ledger.toLocaleString("en-US")}` : "—"}</TableCell>
+                    <TableCell className="font-mono text-[10px] text-muted-foreground">
+                      {c.ledger ? `#${c.ledger.toLocaleString("en-US")}` : "—"}
+                    </TableCell>
                     <TableCell className="font-mono text-[10px] text-muted-foreground">
                       {c.status === "FAILED" ? "—" : `${c.txHash.slice(0, 6)}…${c.txHash.slice(-6)}`}
                     </TableCell>
@@ -219,7 +236,11 @@ function ContractsList() {
                 );
               })}
               {rows.length === 0 && (
-                <TableRow><TableCell colSpan={16} className="py-10 text-center text-xs text-muted-foreground">No contracts match the current filters.</TableCell></TableRow>
+                <TableRow>
+                  <TableCell colSpan={16} className="py-10 text-center text-xs text-muted-foreground">
+                    No contracts match the current filters.
+                  </TableCell>
+                </TableRow>
               )}
             </TableBody>
           </Table>
@@ -271,7 +292,11 @@ function ContractsList() {
                       <KV k="Duration" v={`${contractDurationDays(selected)} days`} mono />
                       <KV k="Settlement date" v={selected.settlementDate} mono />
                       <KV k="Ledger #" v={selected.ledger ? selected.ledger.toLocaleString("en-US") : "—"} mono />
-                      <KV k="Finality latency" v={selected.latencyMs ? `${(selected.latencyMs / 1000).toFixed(2)}s` : "—"} mono />
+                      <KV
+                        k="Finality latency"
+                        v={selected.latencyMs ? `${(selected.latencyMs / 1000).toFixed(2)}s` : "—"}
+                        mono
+                      />
                     </div>
                     <div className="mt-2 border-t border-border pt-2">
                       <KV k="Net exposure" v={fmtBRL(computeExposure(selected))} mono highlight />
@@ -306,7 +331,9 @@ function ContractsList() {
               <div className="border-t border-border bg-background/40 px-5 py-3">
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">Stellar Tx Hash</p>
+                    <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
+                      Stellar Tx Hash
+                    </p>
                     <p className="truncate font-mono text-[11px]">
                       {selected.status === "FAILED" ? "— transaction not broadcast —" : selected.txHash}
                     </p>
@@ -325,7 +352,9 @@ function ContractsList() {
               </div>
 
               <div className="flex items-center justify-end gap-2 border-t border-border bg-card/40 px-5 py-3">
-                <Button size="sm" variant="ghost" onClick={() => setSelected(null)}>Close</Button>
+                <Button size="sm" variant="ghost" onClick={() => setSelected(null)}>
+                  Close
+                </Button>
               </div>
             </>
           )}
@@ -339,7 +368,9 @@ function KV({ k, v, mono, highlight }: { k: string; v: string; mono?: boolean; h
   return (
     <div className="flex items-center justify-between gap-4">
       <span className="text-xs text-muted-foreground">{k}</span>
-      <span className={`${mono ? "font-mono" : ""} ${highlight ? "text-base font-semibold text-primary" : "text-sm"}`}>{v}</span>
+      <span className={`${mono ? "font-mono" : ""} ${highlight ? "text-base font-semibold text-primary" : "text-sm"}`}>
+        {v}
+      </span>
     </div>
   );
 }
