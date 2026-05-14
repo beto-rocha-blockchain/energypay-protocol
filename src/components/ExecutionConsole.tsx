@@ -111,7 +111,7 @@ export function ExecutionConsole({
       log("VALIDATED", `exposure calculated · ${fmtBRL(amount)} (${amount >= 0 ? "buyer" : "seller"} receives)`);
       await wait(180);
       log("PENDING_SIGNATURE", `▸ requesting backend settlement execution · ${settlementId}`);
-      log("BROADCASTING", `→ POST /api/settlements/execute · backend signs & broadcasts`, "info");
+      log("BROADCASTING", `→ POST /api/settlement/execute · backend signs & broadcasts`, "info");
 
       try {
         const res = await apiExecuteSettlement({
@@ -135,14 +135,14 @@ export function ExecutionConsole({
         }
 
         log("CONFIRMED", `✓ tx confirmed · ledger #${res.ledger.toLocaleString("en-US")}`, "ok");
-        log("CONFIRMED", `tx hash: ${res.tx_hash}`);
+        log("CONFIRMED", `tx hash: ${res.txHash}`);
         await wait(140);
         log("SETTLED", `✓ reconciliation closed · BRL leg cleared · signer=${signer}`, "ok");
 
         const lat = res.finality_ms ?? Date.now() - startRef.current;
         log("SETTLED", `settlement finalized · finality latency ${(lat / 1000).toFixed(2)}s`, "ok");
 
-        setTx(res.tx_hash);
+        setTx(res.txHash);
         setLedger(res.ledger);
         setLatency(lat);
         setResult(res);
@@ -156,7 +156,7 @@ export function ExecutionConsole({
           amountBRL: amount,
           pld,
           date: new Date().toISOString().slice(0, 16).replace("T", " "),
-          txHash: res.tx_hash,
+          txHash: res.txHash,
           ledger: res.ledger,
           latencyMs: lat,
           window: contract.window,

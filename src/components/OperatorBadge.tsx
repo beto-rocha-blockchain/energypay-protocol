@@ -54,7 +54,7 @@ export function OperatorBadge() {
       <PopoverContent
         align="end"
         sideOffset={8}
-        className="w-[340px] border-border bg-card/95 p-0 backdrop-blur"
+        className="w-[490px] max-h-[90vh] overflow-y-auto border-border bg-card/95 p-0 backdrop-blur"
       >
         <div className="flex items-center justify-between border-b border-border bg-background/40 px-3 py-2">
           <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">

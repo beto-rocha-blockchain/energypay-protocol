@@ -230,8 +230,9 @@ function ContractsList() {
                       {c.ledger ? `#${c.ledger.toLocaleString("en-US")}` : "—"}
                     </TableCell>
                     <TableCell className="font-mono text-[10px] text-muted-foreground">
-                      {c.status === "FAILED" ? "—" : `${c.txHash.slice(0, 6)}…${c.txHash.slice(-6)}`}
-                    </TableCell>
+                      {c.txHash
+                        ? `${c.txHash.slice(0, 6)}…${c.txHash.slice(-6)}`
+                        : "—"}                    </TableCell>
                   </TableRow>
                 );
               })}
@@ -335,12 +336,18 @@ function ContractsList() {
                       Stellar Tx Hash
                     </p>
                     <p className="truncate font-mono text-[11px]">
-                      {selected.status === "FAILED" ? "— transaction not broadcast —" : selected.txHash}
+                      {selected.status === "FAILED"
+                        ? "— transaction not broadcast —"
+                        : selected.txHash || "Awaiting settlement hash"}
                     </p>
                   </div>
                   {selected.status !== "FAILED" && (
                     <a
-                      href={`https://stellar.expert/explorer/testnet/tx/${selected.txHash}`}
+                      href={
+                        selected.txHash && selected.txHash !== "UNAVAILABLE"
+                          ? `https://stellar.expert/explorer/testnet/tx/${selected.txHash}`
+                          : "#"
+                      }
                       target="_blank"
                       rel="noreferrer"
                       className="inline-flex shrink-0 items-center gap-1 rounded border border-border bg-card px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider text-accent hover:bg-accent/10"

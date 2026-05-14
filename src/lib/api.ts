@@ -156,7 +156,7 @@ export type SettlementExecutePayload = {
 export type SettlementResult = {
   settlement_id: string;
   contract_id: string;
-  tx_hash: string;
+  txHash: string;
   ledger: number;
   finality_ms: number;
   status: "SETTLED" | "FAILED" | "PENDING";
@@ -166,7 +166,7 @@ export type SettlementResult = {
 };
 
 export const apiExecuteSettlement = (payload: SettlementExecutePayload) =>
-  apiRequest<SettlementResult>("/api/settlements/execute", {
+  apiRequest<SettlementResult>("/api/settlement/execute", {
     method: "POST",
     body: payload,
   });

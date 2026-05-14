@@ -1,3 +1,4 @@
+import p2pRoutes from "./routes/p2p.js";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -28,6 +29,8 @@ app.use(express.json());
 app.use("/api/wallet", walletRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/token", tokenRoutes);
+app.use("/api/p2p", p2pRoutes);
+
 // ========================================
 // Health Check
 // ========================================

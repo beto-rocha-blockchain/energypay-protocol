@@ -115,9 +115,28 @@ function SettlementPage() {
             = <span className="text-foreground">{fmtBRL(settlement)}</span>
           </div>
 
-          <Button className="w-full" size="lg" onClick={() => setOpen(true)}>
-            <Zap className="mr-2 h-4 w-4" /> Run Settlement
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              className="w-full"
+              size="lg"
+              onClick={() => setOpen(true)}
+            >
+              <Zap className="mr-2 h-4 w-4" />
+              Run Settlement
+            </Button>
+
+            <Button
+              variant="outline"
+              size="lg"
+              className="border-red-500/40 text-red-400 hover:bg-red-500/10"
+              onClick={() => {
+                localStorage.removeItem("energypay.ops.v1");
+                window.location.reload();
+              }}
+            >
+              Reset
+            </Button>
+          </div>
           <p className="mt-3 flex items-center justify-center gap-1.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
             <ShieldCheck className="h-3 w-3" /> Atomic settlement · counterparty net exposure
           </p>

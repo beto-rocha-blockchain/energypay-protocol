@@ -1,6 +1,7 @@
 import express from "express";
 import bcrypt from "bcrypt";
 import axios from "axios";
+import jwt from "jsonwebtoken";
 
 import { Keypair } from "@stellar/stellar-sdk";
 
@@ -157,41 +158,47 @@ router.post("/register", async (req, res) => {
     // =================================================
     // success
     // =================================================
+    
+    const token = jwt.sign(
+      {
+        sub: data[0].id,
+        email: data[0].email,
+        roles: data[0].roles,
+      },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "24h",
+      }
+      );
 
     res.json({
       success: true,
-
-      provisioning: {
-        wallet_created: true,
-        stellar_funded: true,
-        settlement_ready: true,
-        roles_assigned: true,
-      },
+      token,
 
       user: {
         id: data[0].id,
+        email: data[0].email,
+        full_name: data[0].full_name,
+        organization: data[0].organization,
+        roles: data[0].roles,
 
-        email,
-        full_name,
+      stellar_public_key: publicKey,
 
-        organization,
+      country: data[0].country,
+      city,
+    address,
 
-        roles,
+    has_solar_generation,
+  },
 
-        stellar_public_key: publicKey,
+  provisioning: {
+    wallet_created: true,
+    stellar_funded: true,
+    settlement_ready: true,
+    roles_assigned: true,
+  },
+  });
 
-        country,
-        city,
-
-        has_solar_generation,
-      },
-
-      wallet: {
-        publicKey,
-        network: "STELLAR_TESTNET",
-        funded: true,
-      },
-    });
   } catch (err) {
     console.error(err);
 
@@ -200,7 +207,8 @@ router.post("/register", async (req, res) => {
       error: err.message,
     });
   }
-});
+  });
+    
 
 // =====================================================
 // LOGIN
@@ -244,29 +252,45 @@ router.post("/login", async (req, res) => {
     // success
     // =================================================
 
+    const token = jwt.sign(
+      {
+        sub: data.id,
+        id: data.id,
+        email: data.email,
+        roles: data.roles,
+        publicKey: data.stellar_public_key,
+      },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "12h",
+      }
+    );
+
     res.json({
       success: true,
 
+      token,
+
       user: {
-        id: data.id,
+      id: data.id,
 
-        email: data.email,
+      email: data.email,
 
-        full_name: data.full_name,
+      full_name: data.full_name,
 
-        organization: data.organization,
+      organization: data.organization,
 
-        roles: data.roles,
+      roles: data.roles,
 
-        stellar_public_key: data.stellar_public_key,
+      stellar_public_key: data.stellar_public_key,
 
-        country: data.country,
+      country: data.country,
 
-        city: data.city,
+      city: data.city,
 
-        address: data.address,
+      address: data.address,
 
-        has_solar_generation: data.has_solar_generation,
+      has_solar_generation: data.has_solar_generation,
       },
 
       wallet: {
@@ -285,6 +309,6 @@ router.post("/login", async (req, res) => {
       error: err.message,
     });
   }
-});
+  });
 
 export default router;

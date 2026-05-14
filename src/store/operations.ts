@@ -16,6 +16,25 @@ import {
   type QueuePhase,
 } from "@/lib/mock-data";
 
+
+const API_BASE = "http://localhost:3000/api";
+
+export async function loadContractsFromApi() {
+  try {
+    const res = await fetch(`${API_BASE}/contracts`);
+
+    if (!res.ok) {
+      throw new Error("contracts fetch failed");
+    }
+
+    return await res.json();
+  } catch (err) {
+    console.warn("Using mock contracts fallback", err);
+    return mockContracts;
+  }
+}
+
+
 /* ------------------------------------------------------------------ */
 /*  Operational Log                                                    */
 /* ------------------------------------------------------------------ */
@@ -47,6 +66,7 @@ type OpsState = {
   logs: ExecutionLog[];
   counters: Counters;
   lastTick: number;
+  
 
   /* selectors (computed) */
   getContract: (id: string) => Contract | undefined;
@@ -65,7 +85,7 @@ type OpsState = {
   pushAlert: (a: Omit<AlertItem, "id" | "time">) => void;
 
   /* background tick — advances queue & emits operational events */
-  tick: () => void;
+  tick: () => Promise<void>;
   reset: () => void;
 };
 
@@ -227,7 +247,7 @@ export const useOps = create<OpsState>()(
         });
       },
 
-      tick: () => {
+      tick: async () => {
         const s = get();
         const t = Date.now();
         if (t - s.lastTick < 4500) return;
@@ -259,10 +279,29 @@ export const useOps = create<OpsState>()(
         });
 
         // finalize completed → record settlement
-        completed.forEach((q) => {
+        completed.forEach(async (q) => {
           const c = s.contracts.find((cc) => cc.id === q.contractId);
           if (!c) return;
           const ledger = s.counters.ledger + Math.floor(Math.random() * 30);
+          const response = await fetch(
+  "http://localhost:3000/api/settlement/execute",
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      contractId: q.contractId,
+      amount: q.amount,
+    }),
+  }
+);
+
+if (!response.ok) {
+  throw new Error("Settlement execution failed");
+}
+
+const settlementResult = await response.json();
           const stl: Settlement = {
             id: q.id,
             contractId: q.contractId,
@@ -270,9 +309,13 @@ export const useOps = create<OpsState>()(
             amountBRL: q.amount,
             pld: c.pldBRL,
             date: new Date().toISOString().slice(0, 16).replace("T", " "),
-            txHash: rndHash(),
-            ledger,
-            latencyMs: 1800 + Math.floor(Math.random() * 1200),
+            txHash:
+              settlementResult.tx_hash ||
+              settlementResult.hash ||
+              settlementResult.txHash ||
+              "UNAVAILABLE",
+            ledger: settlementResult.ledger,
+            latencyMs: settlementResult.finality_ms ?? 2400,
             window: c.window,
             state: "SETTLED",
             status: "CONFIRMED",
@@ -346,5 +389,7 @@ let tickerStarted = false;
 export function startOpsTicker() {
   if (tickerStarted || typeof window === "undefined") return;
   tickerStarted = true;
-  setInterval(() => useOps.getState().tick(), 5000);
+  setInterval(() => {
+    useOps.getState().tick().catch(console.error);
+  }, 5000);
 }
