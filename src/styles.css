@@ -1,0 +1,212 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+:root {
+  --radius: 0.25rem;
+  /* Institutional deep-blue/black operational palette */
+  --background: oklch(0.135 0.022 252);
+  --foreground: oklch(0.95 0.008 240);
+  --card: oklch(0.175 0.022 250);
+  --card-foreground: oklch(0.95 0.008 240);
+  --popover: oklch(0.19 0.022 250);
+  --popover-foreground: oklch(0.95 0.008 240);
+  /* Primary = muted operational cyan */
+  --primary: oklch(0.78 0.13 215);
+  --primary-foreground: oklch(0.14 0.02 250);
+  --secondary: oklch(0.235 0.022 250);
+  --secondary-foreground: oklch(0.95 0.008 240);
+  --muted: oklch(0.215 0.02 250);
+  --muted-foreground: oklch(0.70 0.018 240);
+  /* Accent = control-room teal (operational nominal) */
+  --accent: oklch(0.78 0.10 195);
+  --accent-foreground: oklch(0.14 0.02 250);
+  --destructive: oklch(0.66 0.22 25);
+  --destructive-foreground: oklch(0.98 0 0);
+  --success: oklch(0.80 0.09 190);
+  --success-foreground: oklch(0.14 0.02 250);
+  --warning: oklch(0.82 0.16 75);
+  --warning-foreground: oklch(0.14 0.02 250);
+  --border: oklch(0.245 0.018 252);
+  --input: oklch(0.22 0.02 250);
+  --ring: oklch(0.78 0.13 215);
+
+  /* Institutional easing & durations */
+  --ease-ops: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --dur-fast: 120ms;
+  --dur-med: 180ms;
+  --dur-slow: 240ms;
+  --chart-1: oklch(0.78 0.13 215);
+  --chart-2: oklch(0.78 0.10 195);
+  --chart-3: oklch(0.82 0.16 75);
+  --chart-4: oklch(0.66 0.22 25);
+  --chart-5: oklch(0.72 0.15 290);
+  --sidebar: oklch(0.155 0.022 252);
+  --sidebar-foreground: oklch(0.86 0.012 240);
+  --sidebar-primary: oklch(0.78 0.13 215);
+  --sidebar-primary-foreground: oklch(0.14 0.02 250);
+  --sidebar-accent: oklch(0.22 0.022 250);
+  --sidebar-accent-foreground: oklch(0.95 0.008 240);
+  --sidebar-border: oklch(0.245 0.02 250);
+  --sidebar-ring: oklch(0.78 0.13 215);
+
+  --gradient-primary: linear-gradient(135deg, oklch(0.78 0.13 215), oklch(0.78 0.10 195));
+  --gradient-card: linear-gradient(180deg, oklch(0.19 0.022 250), oklch(0.165 0.022 250));
+  --shadow-elegant: 0 10px 40px -10px oklch(0.08 0.02 250 / 0.7);
+  --shadow-glow: 0 0 12px oklch(0.78 0.13 215 / 0.18);
+}
+
+.dark { color-scheme: dark; }
+
+@layer base {
+  * { border-color: var(--color-border); }
+  html, body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-display);
+    font-feature-settings: "ss01", "cv11", "tnum";
+  }
+  .font-mono { font-family: var(--font-mono); font-feature-settings: "tnum"; }
+  .tabular { font-variant-numeric: tabular-nums; }
+}
+
+@layer utilities {
+  /* Institutional operational labels */
+  .label-op {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    line-height: 1;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+  }
+  .kpi-num {
+    font-family: var(--font-display);
+    font-feature-settings: "tnum";
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+  .panel {
+    background-color: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+    background: color-mix(in oklab, var(--card) 85%, transparent);
+  }
+  .table-inst th {
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+    text-align: left;
+    padding: 0.45rem 0.65rem;
+    border-bottom: 1px solid var(--border);
+    background: color-mix(in oklab, var(--background) 50%, var(--card));
+    position: sticky;
+    top: 0;
+  }
+  .table-inst td {
+    font-size: 11.5px;
+    padding: 0.5rem 0.65rem;
+    border-bottom: 1px solid color-mix(in oklab, var(--border) 70%, transparent);
+    font-variant-numeric: tabular-nums;
+  }
+  .table-inst tr:hover td {
+    background: color-mix(in oklab, var(--primary) 4%, transparent);
+  }
+  .grid-bg {
+    background-image:
+      linear-gradient(to right, color-mix(in oklab, var(--border) 55%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in oklab, var(--border) 55%, transparent) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+
+  @keyframes scada-scan {
+    0% { transform: translateX(-100%); opacity: 0; }
+    50% { opacity: 0.55; }
+    100% { transform: translateX(100%); opacity: 0; }
+  }
+  @keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--primary) 45%, transparent); }
+    50% { box-shadow: 0 0 0 6px color-mix(in oklab, var(--primary) 0%, transparent); }
+  }
+  @keyframes flow-dash { to { stroke-dashoffset: -32; } }
+  @keyframes node-pulse {
+    0%, 100% { r: 5; opacity: 1; }
+    50% { r: 7.5; opacity: 0.65; }
+  }
+  @keyframes ticker-up {
+    from { transform: translateY(8px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  @keyframes blink {
+    0%, 60% { opacity: 1; }
+    61%, 100% { opacity: 0.25; }
+  }
+  .animate-scada-scan { animation: scada-scan 3.6s ease-in-out infinite; }
+  .animate-pulse-glow { animation: pulse-glow 2.4s ease-out infinite; }
+  .animate-flow-dash { animation: flow-dash 1.4s linear infinite; }
+  .animate-node-pulse { animation: node-pulse 2.2s ease-in-out infinite; }
+  .animate-ticker-up { animation: ticker-up 0.4s ease-out; }
+  .animate-blink { animation: blink 1.6s steps(1) infinite; }
+  .terminal-grid-bg {
+    background-image:
+      linear-gradient(to right, color-mix(in oklab, var(--border) 60%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in oklab, var(--border) 60%, transparent) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+}
