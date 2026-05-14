@@ -50,49 +50,57 @@
 }
 
 :root {
-  --radius: 0.5rem;
-  /* Dark fintech theme by default */
-  --background: oklch(0.16 0.018 240);
-  --foreground: oklch(0.96 0.005 240);
-  --card: oklch(0.205 0.02 240);
-  --card-foreground: oklch(0.96 0.005 240);
-  --popover: oklch(0.21 0.02 240);
-  --popover-foreground: oklch(0.96 0.005 240);
-  --primary: oklch(0.78 0.18 145);
-  --primary-foreground: oklch(0.18 0.02 240);
-  --secondary: oklch(0.27 0.025 240);
-  --secondary-foreground: oklch(0.96 0.005 240);
-  --muted: oklch(0.24 0.02 240);
-  --muted-foreground: oklch(0.68 0.02 240);
-  --accent: oklch(0.7 0.15 220);
-  --accent-foreground: oklch(0.16 0.018 240);
-  --destructive: oklch(0.65 0.22 25);
+  --radius: 0.25rem;
+  /* Institutional deep-blue/black operational palette */
+  --background: oklch(0.135 0.022 252);
+  --foreground: oklch(0.95 0.008 240);
+  --card: oklch(0.175 0.022 250);
+  --card-foreground: oklch(0.95 0.008 240);
+  --popover: oklch(0.19 0.022 250);
+  --popover-foreground: oklch(0.95 0.008 240);
+  /* Primary = muted operational cyan */
+  --primary: oklch(0.78 0.13 215);
+  --primary-foreground: oklch(0.14 0.02 250);
+  --secondary: oklch(0.235 0.022 250);
+  --secondary-foreground: oklch(0.95 0.008 240);
+  --muted: oklch(0.215 0.02 250);
+  --muted-foreground: oklch(0.70 0.018 240);
+  /* Accent = control-room teal (operational nominal) */
+  --accent: oklch(0.78 0.10 195);
+  --accent-foreground: oklch(0.14 0.02 250);
+  --destructive: oklch(0.66 0.22 25);
   --destructive-foreground: oklch(0.98 0 0);
-  --success: oklch(0.78 0.18 145);
-  --success-foreground: oklch(0.18 0.02 240);
+  --success: oklch(0.80 0.09 190);
+  --success-foreground: oklch(0.14 0.02 250);
   --warning: oklch(0.82 0.16 75);
-  --warning-foreground: oklch(0.18 0.02 240);
-  --border: oklch(0.28 0.02 240);
-  --input: oklch(0.24 0.02 240);
-  --ring: oklch(0.78 0.18 145);
-  --chart-1: oklch(0.78 0.18 145);
-  --chart-2: oklch(0.7 0.15 220);
-  --chart-3: oklch(0.82 0.16 75);
-  --chart-4: oklch(0.65 0.2 295);
-  --chart-5: oklch(0.7 0.18 15);
-  --sidebar: oklch(0.18 0.018 240);
-  --sidebar-foreground: oklch(0.88 0.01 240);
-  --sidebar-primary: oklch(0.78 0.18 145);
-  --sidebar-primary-foreground: oklch(0.18 0.02 240);
-  --sidebar-accent: oklch(0.24 0.02 240);
-  --sidebar-accent-foreground: oklch(0.96 0.005 240);
-  --sidebar-border: oklch(0.26 0.02 240);
-  --sidebar-ring: oklch(0.78 0.18 145);
+  --warning-foreground: oklch(0.14 0.02 250);
+  --border: oklch(0.245 0.018 252);
+  --input: oklch(0.22 0.02 250);
+  --ring: oklch(0.78 0.13 215);
 
-  --gradient-primary: linear-gradient(135deg, oklch(0.78 0.18 145), oklch(0.7 0.15 180));
-  --gradient-card: linear-gradient(180deg, oklch(0.22 0.02 240), oklch(0.19 0.02 240));
-  --shadow-elegant: 0 10px 40px -10px oklch(0.1 0.02 240 / 0.6);
-  --shadow-glow: 0 0 12px oklch(0.78 0.18 145 / 0.08);
+  /* Institutional easing & durations */
+  --ease-ops: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --dur-fast: 120ms;
+  --dur-med: 180ms;
+  --dur-slow: 240ms;
+  --chart-1: oklch(0.78 0.13 215);
+  --chart-2: oklch(0.78 0.10 195);
+  --chart-3: oklch(0.82 0.16 75);
+  --chart-4: oklch(0.66 0.22 25);
+  --chart-5: oklch(0.72 0.15 290);
+  --sidebar: oklch(0.155 0.022 252);
+  --sidebar-foreground: oklch(0.86 0.012 240);
+  --sidebar-primary: oklch(0.78 0.13 215);
+  --sidebar-primary-foreground: oklch(0.14 0.02 250);
+  --sidebar-accent: oklch(0.22 0.022 250);
+  --sidebar-accent-foreground: oklch(0.95 0.008 240);
+  --sidebar-border: oklch(0.245 0.02 250);
+  --sidebar-ring: oklch(0.78 0.13 215);
+
+  --gradient-primary: linear-gradient(135deg, oklch(0.78 0.13 215), oklch(0.78 0.10 195));
+  --gradient-card: linear-gradient(180deg, oklch(0.19 0.022 250), oklch(0.165 0.022 250));
+  --shadow-elegant: 0 10px 40px -10px oklch(0.08 0.02 250 / 0.7);
+  --shadow-glow: 0 0 12px oklch(0.78 0.13 215 / 0.18);
 }
 
 .dark { color-scheme: dark; }
@@ -103,7 +111,102 @@
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-display);
-    font-feature-settings: "ss01", "cv11";
+    font-feature-settings: "ss01", "cv11", "tnum";
   }
-  .font-mono { font-family: var(--font-mono); }
+  .font-mono { font-family: var(--font-mono); font-feature-settings: "tnum"; }
+  .tabular { font-variant-numeric: tabular-nums; }
+}
+
+@layer utilities {
+  /* Institutional operational labels */
+  .label-op {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    line-height: 1;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+  }
+  .kpi-num {
+    font-family: var(--font-display);
+    font-feature-settings: "tnum";
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+  .panel {
+    background-color: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+    background: color-mix(in oklab, var(--card) 85%, transparent);
+  }
+  .table-inst th {
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+    text-align: left;
+    padding: 0.45rem 0.65rem;
+    border-bottom: 1px solid var(--border);
+    background: color-mix(in oklab, var(--background) 50%, var(--card));
+    position: sticky;
+    top: 0;
+  }
+  .table-inst td {
+    font-size: 11.5px;
+    padding: 0.5rem 0.65rem;
+    border-bottom: 1px solid color-mix(in oklab, var(--border) 70%, transparent);
+    font-variant-numeric: tabular-nums;
+  }
+  .table-inst tr:hover td {
+    background: color-mix(in oklab, var(--primary) 4%, transparent);
+  }
+  .grid-bg {
+    background-image:
+      linear-gradient(to right, color-mix(in oklab, var(--border) 55%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in oklab, var(--border) 55%, transparent) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+
+  @keyframes scada-scan {
+    0% { transform: translateX(-100%); opacity: 0; }
+    50% { opacity: 0.55; }
+    100% { transform: translateX(100%); opacity: 0; }
+  }
+  @keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--primary) 45%, transparent); }
+    50% { box-shadow: 0 0 0 6px color-mix(in oklab, var(--primary) 0%, transparent); }
+  }
+  @keyframes flow-dash { to { stroke-dashoffset: -32; } }
+  @keyframes node-pulse {
+    0%, 100% { r: 5; opacity: 1; }
+    50% { r: 7.5; opacity: 0.65; }
+  }
+  @keyframes ticker-up {
+    from { transform: translateY(8px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  @keyframes blink {
+    0%, 60% { opacity: 1; }
+    61%, 100% { opacity: 0.25; }
+  }
+  .animate-scada-scan { animation: scada-scan 3.6s ease-in-out infinite; }
+  .animate-pulse-glow { animation: pulse-glow 2.4s ease-out infinite; }
+  .animate-flow-dash { animation: flow-dash 1.4s linear infinite; }
+  .animate-node-pulse { animation: node-pulse 2.2s ease-in-out infinite; }
+  .animate-ticker-up { animation: ticker-up 0.4s ease-out; }
+  .animate-blink { animation: blink 1.6s steps(1) infinite; }
+  .terminal-grid-bg {
+    background-image:
+      linear-gradient(to right, color-mix(in oklab, var(--border) 60%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in oklab, var(--border) 60%, transparent) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
 }

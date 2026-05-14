@@ -1,32 +1,28 @@
-import { createFileRoute, useNavigate, useRouterState } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Zap, KeyRound, Building2, Mail, ShieldCheck, Activity, Terminal, Loader2 } from "lucide-react";
+import { Zap, KeyRound, Building2, Mail, ShieldCheck, Activity, Terminal, Loader2, ArrowRight } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { useOperator, maskAddress } from "@/store/operator";
+import { useOperator } from "@/store/operator";
 import { toast } from "sonner";
+import { safeErrorMessage } from "@/lib/safe-error";
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-type Mode = "access" | "provision";
-
 function LoginPage() {
   const navigate = useNavigate();
   const isAuthenticated = useOperator((s) => s.isAuthenticated);
   const login = useOperator((s) => s.login);
-  const provision = useOperator((s) => s.provisionIdentity);
 
-  const [mode, setMode] = useState<Mode>("access");
   const [email, setEmail] = useState("");
   const [organization, setOrganization] = useState("");
-  const [accessKey, setAccessKey] = useState("");
-  const [fund, setFund] = useState(true);
-  const [busy, setBusy] = useState<null | "access" | "provision">(null);
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated) navigate({ to: "/" });
@@ -34,41 +30,25 @@ function LoginPage() {
 
   const onAccess = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !organization || !accessKey) {
-      toast.error("Operational credentials incomplete.");
+    if (!email || !password) {
+      toast.error("Operator email and password are required.");
       return;
     }
-    setBusy("access");
-    await new Promise((r) => setTimeout(r, 700));
+    setBusy(true);
     try {
-      const id = login({ email, organization, accessKey });
+      const id = await login({ email, password, organization: organization || undefined });
       toast.success(`Operator ${id.operatorId} connected · Stellar Testnet active`);
       navigate({ to: "/" });
     } catch (err) {
-      toast.error((err as Error).message);
+      toast.error(safeErrorMessage(err, "Authentication failed"));
     } finally {
-      setBusy(null);
+      setBusy(false);
     }
-  };
-
-  const onProvision = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || !organization) {
-      toast.error("Operator email and organization required for provisioning.");
-      return;
-    }
-    setBusy("provision");
-    await new Promise((r) => setTimeout(r, 1200));
-    const id = provision({ email, organization, fund });
-    toast.success(`Settlement identity provisioned · ${maskAddress(id.settlementAddress)}`);
-    navigate({ to: "/" });
-    setBusy(null);
   };
 
   return (
-    <div className="grid min-h-[calc(100vh-3.5rem)] w-full place-items-center px-4">
+    <div className="grid min-h-screen w-full place-items-center px-4">
       <div className="grid w-full max-w-5xl gap-6 lg:grid-cols-[1.05fr_1fr] lg:items-stretch">
-        {/* Left: brand / institutional context */}
         <Card className="hidden flex-col justify-between overflow-hidden border-border bg-card/60 p-6 lg:flex">
           <div>
             <div className="flex items-center gap-2">
@@ -91,8 +71,8 @@ function LoginPage() {
                 Programmable settlement<br />for power markets.
               </h1>
               <p className="mt-2 max-w-sm text-xs text-muted-foreground">
-                Operator access provisions a settlement identity on the EnergyPay clearing network,
-                anchored to Stellar Testnet for institutional reconciliation.
+                Operator access connects an existing settlement identity to the EnergyPay clearing
+                network, anchored to Stellar Testnet for institutional reconciliation.
               </p>
             </div>
 
@@ -101,7 +81,7 @@ function LoginPage() {
             <ul className="space-y-2.5 text-xs">
               <li className="flex items-start gap-2">
                 <ShieldCheck className="mt-0.5 h-3.5 w-3.5 text-success" />
-                <span><span className="font-mono text-foreground">Operational credentials</span> · scoped to clearing desk &amp; reconciliation roles</span>
+                <span><span className="font-mono text-foreground">Operational credentials</span> · scoped to clearing desk &amp; reconciliation</span>
               </li>
               <li className="flex items-start gap-2">
                 <Terminal className="mt-0.5 h-3.5 w-3.5 text-accent" />
@@ -122,7 +102,6 @@ function LoginPage() {
           </div>
         </Card>
 
-        {/* Right: login terminal */}
         <Card className="overflow-hidden border-border bg-card/70">
           <div className="flex items-center justify-between border-b border-border bg-background/40 px-4 py-2.5">
             <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
@@ -131,50 +110,16 @@ function LoginPage() {
             <div className="font-mono text-[10px] text-muted-foreground">SECURE · TLS</div>
           </div>
 
-          <div className="flex border-b border-border bg-background/20 text-xs">
-            <button
-              type="button"
-              onClick={() => setMode("access")}
-              className={`flex-1 px-4 py-2.5 font-mono uppercase tracking-widest transition ${
-                mode === "access"
-                  ? "border-b-2 border-primary text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Operator Access
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode("provision")}
-              className={`flex-1 px-4 py-2.5 font-mono uppercase tracking-widest transition ${
-                mode === "provision"
-                  ? "border-b-2 border-primary text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Provision Identity
-            </button>
-          </div>
-
-          <form
-            onSubmit={mode === "access" ? onAccess : onProvision}
-            className="space-y-4 p-5"
-          >
+          <form onSubmit={onAccess} className="space-y-4 p-5">
             <div className="space-y-1.5">
               <Label htmlFor="email" className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
                 Operator Email
               </Label>
               <div className="relative">
                 <Mail className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  id="email"
-                  type="email"
-                  autoComplete="username"
-                  value={email}
+                <Input id="email" type="email" autoComplete="username" value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="operator@clearing-desk.com"
-                  className="h-9 pl-8 font-mono text-xs"
-                />
+                  placeholder="operator@clearing-desk.com" className="h-9 pl-8 font-mono text-xs" />
               </div>
             </div>
 
@@ -184,71 +129,45 @@ function LoginPage() {
               </Label>
               <div className="relative">
                 <Building2 className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  id="org"
-                  value={organization}
-                  onChange={(e) => setOrganization(e.target.value)}
-                  placeholder="Treasury · Energy Trading Desk"
-                  className="h-9 pl-8 font-mono text-xs"
-                />
+                <Input id="org" value={organization} onChange={(e) => setOrganization(e.target.value)}
+                  placeholder="Treasury · Energy Trading Desk" className="h-9 pl-8 font-mono text-xs" />
               </div>
             </div>
 
-            {mode === "access" ? (
-              <div className="space-y-1.5">
-                <Label htmlFor="key" className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-                  Access Key
-                </Label>
-                <div className="relative">
-                  <KeyRound className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    id="key"
-                    type="password"
-                    autoComplete="current-password"
-                    value={accessKey}
-                    onChange={(e) => setAccessKey(e.target.value)}
-                    placeholder="••••••••••••••••"
-                    className="h-9 pl-8 font-mono text-xs tracking-widest"
-                  />
-                </div>
-                <p className="text-[10px] font-mono text-muted-foreground">
-                  Access keys are scoped per operator and rotated by the clearing admin.
-                </p>
+            <div className="space-y-1.5">
+              <Label htmlFor="key" className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+                Password
+              </Label>
+              <div className="relative">
+                <KeyRound className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                <Input id="key" type="password" autoComplete="current-password" value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••••••••••" className="h-9 pl-8 font-mono text-xs tracking-widest" />
               </div>
-            ) : (
-              <label className="flex cursor-pointer items-start gap-2 rounded-md border border-border bg-background/40 p-3 text-xs">
-                <input
-                  type="checkbox"
-                  checked={fund}
-                  onChange={(e) => setFund(e.target.checked)}
-                  className="mt-0.5 h-3.5 w-3.5 accent-[var(--primary)]"
-                />
-                <span className="space-y-0.5">
-                  <span className="block font-mono uppercase tracking-widest text-foreground">
-                    Fund settlement account on Stellar Testnet
-                  </span>
-                  <span className="block text-[11px] text-muted-foreground">
-                    Provisions a Stellar Testnet account funded via Friendbot for settlement operations.
-                  </span>
-                </span>
-              </label>
-            )}
+              <p className="text-[10px] font-mono text-muted-foreground">
+                Authenticated against the EnergyPay clearing backend. Sessions are scoped to this browser tab.
+              </p>
+            </div>
 
-            <Button
-              type="submit"
-              disabled={!!busy}
-              className="h-9 w-full font-mono text-xs uppercase tracking-widest"
-            >
-              {busy === "access" && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-              {busy === "provision" && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-              {mode === "access"
-                ? busy
-                  ? "Authenticating…"
-                  : "Access Clearing Environment"
-                : busy
-                  ? "Provisioning Settlement Identity…"
-                  : "Provision Settlement Identity"}
+            <Button type="submit" disabled={busy} className="h-9 w-full font-mono text-xs uppercase tracking-widest">
+              {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+              {busy ? "Authenticating…" : "Access Clearing Environment"}
             </Button>
+
+            <Separator className="bg-border/60" />
+
+            <Link to="/register"
+              className="flex items-center justify-between rounded-md border border-border bg-background/40 px-3 py-2.5 text-xs transition hover:border-primary/40 hover:bg-primary/5">
+              <span>
+                <span className="block font-mono uppercase tracking-widest text-foreground">
+                  Provision new settlement identity
+                </span>
+                <span className="block text-[11px] text-muted-foreground">
+                  Mint operator identity · ed25519 keypair · market participant roles
+                </span>
+              </span>
+              <ArrowRight className="h-4 w-4 text-muted-foreground" />
+            </Link>
 
             <div className="flex items-center justify-between border-t border-border pt-3 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
               <span>Stellar Testnet · Settlement Network</span>

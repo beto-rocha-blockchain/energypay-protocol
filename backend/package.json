@@ -1,0 +1,22 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "EnergyPay backend",
+  "main": "src/app.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node src/app.js"
+  },
+  "dependencies": {
+    "@stellar/stellar-sdk": "^15.1.0",
+    "@supabase/supabase-js": "^2.105.4",
+    "axios": "^1.16.0",
+    "bcrypt": "^6.0.0",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "crypto-js": "^4.2.0",
+    "dotenv": "^17.4.2",
+    "express": "^4.22.1",
+    "jsonwebtoken": "^9.0.3"
+  }
+}

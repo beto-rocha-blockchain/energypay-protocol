@@ -1,89 +1,242 @@
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
+import {
+  apiLogin,
+  apiRegister,
+  type ApiUser,
+  type RegisterPayload,
+} from "@/lib/api";
+import {
+  getSession,
+  setSession,
+  clearSession,
+  type AuthSession,
+} from "@/lib/session";
 
 export type AccessLevel = "OPERATOR" | "SUPERVISOR" | "CLEARING_ADMIN";
+
+export type ParticipantRole = "GENERATOR" | "SELLER" | "INVESTOR" | "USER";
+
+export const ROLE_META: Record<
+  ParticipantRole,
+  { label: string; tagline: string; capabilities: string[] }
+> = {
+  GENERATOR: {
+    label: "Generator",
+    tagline: "Energy issuance · tokenized production",
+    capabilities: ["Generation assets", "Energy issuance", "Tokenized production"],
+  },
+  SELLER: {
+    label: "Seller",
+    tagline: "Commercialization · contract settlement",
+    capabilities: ["Energy commercialization", "Contract settlement", "Market operations"],
+  },
+  INVESTOR: {
+    label: "Investor",
+    tagline: "Portfolio exposure · financial reconciliation",
+    capabilities: ["Portfolio exposure", "Settlement analytics", "Financial reconciliation"],
+  },
+  USER: {
+    label: "User",
+    tagline: "Consumption · billing visibility",
+    capabilities: ["Energy consumption", "Billing visibility", "Settlement history"],
+  },
+};
+
+export type StellarKeypair = {
+  publicKey: string;
+  network: "STELLAR_TESTNET" | string;
+  funded: boolean;
+  status: string;
+};
+
+export type OperatorCoords = { lat: number; lng: number; source: "GPS" | "MANUAL" };
 
 export type OperatorIdentity = {
   operatorId: string;
   email: string;
+  fullName: string;
   organization: string;
-  settlementAddress: string;        // Stellar G... public key (mock)
+  country: string;
+  city: string;
+  coords?: OperatorCoords;
+  settlementAddress: string;
+  wallet: StellarKeypair;
+  roles: ParticipantRole[];
   accessLevel: AccessLevel;
   permissions: string[];
-  network: "STELLAR_TESTNET";
+  network: string;
   networkStatus: "ACTIVE" | "DEGRADED" | "OFFLINE";
   funded: boolean;
   provisionedAt: string;
+  token: string;
+  provisioningTxHash?: string | null;
+  provisioningLedger?: number | null;
+  settlementStatus?: string | null;
 };
 
 type OperatorState = {
   operator: OperatorIdentity | null;
   isAuthenticated: boolean;
-  login: (input: { email: string; organization: string; accessKey: string }) => OperatorIdentity;
-  provisionIdentity: (input: { email: string; organization: string; fund?: boolean }) => OperatorIdentity;
+  hydrate: () => void;
+  login: (input: { email: string; password: string; organization?: string }) => Promise<OperatorIdentity>;
+  register: (input: {
+    email: string;
+    password: string;
+    fullName: string;
+    organization: string;
+    country: string;
+    city: string;
+    roles: ParticipantRole[];
+    coords?: OperatorCoords;
+    fund?: boolean;
+  }) => Promise<OperatorIdentity>;
+  setRoles: (roles: ParticipantRole[]) => void;
+  setCoords: (coords: OperatorCoords | undefined) => void;
   logout: () => void;
 };
 
-const B32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
-const rand = (n: number, alphabet: string) =>
-  Array.from({ length: n }, () => alphabet[Math.floor(Math.random() * alphabet.length)]).join("");
+const ROLE_PERMISSIONS: Record<ParticipantRole, string[]> = {
+  GENERATOR: ["generation.issue", "assets.read"],
+  SELLER: ["settlements.execute", "contracts.write"],
+  INVESTOR: ["portfolio.read", "analytics.read"],
+  USER: ["billing.read", "consumption.read"],
+};
 
-/** Mock Stellar-style public key: starts with G, 56 chars total, base32. */
-export const generateStellarAddress = () => `G${rand(55, B32)}`;
+const buildPermissions = (roles: ParticipantRole[]) => {
+  const base = ["registry.read", "reconciliation.read"];
+  const rolePerms = roles.flatMap((r) => ROLE_PERMISSIONS[r] ?? []);
+  return Array.from(new Set([...base, ...rolePerms]));
+};
 
-const orgToCode = (org: string) =>
-  (org.replace(/[^A-Za-z0-9]/g, "").toUpperCase().slice(0, 4) || "OPER").padEnd(4, "X");
+const normalizeRoles = (roles: string[] | undefined): ParticipantRole[] => {
+  const valid: ParticipantRole[] = ["GENERATOR", "SELLER", "INVESTOR", "USER"];
+  if (!roles?.length) return ["SELLER"];
+  return roles
+    .map((r) => r.toUpperCase() as ParticipantRole)
+    .filter((r): r is ParticipantRole => valid.includes(r));
+};
 
-const makeOperatorId = (org: string) =>
-  `OPR-${orgToCode(org)}-${Math.floor(1000 + Math.random() * 9000)}`;
+const identityFromSession = (session: AuthSession): OperatorIdentity => {
+  const u: ApiUser = session.user;
+  const roles = normalizeRoles(u.roles);
+  const wallet: StellarKeypair = {
+    publicKey: u.stellar_public_key,
+    network: u.network ?? "STELLAR_TESTNET",
+    funded: !!u.funded,
+    status: u.wallet_status ?? (u.funded ? "FUNDED" : "PROVISIONED"),
+  };
+  return {
+    operatorId: u.id,
+    email: u.email,
+    fullName: u.full_name,
+    organization: u.organization ?? "—",
+    country: u.country ?? "—",
+    city: u.city ?? "—",
+    coords: u.coords
+      ? { lat: u.coords.lat, lng: u.coords.lng, source: u.coords.source ?? "MANUAL" }
+      : undefined,
+    settlementAddress: u.stellar_public_key,
+    wallet,
+    roles,
+    accessLevel: "OPERATOR",
+    permissions: buildPermissions(roles),
+    network: u.network ?? "STELLAR_TESTNET",
+    networkStatus: "ACTIVE",
+    funded: !!u.funded,
+    provisionedAt: session.createdAt,
+    token: session.token,
+    provisioningTxHash: u.provisioning_tx_hash ?? null,
+    provisioningLedger: u.provisioning_ledger ?? null,
+    settlementStatus: u.settlement_status ?? (u.funded ? "FUNDED" : "PROVISIONED"),
+  };
+};
 
-const buildIdentity = (
-  email: string,
-  organization: string,
-  opts: { fund?: boolean; accessLevel?: AccessLevel } = {},
-): OperatorIdentity => ({
-  operatorId: makeOperatorId(organization),
-  email,
-  organization,
-  settlementAddress: generateStellarAddress(),
-  accessLevel: opts.accessLevel ?? "OPERATOR",
-  permissions: ["settlements.execute", "reconciliation.read", "registry.read"],
-  network: "STELLAR_TESTNET",
-  networkStatus: "ACTIVE",
-  funded: opts.fund ?? true,
-  provisionedAt: new Date().toISOString(),
-});
+export const useOperator = create<OperatorState>()((set, get) => ({
+  operator: null,
+  isAuthenticated: false,
 
-export const useOperator = create<OperatorState>()(
-  persist(
-    (set) => ({
-      operator: null,
-      isAuthenticated: false,
-      login: ({ email, organization, accessKey }) => {
-        // Mock credential check — any non-empty access key authenticates.
-        if (!email || !organization || !accessKey) {
-          throw new Error("Operational credentials incomplete.");
-        }
-        const id = buildIdentity(email, organization, { fund: true });
-        set({ operator: id, isAuthenticated: true });
-        return id;
-      },
-      provisionIdentity: ({ email, organization, fund }) => {
-        const id = buildIdentity(email, organization, { fund });
-        set({ operator: id, isAuthenticated: true });
-        return id;
-      },
-      logout: () => set({ operator: null, isAuthenticated: false }),
-    }),
-    {
-      name: "energypay.operator.v1",
-      storage: createJSONStorage(() =>
-        typeof window !== "undefined" ? window.localStorage : (undefined as unknown as Storage),
-      ),
-    },
-  ),
-);
+  hydrate: () => {
+    const session = getSession();
+    if (!session) {
+      set({ operator: null, isAuthenticated: false });
+      return;
+    }
+    set({ operator: identityFromSession(session), isAuthenticated: true });
+  },
 
-/** Mask a Stellar address as `GABC…XY12` for institutional display. */
+  login: async ({ email, password, organization }) => {
+    if (!email || !password) {
+      throw new Error("Operator email and password are required.");
+    }
+    const res = await apiLogin({ email, password, organization });
+    const session: AuthSession = {
+      token: res.token,
+      user: res.user,
+      createdAt: new Date().toISOString(),
+    };
+    setSession(session);
+    const id = identityFromSession(session);
+    set({ operator: id, isAuthenticated: true });
+    return id;
+  },
+
+  register: async ({ email, password, fullName, organization, country, city, roles, coords, fund }) => {
+    if (!roles.length) throw new Error("Select at least one market participant role.");
+    const payload: RegisterPayload = {
+      email,
+      password,
+      full_name: fullName,
+      organization,
+      country,
+      city,
+      roles,
+      coords,
+      fund: fund ?? true,
+    };
+    const res = await apiRegister(payload);
+    const session: AuthSession = {
+      token: res.token,
+      user: res.user,
+      createdAt: new Date().toISOString(),
+    };
+    setSession(session);
+
+    localStorage.setItem("token", res.token);
+
+    const id = identityFromSession(session);
+    set({ operator: id, isAuthenticated: true });
+    return id;
+  },
+
+  setRoles: (roles) => {
+    const op = get().operator;
+    if (!op) return;
+    set({ operator: { ...op, roles, permissions: buildPermissions(roles) } });
+  },
+
+  setCoords: (coords) => {
+    const op = get().operator;
+    if (!op) return;
+    set({ operator: { ...op, coords } });
+  },
+
+  logout: () => {
+    clearSession();
+    set({ operator: null, isAuthenticated: false });
+  },
+}));
+
+// Hydrate from sessionStorage on first load (browser only).
+if (typeof window !== "undefined") {
+  useOperator.getState().hydrate();
+}
+
 export const maskAddress = (addr: string) =>
-  addr.length > 12 ? `${addr.slice(0, 6)}…${addr.slice(-4)}` : addr;
+  addr && addr.length > 12 ? `${addr.slice(0, 6)}…${addr.slice(-4)}` : addr || "—";
+
+export const canExecuteSettlement = (op: OperatorIdentity | null) =>
+  !!op &&
+  (op.permissions.includes("settlements.execute") ||
+    op.roles.includes("SELLER") ||
+    op.accessLevel !== "OPERATOR" ||
+    op.roles.includes("GENERATOR"));

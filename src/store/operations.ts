@@ -16,6 +16,25 @@ import {
   type QueuePhase,
 } from "@/lib/mock-data";
 
+
+const API_BASE = "http://localhost:3000/api";
+
+export async function loadContractsFromApi() {
+  try {
+    const res = await fetch(`${API_BASE}/contracts`);
+
+    if (!res.ok) {
+      throw new Error("contracts fetch failed");
+    }
+
+    return await res.json();
+  } catch (err) {
+    console.warn("Using mock contracts fallback", err);
+    return mockContracts;
+  }
+}
+
+
 /* ------------------------------------------------------------------ */
 /*  Operational Log                                                    */
 /* ------------------------------------------------------------------ */
@@ -47,6 +66,7 @@ type OpsState = {
   logs: ExecutionLog[];
   counters: Counters;
   lastTick: number;
+  
 
   /* selectors (computed) */
   getContract: (id: string) => Contract | undefined;
@@ -54,7 +74,8 @@ type OpsState = {
 
   /* mutations */
   registerContract: (input: {
-    buyer: string; seller: string; volumeMWh: number; priceBRL: number; settlementDate: string;
+    buyer: string; seller: string; volumeMWh: number; priceBRL: number;
+    settlementDate: string; startDate?: string; endDate?: string;
   }) => Contract;
 
   appendLog: (l: Omit<ExecutionLog, "id" | "ts"> & { ts?: string }) => void;
@@ -64,7 +85,7 @@ type OpsState = {
   pushAlert: (a: Omit<AlertItem, "id" | "time">) => void;
 
   /* background tick — advances queue & emits operational events */
-  tick: () => void;
+  tick: () => Promise<void>;
   reset: () => void;
 };
 
@@ -105,7 +126,7 @@ const seedLogs = (): ExecutionLog[] => {
   const sample = mockContracts.slice(0, 3);
   const out: ExecutionLog[] = [];
   sample.forEach((c, ci) => {
-    const base = ["contract registered in clearing pool", "counterparty validated · KYC + collateral OK", "PLD ingested from CCEE oracle"];
+    const base = ["contract registered in clearing pool", "counterparty validated · KYC + collateral OK", "PLD ingested from GridRef oracle"];
     base.forEach((m, i) => {
       out.push({
         id: `LOG-${1000 + ci * 10 + i}`,
@@ -135,15 +156,21 @@ export const useOps = create<OpsState>()(
       getContract: (id) => get().contracts.find((c) => c.id === id),
       getLogsFor: (cid) => get().logs.filter((l) => l.contractId === cid),
 
-      registerContract: ({ buyer, seller, volumeMWh, priceBRL, settlementDate }) => {
+      registerContract: ({ buyer, seller, volumeMWh, priceBRL, settlementDate, startDate, endDate }) => {
         const c = get();
         const epc = c.counters.epc + 1;
         const id = `EPC-${epc}`;
+        const resolvedEnd = endDate ?? settlementDate;
+        const today = new Date().toISOString().slice(0, 10);
+        const status: Contract["status"] =
+          startDate && startDate > today ? "PENDING" : "ACTIVE";
         const contract: Contract = {
           id, buyer, seller, volumeMWh, priceBRL,
           pldBRL: priceBRL,
-          settlementDate,
-          status: "ACTIVE",
+          settlementDate: resolvedEnd,
+          startDate,
+          endDate: resolvedEnd,
+          status,
           state: "CREATED",
           ledger: 0,
           latencyMs: 0,
@@ -220,7 +247,7 @@ export const useOps = create<OpsState>()(
         });
       },
 
-      tick: () => {
+      tick: async () => {
         const s = get();
         const t = Date.now();
         if (t - s.lastTick < 4500) return;
@@ -252,10 +279,29 @@ export const useOps = create<OpsState>()(
         });
 
         // finalize completed → record settlement
-        completed.forEach((q) => {
+        completed.forEach(async (q) => {
           const c = s.contracts.find((cc) => cc.id === q.contractId);
           if (!c) return;
           const ledger = s.counters.ledger + Math.floor(Math.random() * 30);
+          const response = await fetch(
+  "http://localhost:3000/api/settlement/execute",
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      contractId: q.contractId,
+      amount: q.amount,
+    }),
+  }
+);
+
+if (!response.ok) {
+  throw new Error("Settlement execution failed");
+}
+
+const settlementResult = await response.json();
           const stl: Settlement = {
             id: q.id,
             contractId: q.contractId,
@@ -263,9 +309,13 @@ export const useOps = create<OpsState>()(
             amountBRL: q.amount,
             pld: c.pldBRL,
             date: new Date().toISOString().slice(0, 16).replace("T", " "),
-            txHash: rndHash(),
-            ledger,
-            latencyMs: 1800 + Math.floor(Math.random() * 1200),
+            txHash:
+              settlementResult.tx_hash ||
+              settlementResult.hash ||
+              settlementResult.txHash ||
+              "UNAVAILABLE",
+            ledger: settlementResult.ledger,
+            latencyMs: settlementResult.finality_ms ?? 2400,
             window: c.window,
             state: "SETTLED",
             status: "CONFIRMED",
@@ -292,7 +342,7 @@ export const useOps = create<OpsState>()(
           const candidates: Array<Omit<AlertItem, "id" | "time">> = [
             { level: "warn", title: "Counterparty ack delay", detail: "ack pending > 60s on active settlement" },
             { level: "info", title: "Reconciliation queue normalising", detail: "pending items decreasing" },
-            { level: "warn", title: "Oracle PLD lag", detail: "CCEE feed drift 4.1s vs reference clock" },
+            { level: "warn", title: "Oracle PLD lag", detail: "GridRef feed drift 4.1s vs reference clock" },
             { level: "info", title: "New cycle window opened", detail: "D+1 17:00 BRT clearing window active" },
           ];
           get().pushAlert(candidates[Math.floor(Math.random() * candidates.length)]);
@@ -339,5 +389,7 @@ let tickerStarted = false;
 export function startOpsTicker() {
   if (tickerStarted || typeof window === "undefined") return;
   tickerStarted = true;
-  setInterval(() => useOps.getState().tick(), 5000);
+  setInterval(() => {
+    useOps.getState().tick().catch(console.error);
+  }, 5000);
 }

@@ -5,8 +5,11 @@ import {
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { useOperator, maskAddress } from "@/store/operator";
-import { Copy, LogOut, ShieldCheck, Activity, Building2, Mail, Hash, Check } from "lucide-react";
+import { useOperator, maskAddress, ROLE_META } from "@/store/operator";
+import {
+  Copy, LogOut, ShieldCheck, Activity, Building2, Mail, Hash, Check,
+  KeyRound, MapPin,
+} from "lucide-react";
 import { toast } from "sonner";
 
 export function OperatorBadge() {
@@ -51,7 +54,7 @@ export function OperatorBadge() {
       <PopoverContent
         align="end"
         sideOffset={8}
-        className="w-[340px] border-border bg-card/95 p-0 backdrop-blur"
+        className="w-[490px] max-h-[90vh] overflow-y-auto border-border bg-card/95 p-0 backdrop-blur"
       >
         <div className="flex items-center justify-between border-b border-border bg-background/40 px-3 py-2">
           <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
@@ -65,34 +68,61 @@ export function OperatorBadge() {
 
         <div className="space-y-3 p-3.5">
           <Row icon={<Hash className="h-3 w-3" />} label="Operator ID" value={operator.operatorId} mono />
+          <Row icon={<Hash className="h-3 w-3" />} label="Full Name" value={operator.fullName} />
           <Row icon={<Building2 className="h-3 w-3" />} label="Organization" value={operator.organization} />
           <Row icon={<Mail className="h-3 w-3" />} label="Operator Email" value={operator.email} mono />
+          <Row icon={<MapPin className="h-3 w-3" />} label="Jurisdiction" value={`${operator.city} · ${operator.country}`} />
 
           <div>
             <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
               <ShieldCheck className="h-3 w-3" />
-              Settlement Address
+              Signer Address · Active Settlement Authority
             </div>
             <div className="mt-1 flex items-center gap-1.5">
               <code className="flex-1 truncate rounded-md border border-border bg-background/60 px-2 py-1 font-mono text-[11px] text-foreground">
-                {operator.settlementAddress}
+                {operator.wallet.publicKey}
               </code>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={copy}
-                className="h-7 px-2 font-mono text-[10px] uppercase tracking-widest"
-              >
+              <Button type="button" variant="outline" size="sm" onClick={copy}
+                className="h-7 px-2 font-mono text-[10px] uppercase tracking-widest">
                 {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
               </Button>
             </div>
             <div className="mt-1 font-mono text-[10px] text-muted-foreground">
-              {maskAddress(operator.settlementAddress)} · ed25519 · Stellar Testnet
+              {maskAddress(operator.wallet.publicKey)} · ed25519 · Stellar Testnet
+            </div>
+          </div>
+
+          <div>
+            <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+              <KeyRound className="h-3 w-3" />
+              Signer custody
+            </div>
+            <div className="mt-1 rounded-md border border-border bg-background/60 px-2 py-1.5 font-mono text-[11px] text-foreground">
+              Backend custody · ed25519 · {operator.wallet.status}
+            </div>
+            <div className="mt-1 font-mono text-[10px] text-muted-foreground">
+              Secret seed is held by the EnergyPay backend. Settlement signing is performed server-side on Stellar Testnet.
             </div>
           </div>
 
           <Separator className="bg-border/60" />
+
+          <div>
+            <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+              Market Participant Roles
+            </div>
+            <div className="mt-1 flex flex-wrap gap-1">
+              {operator.roles.length === 0 && (
+                <span className="font-mono text-[10px] text-muted-foreground">No roles provisioned</span>
+              )}
+              {operator.roles.map((r) => (
+                <span key={r}
+                  className="rounded-sm border border-primary/40 bg-primary/10 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-widest text-primary">
+                  {ROLE_META[r].label}
+                </span>
+              ))}
+            </div>
+          </div>
 
           <div className="grid grid-cols-2 gap-2 text-[10px] font-mono uppercase tracking-widest">
             <Mini label="Access Level" value={operator.accessLevel.replace("_", " ")} />
@@ -107,10 +137,8 @@ export function OperatorBadge() {
             </div>
             <div className="mt-1 flex flex-wrap gap-1">
               {operator.permissions.map((p) => (
-                <span
-                  key={p}
-                  className="rounded-sm border border-border bg-background/60 px-1.5 py-0.5 font-mono text-[10px] text-foreground"
-                >
+                <span key={p}
+                  className="rounded-sm border border-border bg-background/60 px-1.5 py-0.5 font-mono text-[10px] text-foreground">
                   {p}
                 </span>
               ))}

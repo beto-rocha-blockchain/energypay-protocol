@@ -2,20 +2,21 @@ import { useEffect, useRef, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, Copy, Terminal } from "lucide-react";
+import { ExternalLink, Copy, Terminal, ShieldCheck, KeyRound, AlertTriangle } from "lucide-react";
 import { StateMachine } from "@/components/StateMachine";
 import { type SettlementState, type Contract, type Settlement } from "@/lib/mock-data";
 import { useOps } from "@/store/operations";
+import {
+  useOperator,
+  maskAddress,
+  canExecuteSettlement,
+  ROLE_META,
+} from "@/store/operator";
+import { apiExecuteSettlement, type SettlementResult } from "@/lib/api";
+import { stellarExpertTx, stellarExpertAccount } from "@/lib/stellar";
 import { toast } from "sonner";
 
 type LogLine = { ts: string; text: string; level?: "info" | "ok" | "warn" };
-
-type Step = {
-  delay: number;
-  state: SettlementState;
-  log: string;
-  level?: "info" | "ok" | "warn";
-};
 
 const fmtTs = (d: Date) =>
   `${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}:${d
@@ -39,6 +40,9 @@ export function ExecutionConsole({
   pld: number;
   amount: number;
 }) {
+  const operator = useOperator((s) => s.operator);
+  const authorized = canExecuteSettlement(operator);
+
   const [logs, setLogs] = useState<LogLine[]>([]);
   const [state, setState] = useState<SettlementState>("CREATED");
   const [tx, setTx] = useState<string | null>(null);
@@ -46,94 +50,143 @@ export function ExecutionConsole({
   const [latency, setLatency] = useState<number | null>(null);
   const [running, setRunning] = useState(false);
   const [done, setDone] = useState(false);
+  const [failed, setFailed] = useState<string | null>(null);
+  const [result, setResult] = useState<SettlementResult | null>(null);
   const startRef = useRef<number>(0);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const appendLog = useOps((s) => s.appendLog);
+  const appendOpsLog = useOps((s) => s.appendLog);
   const updateContractState = useOps((s) => s.updateContractState);
   const recordSettlement = useOps((s) => s.recordSettlement);
 
   useEffect(() => {
     if (!open) return;
+    if (!operator || !authorized) {
+      setLogs([
+        {
+          ts: fmtTs(new Date()),
+          text: "✗ settlement authorization rejected · no operational identity bound to session",
+          level: "warn",
+        },
+      ]);
+      setRunning(false);
+      setDone(false);
+      return;
+    }
+
     setLogs([]);
     setState("CREATED");
     setTx(null);
     setLedger(null);
     setLatency(null);
     setDone(false);
+    setFailed(null);
+    setResult(null);
     setRunning(true);
     startRef.current = Date.now();
 
     const settlementId = `STL-${90220 + Math.floor(Math.random() * 80)}`;
-    const txHash = Array.from({ length: 64 }, () =>
-      "0123456789abcdef"[Math.floor(Math.random() * 16)]
-    ).join("");
-    const ledgerNum = 58921450 + Math.floor(Math.random() * 200);
+    const signer = maskAddress(operator.wallet.publicKey);
+    const roleLabel = operator.roles.map((r) => ROLE_META[r].label).join(", ") || "operator";
 
-    const steps: Step[] = [
-      { delay: 0, state: "CREATED", log: `→ session opened · operator=clearing-desk-01 · contract=${contract.id}` },
-      { delay: 320, state: "CREATED", log: `validating contract ${contract.id}…` },
-      { delay: 640, state: "VALIDATED", log: `✓ counterparty ${contract.seller} within clearing limits`, level: "ok" },
-      { delay: 880, state: "VALIDATED", log: `pld ingested from CCEE oracle feed · R$ ${pld.toFixed(2)}/MWh` },
-      { delay: 1100, state: "VALIDATED", log: `exposure calculated · ${fmtBRL(amount)} (${amount >= 0 ? "buyer" : "seller"} receives)` },
-      { delay: 1380, state: "PENDING_SIGNATURE", log: `preparing settlement transaction · ${settlementId}` },
-      { delay: 1700, state: "PENDING_SIGNATURE", log: `signing payload with EPWR keypair (ed25519)…` },
-      { delay: 2050, state: "BROADCASTING", log: `→ broadcasting to Stellar Testnet horizon.stellar.org`, level: "info" },
-      { delay: 2400, state: "BROADCASTING", log: `awaiting confirmation · ledger window…` },
-      { delay: 2900, state: "CONFIRMED", log: `✓ tx confirmed · ledger #${ledgerNum.toLocaleString("en-US")}`, level: "ok" },
-      { delay: 3050, state: "CONFIRMED", log: `tx hash: ${txHash.slice(0, 16)}…${txHash.slice(-8)}` },
-      { delay: 3250, state: "SETTLED", log: `✓ reconciliation closed · BRL leg cleared`, level: "ok" },
-      { delay: 3400, state: "SETTLED", log: `settlement finalized · finality latency 2.4s`, level: "ok" },
-    ];
+    let cancelled = false;
+    const log = (s: SettlementState, text: string, level: "info" | "ok" | "warn" = "info") => {
+      if (cancelled) return;
+      setState(s);
+      setLogs((l) => [...l, { ts: fmtTs(new Date()), text, level }]);
+      updateContractState(contract.id, s);
+      appendOpsLog({ contractId: contract.id, settlementId, state: s, level, message: text });
+    };
+    const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
-    const timers: number[] = [];
-    steps.forEach((s) => {
-      const t = window.setTimeout(() => {
-        setState(s.state);
-        setLogs((l) => [...l, { ts: fmtTs(new Date()), text: s.log, level: s.level ?? "info" }]);
-        updateContractState(contract.id, s.state);
-        appendLog({
-          contractId: contract.id,
-          settlementId,
-          state: s.state,
-          level: (s.level ?? "info") as "info" | "ok" | "warn",
-          message: s.log,
+    (async () => {
+      log("CREATED", `→ session opened · operator=${operator.operatorId} · ${operator.organization}`);
+      await wait(160);
+      log("CREATED", `authorizing identity · roles=[${roleLabel}] · access=${operator.accessLevel}`);
+      await wait(160);
+      log("CREATED", `binding execution signer · source=${signer}`, "ok");
+      await wait(180);
+      log("VALIDATED", `pld ingested from GridRef oracle feed · R$ ${pld.toFixed(2)}/MWh`);
+      await wait(160);
+      log("VALIDATED", `exposure calculated · ${fmtBRL(amount)} (${amount >= 0 ? "buyer" : "seller"} receives)`);
+      await wait(180);
+      log("PENDING_SIGNATURE", `▸ requesting backend settlement execution · ${settlementId}`);
+      log("BROADCASTING", `→ POST /api/settlement/execute · backend signs & broadcasts`, "info");
+
+      try {
+        const res = await apiExecuteSettlement({
+          contract_id: contract.id,
+          settlement_id: settlementId,
+          counterparty: contract.seller,
+          amount_brl: amount,
+          pld,
+          window: contract.window,
+          memo: `EPAY ${contract.id} ${settlementId}`,
         });
-      }, s.delay);
-      timers.push(t);
-    });
-    const finish = window.setTimeout(() => {
-      setTx(txHash);
-      setLedger(ledgerNum);
-      const lat = Date.now() - startRef.current;
-      setLatency(lat);
-      setRunning(false);
-      setDone(true);
-      const stl: Settlement = {
-        id: settlementId,
-        contractId: contract.id,
-        counterparty: contract.seller,
-        amountBRL: amount,
-        pld,
-        date: new Date().toISOString().slice(0, 16).replace("T", " "),
-        txHash,
-        ledger: ledgerNum,
-        latencyMs: lat,
-        window: contract.window,
-        state: "SETTLED",
-        status: "CONFIRMED",
-      };
-      recordSettlement(stl);
-      toast.success("Settlement finalized", { description: `Ledger #${ledgerNum}` });
-    }, 3500);
-    timers.push(finish);
+        if (cancelled) return;
 
-    return () => timers.forEach((t) => clearTimeout(t));
-  }, [open, contract.id, contract.seller, contract.window, pld, amount, appendLog, updateContractState, recordSettlement]);
+        if (res.status === "FAILED") {
+          const msg = res.error || "Backend reported settlement failure";
+          log("FAILED", `✗ ${msg}`, "warn");
+          setFailed(msg);
+          setRunning(false);
+          toast.error("Settlement failed", { description: msg });
+          return;
+        }
+
+        log("CONFIRMED", `✓ tx confirmed · ledger #${res.ledger.toLocaleString("en-US")}`, "ok");
+        log("CONFIRMED", `tx hash: ${res.txHash}`);
+        await wait(140);
+        log("SETTLED", `✓ reconciliation closed · BRL leg cleared · signer=${signer}`, "ok");
+
+        const lat = res.finality_ms ?? Date.now() - startRef.current;
+        log("SETTLED", `settlement finalized · finality latency ${(lat / 1000).toFixed(2)}s`, "ok");
+
+        setTx(res.txHash);
+        setLedger(res.ledger);
+        setLatency(lat);
+        setResult(res);
+        setRunning(false);
+        setDone(true);
+
+        const stl: Settlement = {
+          id: res.settlement_id ?? settlementId,
+          contractId: contract.id,
+          counterparty: contract.seller,
+          amountBRL: amount,
+          pld,
+          date: new Date().toISOString().slice(0, 16).replace("T", " "),
+          txHash: res.txHash,
+          ledger: res.ledger,
+          latencyMs: lat,
+          window: contract.window,
+          state: "SETTLED",
+          status: "CONFIRMED",
+        };
+        recordSettlement(stl);
+        toast.success("Settlement finalized", {
+          description: `Ledger #${res.ledger} · ${(lat / 1000).toFixed(2)}s`,
+        });
+      } catch (err) {
+        if (cancelled) return;
+        const msg = (err as Error).message || "Backend submission failed";
+        log("FAILED", `✗ ${msg}`, "warn");
+        setFailed(msg);
+        setRunning(false);
+        toast.error("Settlement broadcast failed", { description: msg });
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, contract.id, contract.seller, contract.window, pld, amount, operator, authorized, appendOpsLog, updateContractState, recordSettlement]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [logs]);
+
+  const sourceShort = operator ? maskAddress(operator.wallet.publicKey) : "—";
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -146,25 +199,60 @@ export function ExecutionConsole({
             <div className="flex items-center justify-between gap-2">
               <SheetTitle className="font-display flex items-center gap-2 text-base">
                 <Terminal className="h-4 w-4 text-primary" />
-                Settlement Execution Console
+                Settlement Authorization Console
               </SheetTitle>
               <Badge
                 variant="outline"
                 className={
-                  running
+                  failed
+                    ? "border-destructive/40 bg-destructive/10 font-mono text-[10px] text-destructive"
+                    : running
                     ? "border-primary/40 bg-primary/10 font-mono text-[10px] text-primary"
                     : done
                     ? "border-success/40 bg-success/10 font-mono text-[10px] text-success"
+                    : !authorized
+                    ? "border-destructive/40 bg-destructive/10 font-mono text-[10px] text-destructive"
                     : "font-mono text-[10px]"
                 }
               >
-                {running ? "● RUNNING" : done ? "● FINALIZED" : "IDLE"}
+                {!authorized ? "● UNAUTHORIZED" : failed ? "● FAILED" : running ? "● SIGNING" : done ? "● FINALIZED" : "IDLE"}
               </Badge>
             </div>
             <SheetDescription className="font-mono text-[11px] uppercase tracking-widest">
               {contract.id} · {contract.buyer} ↔ {contract.seller} · Stellar Testnet
             </SheetDescription>
           </SheetHeader>
+        </div>
+
+        {/* Operator-bound signer panel */}
+        <div className="border-b border-border bg-card/40 px-5 py-3">
+          <div className="mb-2 flex items-center justify-between">
+            <p className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+              <ShieldCheck className="h-3 w-3 text-success" />
+              Execution Signer · Backend Custody
+            </p>
+            {operator && (
+              <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                {operator.operatorId}
+              </span>
+            )}
+          </div>
+          {operator ? (
+            <div className="grid grid-cols-2 gap-2 text-[11px]">
+              <SignerCell label="Source Public Key" value={operator.wallet.publicKey} mono truncate />
+              <SignerCell label="Settlement Authority" value={operator.organization} />
+              <SignerCell
+                label="Active Roles"
+                value={operator.roles.map((r) => ROLE_META[r].label).join(" · ") || "—"}
+              />
+              <SignerCell label="Wallet Status" value={`${operator.wallet.status}${operator.funded ? " · FUNDED" : ""}`} />
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 font-mono text-[11px] text-destructive">
+              <AlertTriangle className="h-3.5 w-3.5" />
+              No operational identity bound to session
+            </div>
+          )}
         </div>
 
         <div className="border-b border-border px-5 py-3">
@@ -179,8 +267,8 @@ export function ExecutionConsole({
             <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
               Execution log · stdout
             </p>
-            <p className="font-mono text-[10px] text-muted-foreground">
-              {logs.length} lines
+            <p className="flex items-center gap-1.5 font-mono text-[10px] text-muted-foreground">
+              <KeyRound className="h-3 w-3" /> signer {sourceShort}
             </p>
           </div>
           <div
@@ -206,26 +294,28 @@ export function ExecutionConsole({
             {running && (
               <div className="mt-1 flex items-center gap-2 text-muted-foreground">
                 <span className="h-2 w-1.5 animate-pulse bg-primary" />
-                <span className="text-[10px]">processing…</span>
+                <span className="text-[10px]">awaiting backend confirmation…</span>
               </div>
             )}
           </div>
         </div>
 
-        {done && tx && (
+        {done && tx && operator && result && (
           <div className="border-t border-border bg-card/40 px-5 py-4">
             <p className="mb-3 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-              Settlement receipt
+              Settlement receipt · backend
             </p>
             <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-[12px]">
               <Meta k="Contract ID" v={contract.id} />
-              <Meta k="Settlement ID" v={`STL-${90220 + (ledger ? ledger % 80 : 0)}`} />
+              <Meta k="Settlement ID" v={result.settlement_id} />
               <Meta k="Counterparty" v={contract.seller} />
               <Meta k="Amount" v={fmtBRL(amount)} />
               <Meta k="Ledger #" v={ledger?.toLocaleString("en-US") ?? "—"} />
               <Meta k="Finality" v={`${((latency ?? 0) / 1000).toFixed(2)}s`} />
+              <Meta k="Signer Operator" v={operator.operatorId} />
+              <Meta k="Source Account" v={maskAddress(result.source_public_key ?? operator.wallet.publicKey)} highlight />
               <Meta k="Window" v={contract.window} />
-              <Meta k="Status" v="SETTLED" highlight />
+              <Meta k="Status" v={result.status} highlight />
             </dl>
             <div className="mt-3">
               <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
@@ -248,23 +338,73 @@ export function ExecutionConsole({
                 </Button>
               </div>
             </div>
-            <div className="mt-4 flex items-center justify-between">
-              <a
-                href={`https://stellar.expert/explorer/testnet/tx/${tx}`}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1.5 text-xs text-accent hover:underline"
-              >
-                View on Stellar Expert <ExternalLink className="h-3 w-3" />
-              </a>
+            <div className="mt-4 flex items-center justify-between gap-2">
+              <div className="flex flex-col gap-1">
+                <a
+                  href={stellarExpertTx(tx)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 text-xs text-accent hover:underline"
+                >
+                  View transaction on Stellar Expert <ExternalLink className="h-3 w-3" />
+                </a>
+                <a
+                  href={stellarExpertAccount(result.source_public_key ?? operator.wallet.publicKey)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground hover:text-accent"
+                >
+                  Source account audit <ExternalLink className="h-3 w-3" />
+                </a>
+              </div>
               <Button size="sm" variant="outline" onClick={() => onOpenChange(false)}>
                 Close
               </Button>
             </div>
           </div>
         )}
+
+        {failed && (
+          <div className="border-t border-border bg-destructive/5 px-5 py-4">
+            <p className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-widest text-destructive">
+              <AlertTriangle className="h-3.5 w-3.5" />
+              Settlement broadcast failed
+            </p>
+            <p className="mt-1 font-mono text-[11px] text-muted-foreground">{failed}</p>
+            <p className="mt-1 font-mono text-[10px] text-muted-foreground">
+              Verify backend connectivity ({"http://localhost:3000"}) and Horizon network status, then retry.
+            </p>
+          </div>
+        )}
+
+        {!authorized && (
+          <div className="border-t border-border bg-destructive/5 px-5 py-4">
+            <p className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-widest text-destructive">
+              <AlertTriangle className="h-3.5 w-3.5" />
+              Settlement authorization unavailable
+            </p>
+            <p className="mt-1 font-mono text-[11px] text-muted-foreground">
+              The current session has no provisioned settlement authority. Sign in with an
+              operational identity holding <span className="text-foreground">settlements.execute</span>{" "}
+              to authorize this transaction.
+            </p>
+          </div>
+        )}
       </SheetContent>
     </Sheet>
+  );
+}
+
+function SignerCell({
+  label, value, mono, truncate,
+}: { label: string; value: string; mono?: boolean; truncate?: boolean }) {
+  return (
+    <div className="rounded-md border border-border bg-background/40 px-2 py-1.5">
+      <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{label}</div>
+      <div className={`mt-0.5 text-[11px] ${mono ? "font-mono" : ""} ${truncate ? "truncate" : ""}`}>
+        {value}
+      </div>
+    </div>
   );
 }
 
