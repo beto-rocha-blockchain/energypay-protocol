@@ -1,0 +1,9 @@
+### x402 status
+GET http://localhost:3000/api/x402/status
+
+### x402 protected PLD endpoint — should return 402
+GET http://localhost:3000/api/x402/pld
+
+### x402 protected PLD endpoint — should unlock with Stellar tx hash
+GET http://localhost:3000/api/x402/pld
+PAYMENT-SIGNATURE: stellar-testnet:PASTE_TX_HASH_HERE
