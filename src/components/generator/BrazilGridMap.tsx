@@ -12,11 +12,11 @@ type Region = {
 };
 
 const REGIONS: Region[] = [
-  { id: "N",  name: "Norte",     cx: 200, cy: 90,  baseLoadMw: 18_400 },
-  { id: "NE", name: "Nordeste",  cx: 320, cy: 130, baseLoadMw: 22_900 },
+  { id: "N", name: "Norte", cx: 200, cy: 90, baseLoadMw: 18_400 },
+  { id: "NE", name: "Nordeste", cx: 320, cy: 130, baseLoadMw: 22_900 },
   { id: "CO", name: "Centro-Oeste", cx: 220, cy: 200, baseLoadMw: 14_300 },
-  { id: "SE", name: "Sudeste",   cx: 290, cy: 240, baseLoadMw: 41_700 },
-  { id: "S",  name: "Sul",       cx: 240, cy: 310, baseLoadMw: 19_600 },
+  { id: "SE", name: "Sudeste", cx: 290, cy: 240, baseLoadMw: 41_700 },
+  { id: "S", name: "Sul", cx: 240, cy: 310, baseLoadMw: 19_600 },
 ];
 
 // Simplified Brazil silhouette path
@@ -71,7 +71,9 @@ export function BrazilGridMap() {
           <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
             ONS · National Interconnected System · SCADA Overlay
           </p>
-          <h2 className="mt-0.5 font-display text-base font-semibold">Regional Generation & Settlement Map</h2>
+          <h2 className="mt-0.5 font-display text-base font-semibold">
+            Regional Generation & Settlement Map
+          </h2>
         </div>
         <div className="flex flex-wrap gap-2 font-mono text-[10px] uppercase tracking-widest">
           <Badge variant="outline" className="border-border">
@@ -149,12 +151,7 @@ export function BrazilGridMap() {
                   className="animate-node-pulse"
                   style={{ animationDelay: `${r.cx * 0.003}s` }}
                 />
-                <circle
-                  cx={r.cx}
-                  cy={r.cy}
-                  r={2.5}
-                  fill="oklch(0.96 0.005 240)"
-                />
+                <circle cx={r.cx} cy={r.cy} r={2.5} fill="oklch(0.96 0.005 240)" />
                 <text
                   x={r.cx + 14}
                   y={r.cy - 8}
@@ -181,10 +178,7 @@ export function BrazilGridMap() {
 
         <div className="space-y-2">
           {data.map((r) => (
-            <div
-              key={r.id}
-              className="rounded-md border border-border bg-background/40 p-2.5"
-            >
+            <div key={r.id} className="rounded-md border border-border bg-background/40 p-2.5">
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-2 text-xs">
                   <span

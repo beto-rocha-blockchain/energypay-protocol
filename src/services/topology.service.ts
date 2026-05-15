@@ -10,7 +10,12 @@ export const topologyService: ReadService<TopologySnapshot, void> & {
   edges: () => Promise<TopologyEdge[]>;
 } = {
   async list() {
-    return { items: TOPO_NODES, total: TOPO_NODES.length, asOf: nowIso(), source: "MOCK" } as ListResult<TopologyNode>;
+    return {
+      items: TOPO_NODES,
+      total: TOPO_NODES.length,
+      asOf: nowIso(),
+      source: "MOCK",
+    } as ListResult<TopologyNode>;
   },
   async get(id) {
     return TOPO_NODES.find((n) => n.id === id) ?? null;

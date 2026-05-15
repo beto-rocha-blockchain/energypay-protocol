@@ -107,8 +107,8 @@ export const Route = createFileRoute("/api/health")({
           backend.status === "offline"
             ? "offline"
             : backend.status === "ok" && horizon.status === "ok"
-            ? "ok"
-            : "degraded";
+              ? "ok"
+              : "degraded";
         return json(200, {
           status: overall,
           backend,

@@ -26,8 +26,7 @@ export const fmtMW = (n: number) =>
 export const fmtEPWR = (n: number) =>
   `${n.toLocaleString("en-US", { maximumFractionDigits: 2 })} EPWR`;
 
-export const fmtPct = (n: number, d = 1) =>
-  `${n >= 0 ? "" : ""}${n.toFixed(d)}%`;
+export const fmtPct = (n: number, d = 1) => `${n >= 0 ? "" : ""}${n.toFixed(d)}%`;
 
 export const fmtNum = (n: number, d = 0) =>
   n.toLocaleString("en-US", { maximumFractionDigits: d, minimumFractionDigits: d });
@@ -136,7 +135,6 @@ export const computeExposure = (input: {
 
 // ─── Identifier formatters ───────────────────────────────────────────
 export const fmtOperatorId = (id: string) => id.toUpperCase();
-export const fmtContractId = (id: string) =>
-  id.startsWith("EPC-") ? id : `EPC-${id}`;
+export const fmtContractId = (id: string) => (id.startsWith("EPC-") ? id : `EPC-${id}`);
 export const fmtCorrelationId = (id: string) =>
   id.length > 18 ? `${id.slice(0, 8)}…${id.slice(-6)}` : id;

@@ -24,12 +24,66 @@ type Contract = {
 };
 
 const SEED: Contract[] = [
-  { id: "EPC-2047", counterparty: "Vale Energia", volumeMwh: 18_400, pricePerMwh: 278, status: "DELIVERING", deliveredPct: 64, expiresAt: "2026-12-31", liquidityRisk: 18 },
-  { id: "EPC-2051", counterparty: "Furnas Centrais", volumeMwh: 9_200, pricePerMwh: 264, status: "ACTIVE", deliveredPct: 12, expiresAt: "2027-03-15", liquidityRisk: 22 },
-  { id: "EPC-2058", counterparty: "Cemig GT", volumeMwh: 24_000, pricePerMwh: 291, status: "SETTLING", deliveredPct: 88, expiresAt: "2026-08-30", liquidityRisk: 36 },
-  { id: "EPC-2061", counterparty: "Engie Brasil", volumeMwh: 6_800, pricePerMwh: 305, status: "AT RISK", deliveredPct: 41, expiresAt: "2026-06-12", liquidityRisk: 71 },
-  { id: "EPC-2063", counterparty: "Equatorial S/A", volumeMwh: 12_500, pricePerMwh: 252, status: "ACTIVE", deliveredPct: 27, expiresAt: "2027-01-05", liquidityRisk: 14 },
-  { id: "EPC-2070", counterparty: "Auren Energia", volumeMwh: 15_750, pricePerMwh: 283, status: "DELIVERING", deliveredPct: 53, expiresAt: "2026-11-20", liquidityRisk: 29 },
+  {
+    id: "EPC-2047",
+    counterparty: "Vale Energia",
+    volumeMwh: 18_400,
+    pricePerMwh: 278,
+    status: "DELIVERING",
+    deliveredPct: 64,
+    expiresAt: "2026-12-31",
+    liquidityRisk: 18,
+  },
+  {
+    id: "EPC-2051",
+    counterparty: "Furnas Centrais",
+    volumeMwh: 9_200,
+    pricePerMwh: 264,
+    status: "ACTIVE",
+    deliveredPct: 12,
+    expiresAt: "2027-03-15",
+    liquidityRisk: 22,
+  },
+  {
+    id: "EPC-2058",
+    counterparty: "Cemig GT",
+    volumeMwh: 24_000,
+    pricePerMwh: 291,
+    status: "SETTLING",
+    deliveredPct: 88,
+    expiresAt: "2026-08-30",
+    liquidityRisk: 36,
+  },
+  {
+    id: "EPC-2061",
+    counterparty: "Engie Brasil",
+    volumeMwh: 6_800,
+    pricePerMwh: 305,
+    status: "AT RISK",
+    deliveredPct: 41,
+    expiresAt: "2026-06-12",
+    liquidityRisk: 71,
+  },
+  {
+    id: "EPC-2063",
+    counterparty: "Equatorial S/A",
+    volumeMwh: 12_500,
+    pricePerMwh: 252,
+    status: "ACTIVE",
+    deliveredPct: 27,
+    expiresAt: "2027-01-05",
+    liquidityRisk: 14,
+  },
+  {
+    id: "EPC-2070",
+    counterparty: "Auren Energia",
+    volumeMwh: 15_750,
+    pricePerMwh: 283,
+    status: "DELIVERING",
+    deliveredPct: 53,
+    expiresAt: "2026-11-20",
+    liquidityRisk: 29,
+  },
 ];
 
 const fmt = (n: number) => n.toLocaleString("en-US", { maximumFractionDigits: 0 });
@@ -43,7 +97,13 @@ const statusTone: Record<ContractStatus, string> = {
 };
 
 const barTone = (s: ContractStatus) =>
-  s === "AT RISK" ? "bg-destructive" : s === "SETTLING" ? "bg-primary" : s === "DELIVERING" ? "bg-accent" : "bg-success";
+  s === "AT RISK"
+    ? "bg-destructive"
+    : s === "SETTLING"
+      ? "bg-primary"
+      : s === "DELIVERING"
+        ? "bg-accent"
+        : "bg-success";
 
 export function BilateralContractsPanel() {
   const [tick, setTick] = useState(0);
@@ -76,7 +136,9 @@ export function BilateralContractsPanel() {
           <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
             Bilateral Trading Desk · Active PPAs
           </p>
-          <h2 className="mt-0.5 font-display text-base font-semibold">Active Bilateral Contracts</h2>
+          <h2 className="mt-0.5 font-display text-base font-semibold">
+            Active Bilateral Contracts
+          </h2>
         </div>
         <div className="flex flex-wrap gap-2 font-mono text-[10px] uppercase tracking-widest">
           <Badge variant="outline" className="border-border">
@@ -114,7 +176,9 @@ export function BilateralContractsPanel() {
               className="grid grid-cols-1 items-center gap-2 px-3 py-2.5 transition-colors hover:bg-background/40 md:grid-cols-12"
             >
               <div className="col-span-2 flex items-center gap-2">
-                <CircleDot className={`h-3 w-3 ${c.status === "AT RISK" ? "text-destructive animate-pulse" : "text-primary"}`} />
+                <CircleDot
+                  className={`h-3 w-3 ${c.status === "AT RISK" ? "text-destructive animate-pulse" : "text-primary"}`}
+                />
                 <span className="font-mono text-[11px]">{c.id}</span>
               </div>
               <div className="col-span-3 flex items-center gap-1.5 text-[12px]">
@@ -146,15 +210,18 @@ export function BilateralContractsPanel() {
                     c.liquidityRisk > 60
                       ? "text-destructive"
                       : c.liquidityRisk > 35
-                      ? "text-amber-500"
-                      : "text-success"
+                        ? "text-amber-500"
+                        : "text-success"
                   }
                 >
                   {c.liquidityRisk}
                 </span>
               </div>
               <div className="col-span-1 flex justify-end">
-                <Badge variant="outline" className={`font-mono text-[9px] uppercase tracking-widest ${statusTone[c.status]}`}>
+                <Badge
+                  variant="outline"
+                  className={`font-mono text-[9px] uppercase tracking-widest ${statusTone[c.status]}`}
+                >
                   {c.status}
                 </Badge>
               </div>

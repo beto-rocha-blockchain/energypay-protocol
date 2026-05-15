@@ -1,18 +1,34 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
-  Zap, Building2, Mail, MapPin, Globe2, User, Lock, ShieldCheck,
-  Activity, Terminal, Loader2, Check, ArrowRight, Factory, Coins, LineChart, Plug,
-  Copy, KeyRound, Eye, EyeOff,
+  Zap,
+  Building2,
+  Mail,
+  MapPin,
+  Globe2,
+  User,
+  Lock,
+  ShieldCheck,
+  Activity,
+  Terminal,
+  Loader2,
+  Check,
+  ArrowRight,
+  Factory,
+  Coins,
+  LineChart,
+  Plug,
+  Copy,
+  KeyRound,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import {
-  useOperator, maskAddress, ROLE_META, type ParticipantRole,
-} from "@/store/operator";
+import { useOperator, maskAddress, ROLE_META, type ParticipantRole } from "@/store/operator";
 import { toast } from "sonner";
 import { safeErrorMessage } from "@/lib/safe-error";
 
@@ -58,7 +74,9 @@ function RegisterPage() {
   const [city, setCity] = useState("");
   const [roles, setRoles] = useState<ParticipantRole[]>([]);
   const [fund, setFund] = useState(true);
-  const [coords, setCoordsLocal] = useState<{ lat: number; lng: number; source: "GPS" | "MANUAL" } | undefined>(undefined);
+  const [coords, setCoordsLocal] = useState<
+    { lat: number; lng: number; source: "GPS" | "MANUAL" } | undefined
+  >(undefined);
   const [geoStatus, setGeoStatus] = useState<"idle" | "requesting" | "granted" | "denied">("idle");
   const [manualLat, setManualLat] = useState("");
   const [manualLng, setManualLng] = useState("");
@@ -76,8 +94,7 @@ function RegisterPage() {
   const toggleRole = (r: ParticipantRole) =>
     setRoles((prev) => (prev.includes(r) ? prev.filter((x) => x !== r) : [...prev, r]));
 
-  const selectAll = () =>
-    setRoles(["GENERATOR", "SELLER", "INVESTOR", "USER"]);
+  const selectAll = () => setRoles(["GENERATOR", "SELLER", "INVESTOR", "USER"]);
 
   const formValid = useMemo(
     () =>
@@ -105,7 +122,17 @@ function RegisterPage() {
       setProgress(i + 1);
     }
     try {
-      await register({ email, password, fullName, organization, country, city, roles, fund, coords });
+      await register({
+        email,
+        password,
+        fullName,
+        organization,
+        country,
+        city,
+        roles,
+        fund,
+        coords,
+      });
       setProvisionError(null);
       setStep("success");
     } catch (err) {
@@ -172,7 +199,9 @@ function RegisterPage() {
                 Network Provisioning · Pilot Environment
               </div>
               <h1 className="font-display text-2xl font-semibold leading-tight">
-                Provision a settlement<br />participant identity.
+                Provision a settlement
+                <br />
+                participant identity.
               </h1>
               <p className="mt-2 max-w-sm text-xs text-muted-foreground">
                 Onboarding mints an operational identity, binds an ed25519 settlement keypair, and
@@ -185,15 +214,24 @@ function RegisterPage() {
             <ul className="space-y-2.5 text-xs">
               <li className="flex items-start gap-2">
                 <ShieldCheck className="mt-0.5 h-3.5 w-3.5 text-success" />
-                <span><span className="font-mono text-foreground">Operational identity</span> · scoped to clearing &amp; reconciliation</span>
+                <span>
+                  <span className="font-mono text-foreground">Operational identity</span> · scoped
+                  to clearing &amp; reconciliation
+                </span>
               </li>
               <li className="flex items-start gap-2">
                 <Terminal className="mt-0.5 h-3.5 w-3.5 text-accent" />
-                <span><span className="font-mono text-foreground">Settlement keypair</span> · ed25519 · funded via Friendbot</span>
+                <span>
+                  <span className="font-mono text-foreground">Settlement keypair</span> · ed25519 ·
+                  funded via Friendbot
+                </span>
               </li>
               <li className="flex items-start gap-2">
                 <Activity className="mt-0.5 h-3.5 w-3.5 text-success" />
-                <span><span className="font-mono text-foreground">Role provisioning</span> · Generator · Seller · Investor · User</span>
+                <span>
+                  <span className="font-mono text-foreground">Role provisioning</span> · Generator ·
+                  Seller · Investor · User
+                </span>
               </li>
             </ul>
 
@@ -201,21 +239,26 @@ function RegisterPage() {
               <div className="flex items-center justify-between">
                 <span>Network</span>
                 <span className="flex items-center gap-1.5 text-success">
-                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-success" /> Stellar Testnet · Nominal
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-success" /> Stellar
+                  Testnet · Nominal
                 </span>
               </div>
               <div className="mt-1.5 flex items-center justify-between">
-                <span>Horizon</span><span className="text-foreground">horizon-testnet.stellar.org</span>
+                <span>Horizon</span>
+                <span className="text-foreground">horizon-testnet.stellar.org</span>
               </div>
               <div className="mt-1.5 flex items-center justify-between">
-                <span>Friendbot</span><span className="text-foreground">friendbot.stellar.org</span>
+                <span>Friendbot</span>
+                <span className="text-foreground">friendbot.stellar.org</span>
               </div>
             </div>
           </div>
 
           <div className="mt-6 flex items-center justify-between border-t border-border pt-4 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
             <span>EnergyPay Clearing · v0.4.2</span>
-            <Link to="/login" className="text-foreground hover:text-primary">Operator Access →</Link>
+            <Link to="/login" className="text-foreground hover:text-primary">
+              Operator Access →
+            </Link>
           </div>
         </Card>
 
@@ -223,9 +266,12 @@ function RegisterPage() {
         <Card className="overflow-hidden border-border bg-card/70">
           <div className="flex items-center justify-between border-b border-border bg-background/40 px-4 py-2.5">
             <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-              <span className="h-1.5 w-1.5 rounded-full bg-success" /> Settlement Network · Provisioning Terminal
+              <span className="h-1.5 w-1.5 rounded-full bg-success" /> Settlement Network ·
+              Provisioning Terminal
             </div>
-            <div className="font-mono text-[10px] text-muted-foreground">SECURE · TLS · ed25519</div>
+            <div className="font-mono text-[10px] text-muted-foreground">
+              SECURE · TLS · ed25519
+            </div>
           </div>
 
           {step === "form" && (
@@ -237,10 +283,21 @@ function RegisterPage() {
                       <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-destructive" />
                       Provisioning Failed · Settlement Rail
                     </span>
-                    <button type="button" onClick={() => setProvisionError(null)} className="text-destructive/80 hover:text-destructive">DISMISS</button>
+                    <button
+                      type="button"
+                      onClick={() => setProvisionError(null)}
+                      className="text-destructive/80 hover:text-destructive"
+                    >
+                      DISMISS
+                    </button>
                   </div>
-                  <div className="mt-1.5 font-mono text-[11px] text-foreground break-words">{provisionError}</div>
-                  <div className="mt-1 font-mono text-[10px] text-muted-foreground">Session preserved. Re-submit when the backend is reachable — no operator state was cleared.</div>
+                  <div className="mt-1.5 font-mono text-[11px] text-foreground break-words">
+                    {provisionError}
+                  </div>
+                  <div className="mt-1 font-mono text-[10px] text-muted-foreground">
+                    Session preserved. Re-submit when the backend is reachable — no operator state
+                    was cleared.
+                  </div>
                 </div>
               )}
               <div>
@@ -249,20 +306,44 @@ function RegisterPage() {
                 </div>
                 <div className="mt-2 grid gap-3 md:grid-cols-2">
                   <Field label="Full Name" icon={<User className="h-3.5 w-3.5" />}>
-                    <Input value={fullName} onChange={(e) => setFullName(e.target.value)}
-                      placeholder="Maria L. Andrade" className="h-9 pl-8 font-mono text-xs" />
+                    <Input
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      placeholder="Maria L. Andrade"
+                      className="h-9 pl-8 font-mono text-xs"
+                    />
                   </Field>
                   <Field label="Operator Email" icon={<Mail className="h-3.5 w-3.5" />}>
-                    <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-                      placeholder="operator@clearing-desk.com" className="h-9 pl-8 font-mono text-xs" />
+                    <Input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="operator@clearing-desk.com"
+                      className="h-9 pl-8 font-mono text-xs"
+                    />
                   </Field>
-                  <Field label="Password" icon={<Lock className="h-3.5 w-3.5" />} className="md:col-span-2">
-                    <Input type={showPw ? "text" : "password"} value={password}
+                  <Field
+                    label="Password"
+                    icon={<Lock className="h-3.5 w-3.5" />}
+                    className="md:col-span-2"
+                  >
+                    <Input
+                      type={showPw ? "text" : "password"}
+                      value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••••••" className="h-9 pl-8 pr-9 font-mono text-xs tracking-widest" />
-                    <button type="button" onClick={() => setShowPw((v) => !v)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                      {showPw ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                      placeholder="••••••••••••"
+                      className="h-9 pl-8 pr-9 font-mono text-xs tracking-widest"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPw((v) => !v)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      {showPw ? (
+                        <EyeOff className="h-3.5 w-3.5" />
+                      ) : (
+                        <Eye className="h-3.5 w-3.5" />
+                      )}
                     </button>
                   </Field>
                 </div>
@@ -273,17 +354,37 @@ function RegisterPage() {
                   § 02 · Organization &amp; Jurisdiction
                 </div>
                 <div className="mt-2 grid gap-3 md:grid-cols-3">
-                  <Field label="Organization" icon={<Building2 className="h-3.5 w-3.5" />} className="md:col-span-3">
-                    <Input value={organization} onChange={(e) => setOrganization(e.target.value)}
-                      placeholder="Treasury · Energy Trading Desk" className="h-9 pl-8 font-mono text-xs" />
+                  <Field
+                    label="Organization"
+                    icon={<Building2 className="h-3.5 w-3.5" />}
+                    className="md:col-span-3"
+                  >
+                    <Input
+                      value={organization}
+                      onChange={(e) => setOrganization(e.target.value)}
+                      placeholder="Treasury · Energy Trading Desk"
+                      className="h-9 pl-8 font-mono text-xs"
+                    />
                   </Field>
                   <Field label="Country" icon={<Globe2 className="h-3.5 w-3.5" />}>
-                    <Input value={country} onChange={(e) => setCountry(e.target.value)}
-                      placeholder="Brazil" className="h-9 pl-8 font-mono text-xs" />
+                    <Input
+                      value={country}
+                      onChange={(e) => setCountry(e.target.value)}
+                      placeholder="Brazil"
+                      className="h-9 pl-8 font-mono text-xs"
+                    />
                   </Field>
-                  <Field label="City" icon={<MapPin className="h-3.5 w-3.5" />} className="md:col-span-2">
-                    <Input value={city} onChange={(e) => setCity(e.target.value)}
-                      placeholder="São Paulo" className="h-9 pl-8 font-mono text-xs" />
+                  <Field
+                    label="City"
+                    icon={<MapPin className="h-3.5 w-3.5" />}
+                    className="md:col-span-2"
+                  >
+                    <Input
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                      placeholder="São Paulo"
+                      className="h-9 pl-8 font-mono text-xs"
+                    />
                   </Field>
                 </div>
               </div>
@@ -294,7 +395,11 @@ function RegisterPage() {
                     § 02b · Operational Geolocation · Optional
                   </div>
                   <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-                    {coords ? `${coords.source} · BOUND` : geoStatus === "denied" ? "GPS DENIED" : "UNBOUND"}
+                    {coords
+                      ? `${coords.source} · BOUND`
+                      : geoStatus === "denied"
+                        ? "GPS DENIED"
+                        : "UNBOUND"}
                   </span>
                 </div>
                 <div className="mt-2 grid gap-2 md:grid-cols-[1fr_auto]">
@@ -303,8 +408,8 @@ function RegisterPage() {
                       Bind operational coordinates to your settlement identity
                     </div>
                     <div className="mt-1 text-[10px] text-muted-foreground">
-                      Used for grid map placement &amp; regional liquidity attribution. Coordinates remain
-                      session-scoped and are never shared with counterparties.
+                      Used for grid map placement &amp; regional liquidity attribution. Coordinates
+                      remain session-scoped and are never shared with counterparties.
                     </div>
                     {coords && (
                       <div className="mt-2 font-mono text-[10px] text-success">
@@ -312,24 +417,46 @@ function RegisterPage() {
                       </div>
                     )}
                   </div>
-                  <Button type="button" variant="outline" onClick={requestGeo}
-                    className="h-9 self-stretch font-mono text-[10px] uppercase tracking-widest md:w-44">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={requestGeo}
+                    className="h-9 self-stretch font-mono text-[10px] uppercase tracking-widest md:w-44"
+                  >
                     {geoStatus === "requesting" ? (
-                      <><Loader2 className="h-3 w-3 animate-spin" /> Requesting…</>
+                      <>
+                        <Loader2 className="h-3 w-3 animate-spin" /> Requesting…
+                      </>
                     ) : coords?.source === "GPS" ? (
-                      <><Check className="h-3 w-3" /> GPS Bound</>
+                      <>
+                        <Check className="h-3 w-3" /> GPS Bound
+                      </>
                     ) : (
-                      <><MapPin className="h-3 w-3" /> Capture GPS</>
+                      <>
+                        <MapPin className="h-3 w-3" /> Capture GPS
+                      </>
                     )}
                   </Button>
                 </div>
                 <div className="mt-2 grid gap-2 md:grid-cols-[1fr_1fr_auto]">
-                  <Input value={manualLat} onChange={(e) => setManualLat(e.target.value)}
-                    placeholder="Manual Latitude (e.g. -23.55)" className="h-9 font-mono text-xs" />
-                  <Input value={manualLng} onChange={(e) => setManualLng(e.target.value)}
-                    placeholder="Manual Longitude (e.g. -46.63)" className="h-9 font-mono text-xs" />
-                  <Button type="button" variant="outline" onClick={applyManual}
-                    className="h-9 font-mono text-[10px] uppercase tracking-widest">
+                  <Input
+                    value={manualLat}
+                    onChange={(e) => setManualLat(e.target.value)}
+                    placeholder="Manual Latitude (e.g. -23.55)"
+                    className="h-9 font-mono text-xs"
+                  />
+                  <Input
+                    value={manualLng}
+                    onChange={(e) => setManualLng(e.target.value)}
+                    placeholder="Manual Longitude (e.g. -46.63)"
+                    className="h-9 font-mono text-xs"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={applyManual}
+                    className="h-9 font-mono text-[10px] uppercase tracking-widest"
+                  >
                     Apply Region
                   </Button>
                 </div>
@@ -340,8 +467,11 @@ function RegisterPage() {
                   <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
                     § 03 · Market Participant Roles
                   </div>
-                  <button type="button" onClick={selectAll}
-                    className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground transition hover:text-primary">
+                  <button
+                    type="button"
+                    onClick={selectAll}
+                    className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground transition hover:text-primary"
+                  >
                     Enable all capabilities →
                   </button>
                 </div>
@@ -361,9 +491,13 @@ function RegisterPage() {
                         }`}
                       >
                         <div className="flex items-start gap-2.5">
-                          <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md border ${
-                            active ? "border-primary/50 bg-primary/10 text-primary" : "border-border bg-background/60 text-muted-foreground"
-                          }`}>
+                          <div
+                            className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md border ${
+                              active
+                                ? "border-primary/50 bg-primary/10 text-primary"
+                                : "border-border bg-background/60 text-muted-foreground"
+                            }`}
+                          >
                             <Icon className="h-3.5 w-3.5" />
                           </div>
                           <div className="flex-1">
@@ -371,9 +505,13 @@ function RegisterPage() {
                               <div className="font-mono text-[11px] uppercase tracking-widest text-foreground">
                                 {ROLE_META[r].label}
                               </div>
-                              <div className={`flex h-4 w-4 items-center justify-center rounded-sm border transition ${
-                                active ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background/60"
-                              }`}>
+                              <div
+                                className={`flex h-4 w-4 items-center justify-center rounded-sm border transition ${
+                                  active
+                                    ? "border-primary bg-primary text-primary-foreground"
+                                    : "border-border bg-background/60"
+                                }`}
+                              >
                                 {active && <Check className="h-3 w-3" />}
                               </div>
                             </div>
@@ -382,7 +520,10 @@ function RegisterPage() {
                             </div>
                             <div className="mt-1.5 flex flex-wrap gap-1">
                               {ROLE_META[r].capabilities.map((c) => (
-                                <span key={c} className="rounded-sm border border-border bg-background/60 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
+                                <span
+                                  key={c}
+                                  className="rounded-sm border border-border bg-background/60 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-widest text-muted-foreground"
+                                >
                                   {c}
                                 </span>
                               ))}
@@ -401,27 +542,37 @@ function RegisterPage() {
               </div>
 
               <label className="flex cursor-pointer items-start gap-2 rounded-md border border-border bg-background/40 p-3 text-xs">
-                <input type="checkbox" checked={fund} onChange={(e) => setFund(e.target.checked)}
-                  className="mt-0.5 h-3.5 w-3.5 accent-[var(--primary)]" />
+                <input
+                  type="checkbox"
+                  checked={fund}
+                  onChange={(e) => setFund(e.target.checked)}
+                  className="mt-0.5 h-3.5 w-3.5 accent-[var(--primary)]"
+                />
                 <span>
                   <span className="block font-mono uppercase tracking-widest text-foreground">
                     Fund settlement account on Stellar Testnet
                   </span>
                   <span className="block text-[11px] text-muted-foreground">
-                    Provisions a Stellar Testnet account funded via Friendbot for settlement operations.
+                    Provisions a Stellar Testnet account funded via Friendbot for settlement
+                    operations.
                   </span>
                 </span>
               </label>
 
-              <Button type="submit" disabled={!formValid}
-                className="h-10 w-full font-mono text-xs uppercase tracking-widest">
+              <Button
+                type="submit"
+                disabled={!formValid}
+                className="h-10 w-full font-mono text-xs uppercase tracking-widest"
+              >
                 Provision Settlement Identity
                 <ArrowRight className="h-3.5 w-3.5" />
               </Button>
 
               <div className="flex items-center justify-between border-t border-border pt-3 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
                 <span>Already provisioned?</span>
-                <Link to="/login" className="text-foreground hover:text-primary">Operator Access →</Link>
+                <Link to="/login" className="text-foreground hover:text-primary">
+                  Operator Access →
+                </Link>
               </div>
             </form>
           )}
@@ -448,7 +599,9 @@ function RegisterPage() {
                   const active = i === progress;
                   return (
                     <div key={s} className="flex items-center gap-2">
-                      <span className="w-7 text-muted-foreground">[{String(i + 1).padStart(2, "0")}]</span>
+                      <span className="w-7 text-muted-foreground">
+                        [{String(i + 1).padStart(2, "0")}]
+                      </span>
                       {done ? (
                         <Check className="h-3 w-3 text-success" />
                       ) : active ? (
@@ -456,7 +609,15 @@ function RegisterPage() {
                       ) : (
                         <span className="h-3 w-3 rounded-full border border-border" />
                       )}
-                      <span className={done ? "text-foreground" : active ? "text-foreground" : "text-muted-foreground"}>
+                      <span
+                        className={
+                          done
+                            ? "text-foreground"
+                            : active
+                              ? "text-foreground"
+                              : "text-muted-foreground"
+                        }
+                      >
                         {s}
                       </span>
                       {done && <span className="ml-auto text-[10px] text-success">OK</span>}
@@ -467,7 +628,8 @@ function RegisterPage() {
               <div className="flex items-center justify-between text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
                 <span>Network: Stellar Testnet</span>
                 <span className="flex items-center gap-1.5 text-success">
-                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-success" /> Provisioning
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-success" />{" "}
+                  Provisioning
                 </span>
               </div>
             </div>
@@ -490,7 +652,11 @@ function RegisterPage() {
               </div>
 
               <div className="rounded-md border border-border bg-background/60 p-3">
-                <KeyRow label="Public Key" value={operator.wallet.publicKey} icon={<ShieldCheck className="h-3 w-3" />} />
+                <KeyRow
+                  label="Public Key"
+                  value={operator.wallet.publicKey}
+                  icon={<ShieldCheck className="h-3 w-3" />}
+                />
                 <Separator className="my-2 bg-border/60" />
                 <div className="rounded-md border border-border bg-background/40 px-2 py-1.5">
                   <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
@@ -500,7 +666,8 @@ function RegisterPage() {
                     Backend custody · ed25519 · {operator.wallet.status}
                   </div>
                   <div className="mt-1 font-mono text-[10px] text-muted-foreground">
-                    Secret seed is held by the EnergyPay backend. The frontend never receives the secret key.
+                    Secret seed is held by the EnergyPay backend. The frontend never receives the
+                    secret key.
                   </div>
                 </div>
               </div>
@@ -518,12 +685,20 @@ function RegisterPage() {
                   <div className="grid grid-cols-2 gap-2 font-mono text-[10px] uppercase tracking-widest">
                     <Mini
                       label="Ledger Sequence"
-                      value={operator.provisioningLedger != null ? `#${operator.provisioningLedger}` : "PENDING"}
+                      value={
+                        operator.provisioningLedger != null
+                          ? `#${operator.provisioningLedger}`
+                          : "PENDING"
+                      }
                       tone={operator.provisioningLedger != null ? "success" : undefined}
                     />
                     <Mini
                       label="Settlement Status"
-                      value={(operator.settlementStatus || operator.wallet.status || "PROVISIONED").toUpperCase()}
+                      value={(
+                        operator.settlementStatus ||
+                        operator.wallet.status ||
+                        "PROVISIONED"
+                      ).toUpperCase()}
                       tone={operator.wallet.funded ? "success" : undefined}
                     />
                   </div>
@@ -531,8 +706,16 @@ function RegisterPage() {
               </div>
 
               <div className="grid grid-cols-2 gap-2 font-mono text-[10px] uppercase tracking-widest">
-                <Mini label="Network" value={operator.network || "Stellar Testnet"} tone="success" />
-                <Mini label="Funded" value={operator.wallet.funded ? "Yes · Friendbot" : "No · Friendbot failed"} tone={operator.wallet.funded ? "success" : undefined} />
+                <Mini
+                  label="Network"
+                  value={operator.network || "Stellar Testnet"}
+                  tone="success"
+                />
+                <Mini
+                  label="Funded"
+                  value={operator.wallet.funded ? "Yes · Friendbot" : "No · Friendbot failed"}
+                  tone={operator.wallet.funded ? "success" : undefined}
+                />
                 <Mini label="Roles" value={operator.roles.length.toString()} />
                 <Mini label="Address" value={maskAddress(operator.wallet.publicKey)} />
               </div>
@@ -543,7 +726,10 @@ function RegisterPage() {
                 </div>
                 <div className="mt-1 flex flex-wrap gap-1">
                   {operator.roles.map((r) => (
-                    <span key={r} className="rounded-sm border border-primary/40 bg-primary/10 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-widest text-primary">
+                    <span
+                      key={r}
+                      className="rounded-sm border border-primary/40 bg-primary/10 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-widest text-primary"
+                    >
                       {ROLE_META[r].label}
                     </span>
                   ))}
@@ -560,8 +746,10 @@ function RegisterPage() {
                 <ArrowRight className="h-3 w-3" />
               </a>
 
-              <Button onClick={() => navigate({ to: "/" })}
-                className="h-10 w-full font-mono text-xs uppercase tracking-widest">
+              <Button
+                onClick={() => navigate({ to: "/" })}
+                className="h-10 w-full font-mono text-xs uppercase tracking-widest"
+              >
                 Enter Settlement Control Room
                 <ArrowRight className="h-3.5 w-3.5" />
               </Button>
@@ -574,8 +762,16 @@ function RegisterPage() {
 }
 
 function Field({
-  label, icon, children, className = "",
-}: { label: string; icon: React.ReactNode; children: React.ReactNode; className?: string }) {
+  label,
+  icon,
+  children,
+  className = "",
+}: {
+  label: string;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
     <div className={`space-y-1.5 ${className}`}>
       <Label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
@@ -592,8 +788,16 @@ function Field({
 }
 
 function KeyRow({
-  label, value, icon, trailing,
-}: { label: string; value: string; icon: React.ReactNode; trailing?: React.ReactNode }) {
+  label,
+  value,
+  icon,
+  trailing,
+}: {
+  label: string;
+  value: string;
+  icon: React.ReactNode;
+  trailing?: React.ReactNode;
+}) {
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(value);
@@ -605,14 +809,20 @@ function KeyRow({
   return (
     <div>
       <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-        {icon}{label}
+        {icon}
+        {label}
       </div>
       <div className="mt-1 flex items-center gap-1.5">
         <code className="flex-1 truncate rounded-md border border-border bg-background/60 px-2 py-1 font-mono text-[11px] text-foreground">
           {value}
         </code>
-        <Button type="button" variant="outline" size="sm" onClick={copy}
-          className="h-6 px-2 font-mono text-[10px] uppercase tracking-widest">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={copy}
+          className="h-6 px-2 font-mono text-[10px] uppercase tracking-widest"
+        >
           <Copy className="h-3 w-3" />
         </Button>
         {trailing}
@@ -625,7 +835,9 @@ function Mini({ label, value, tone }: { label: string; value: string; tone?: "su
   return (
     <div className="rounded-md border border-border bg-background/40 px-2 py-1.5">
       <div className="text-muted-foreground">{label}</div>
-      <div className={`mt-0.5 text-[11px] ${tone === "success" ? "text-success" : "text-foreground"}`}>
+      <div
+        className={`mt-0.5 text-[11px] ${tone === "success" ? "text-success" : "text-foreground"}`}
+      >
         {value}
       </div>
     </div>

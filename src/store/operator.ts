@@ -1,16 +1,6 @@
 import { create } from "zustand";
-import {
-  apiLogin,
-  apiRegister,
-  type ApiUser,
-  type RegisterPayload,
-} from "@/lib/api";
-import {
-  getSession,
-  setSession,
-  clearSession,
-  type AuthSession,
-} from "@/lib/session";
+import { apiLogin, apiRegister, type ApiUser, type RegisterPayload } from "@/lib/api";
+import { getSession, setSession, clearSession, type AuthSession } from "@/lib/session";
 
 export type AccessLevel = "OPERATOR" | "SUPERVISOR" | "CLEARING_ADMIN";
 
@@ -78,7 +68,11 @@ type OperatorState = {
   operator: OperatorIdentity | null;
   isAuthenticated: boolean;
   hydrate: () => void;
-  login: (input: { email: string; password: string; organization?: string }) => Promise<OperatorIdentity>;
+  login: (input: {
+    email: string;
+    password: string;
+    organization?: string;
+  }) => Promise<OperatorIdentity>;
   register: (input: {
     email: string;
     password: string;
@@ -180,7 +174,17 @@ export const useOperator = create<OperatorState>()((set, get) => ({
     return id;
   },
 
-  register: async ({ email, password, fullName, organization, country, city, roles, coords, fund }) => {
+  register: async ({
+    email,
+    password,
+    fullName,
+    organization,
+    country,
+    city,
+    roles,
+    coords,
+    fund,
+  }) => {
     if (!roles.length) throw new Error("Select at least one market participant role.");
     const payload: RegisterPayload = {
       email,

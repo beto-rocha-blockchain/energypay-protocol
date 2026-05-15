@@ -46,13 +46,10 @@ export const Route = createFileRoute("/api/settlements/telemetry")({
         const counters = snapshot();
         const recent_receipts = await settlementStore.list(20);
         const recent_logs = opsTail(50);
-        return new Response(
-          JSON.stringify({ counters, recent_receipts, recent_logs }),
-          {
-            status: 200,
-            headers: { "Content-Type": "application/json", ...cors },
-          },
-        );
+        return new Response(JSON.stringify({ counters, recent_receipts, recent_logs }), {
+          status: 200,
+          headers: { "Content-Type": "application/json", ...cors },
+        });
       },
     },
   },

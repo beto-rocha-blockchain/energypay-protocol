@@ -8,8 +8,8 @@
 export type SettlementTelemetry = {
   finalized_count: number;
   failed_count: number;
-  total_latency_ms: number;     // cumulative end-to-end finality
-  total_horizon_ms: number;     // cumulative time spent waiting on Horizon
+  total_latency_ms: number; // cumulative end-to-end finality
+  total_horizon_ms: number; // cumulative time spent waiting on Horizon
   horizon_samples: number;
   last_updated_at: string | null;
 };

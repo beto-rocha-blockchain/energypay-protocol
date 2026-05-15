@@ -158,7 +158,7 @@ router.post("/register", async (req, res) => {
     // =================================================
     // success
     // =================================================
-    
+
     const token = jwt.sign(
       {
         sub: data[0].id,
@@ -168,8 +168,8 @@ router.post("/register", async (req, res) => {
       process.env.JWT_SECRET,
       {
         expiresIn: "24h",
-      }
-      );
+      },
+    );
 
     res.json({
       success: true,
@@ -182,23 +182,22 @@ router.post("/register", async (req, res) => {
         organization: data[0].organization,
         roles: data[0].roles,
 
-      stellar_public_key: publicKey,
+        stellar_public_key: publicKey,
 
-      country: data[0].country,
-      city,
-    address,
+        country: data[0].country,
+        city,
+        address,
 
-    has_solar_generation,
-  },
+        has_solar_generation,
+      },
 
-  provisioning: {
-    wallet_created: true,
-    stellar_funded: true,
-    settlement_ready: true,
-    roles_assigned: true,
-  },
-  });
-
+      provisioning: {
+        wallet_created: true,
+        stellar_funded: true,
+        settlement_ready: true,
+        roles_assigned: true,
+      },
+    });
   } catch (err) {
     console.error(err);
 
@@ -207,8 +206,7 @@ router.post("/register", async (req, res) => {
       error: err.message,
     });
   }
-  });
-    
+});
 
 // =====================================================
 // LOGIN
@@ -222,11 +220,7 @@ router.post("/login", async (req, res) => {
     // get user
     // =================================================
 
-    const { data, error } = await supabase
-      .from("users")
-      .select("*")
-      .eq("email", email)
-      .single();
+    const { data, error } = await supabase.from("users").select("*").eq("email", email).single();
 
     if (error || !data) {
       return res.status(401).json({
@@ -263,7 +257,7 @@ router.post("/login", async (req, res) => {
       process.env.JWT_SECRET,
       {
         expiresIn: "12h",
-      }
+      },
     );
 
     res.json({
@@ -272,25 +266,25 @@ router.post("/login", async (req, res) => {
       token,
 
       user: {
-      id: data.id,
+        id: data.id,
 
-      email: data.email,
+        email: data.email,
 
-      full_name: data.full_name,
+        full_name: data.full_name,
 
-      organization: data.organization,
+        organization: data.organization,
 
-      roles: data.roles,
+        roles: data.roles,
 
-      stellar_public_key: data.stellar_public_key,
+        stellar_public_key: data.stellar_public_key,
 
-      country: data.country,
+        country: data.country,
 
-      city: data.city,
+        city: data.city,
 
-      address: data.address,
+        address: data.address,
 
-      has_solar_generation: data.has_solar_generation,
+        has_solar_generation: data.has_solar_generation,
       },
 
       wallet: {
@@ -309,6 +303,6 @@ router.post("/login", async (req, res) => {
       error: err.message,
     });
   }
-  });
+});
 
 export default router;

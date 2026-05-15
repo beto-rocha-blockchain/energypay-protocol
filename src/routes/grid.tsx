@@ -1,15 +1,35 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import {
-  Activity, Radio, Sun, Droplets, Wind, Flame, Network, Building2, Coins,
-  LineChart, Plug, Factory, MapPin, Signal, Zap, ExternalLink, ShieldCheck,
+  Activity,
+  Radio,
+  Sun,
+  Droplets,
+  Wind,
+  Flame,
+  Network,
+  Building2,
+  Coins,
+  LineChart,
+  Plug,
+  Factory,
+  MapPin,
+  Signal,
+  Zap,
+  ExternalLink,
+  ShieldCheck,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import {
-  useGrid, projectCoords, ENERGY_LABEL, STATUS_TONE,
-  type GridNode, type EnergyType, type NodeStatus,
+  useGrid,
+  projectCoords,
+  ENERGY_LABEL,
+  STATUS_TONE,
+  type GridNode,
+  type EnergyType,
+  type NodeStatus,
 } from "@/store/grid";
 import { useOperator, maskAddress } from "@/store/operator";
 import type { ParticipantRole } from "@/store/operator";
@@ -19,17 +39,39 @@ export const Route = createFileRoute("/grid")({
 });
 
 const ROLE_ICON: Record<ParticipantRole, React.ComponentType<{ className?: string }>> = {
-  GENERATOR: Factory, SELLER: Coins, INVESTOR: LineChart, USER: Plug,
+  GENERATOR: Factory,
+  SELLER: Coins,
+  INVESTOR: LineChart,
+  USER: Plug,
 };
 
 const ENERGY_ICON: Record<EnergyType, React.ComponentType<{ className?: string }>> = {
-  SOLAR: Sun, HYDRO: Droplets, WIND: Wind, THERMAL: Flame, GRID: Network,
+  SOLAR: Sun,
+  HYDRO: Droplets,
+  WIND: Wind,
+  THERMAL: Flame,
+  GRID: Network,
 };
 
 const TONE_CLASS = {
-  success: { dot: "bg-success", text: "text-success", border: "border-success/40", glow: "shadow-[0_0_18px_oklch(0.78_0.18_145/0.55)]" },
-  warning: { dot: "bg-warning", text: "text-warning", border: "border-warning/40", glow: "shadow-[0_0_18px_oklch(0.82_0.16_75/0.45)]" },
-  destructive: { dot: "bg-destructive", text: "text-destructive", border: "border-destructive/50", glow: "shadow-[0_0_14px_oklch(0.65_0.22_25/0.4)]" },
+  success: {
+    dot: "bg-success",
+    text: "text-success",
+    border: "border-success/40",
+    glow: "shadow-[0_0_18px_oklch(0.78_0.18_145/0.55)]",
+  },
+  warning: {
+    dot: "bg-warning",
+    text: "text-warning",
+    border: "border-warning/40",
+    glow: "shadow-[0_0_18px_oklch(0.82_0.16_75/0.45)]",
+  },
+  destructive: {
+    dot: "bg-destructive",
+    text: "text-destructive",
+    border: "border-destructive/50",
+    glow: "shadow-[0_0_14px_oklch(0.65_0.22_25/0.4)]",
+  },
 } as const;
 
 function GridPage() {
@@ -45,7 +87,10 @@ function GridPage() {
       nodes.filter((n) => {
         if (filterRole !== "ALL" && n.role !== filterRole) return false;
         if (filterStatus !== "ALL" && n.status !== filterStatus) return false;
-        if (query && !`${n.organization} ${n.region} ${n.id}`.toLowerCase().includes(query.toLowerCase()))
+        if (
+          query &&
+          !`${n.organization} ${n.region} ${n.id}`.toLowerCase().includes(query.toLowerCase())
+        )
           return false;
         return true;
       }),
@@ -67,7 +112,9 @@ function GridPage() {
     return { total, active, capacity, degraded, offline, generators: generators.length };
   }, [nodes]);
 
-  const operatorPos = operator?.coords ? projectCoords(operator.coords.lat, operator.coords.lng) : null;
+  const operatorPos = operator?.coords
+    ? projectCoords(operator.coords.lat, operator.coords.lng)
+    : null;
 
   return (
     <div className="space-y-4">
@@ -95,18 +142,27 @@ function GridPage() {
       <Card className="border-border bg-card/60 p-3">
         <div className="flex flex-wrap items-center gap-2 text-[10px] font-mono uppercase tracking-widest">
           <span className="text-muted-foreground">Filter</span>
-          <Pill active={filterRole === "ALL"} onClick={() => setFilterRole("ALL")}>All Roles</Pill>
+          <Pill active={filterRole === "ALL"} onClick={() => setFilterRole("ALL")}>
+            All Roles
+          </Pill>
           {(["GENERATOR", "SELLER", "INVESTOR", "USER"] as ParticipantRole[]).map((r) => (
-            <Pill key={r} active={filterRole === r} onClick={() => setFilterRole(r)}>{r}</Pill>
+            <Pill key={r} active={filterRole === r} onClick={() => setFilterRole(r)}>
+              {r}
+            </Pill>
           ))}
           <Separator orientation="vertical" className="mx-1 h-4 bg-border" />
-          <Pill active={filterStatus === "ALL"} onClick={() => setFilterStatus("ALL")}>All States</Pill>
+          <Pill active={filterStatus === "ALL"} onClick={() => setFilterStatus("ALL")}>
+            All States
+          </Pill>
           {(["ACTIVE", "DEGRADED", "OFFLINE"] as NodeStatus[]).map((s) => (
-            <Pill key={s} active={filterStatus === s} onClick={() => setFilterStatus(s)}>{s}</Pill>
+            <Pill key={s} active={filterStatus === s} onClick={() => setFilterStatus(s)}>
+              {s}
+            </Pill>
           ))}
           <div className="ml-auto w-full md:w-56">
             <Input
-              value={query} onChange={(e) => setQuery(e.target.value)}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
               placeholder="Search organization or region…"
               className="h-8 font-mono text-xs"
             />
@@ -123,20 +179,40 @@ function GridPage() {
               <span>Stellar Settlement Network · Regional Topology</span>
             </div>
             <div className="flex items-center gap-2 text-muted-foreground">
-              <span className="flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-success" /> ACTIVE</span>
-              <span className="flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-warning" /> DEGRADED</span>
-              <span className="flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-destructive" /> OFFLINE</span>
+              <span className="flex items-center gap-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-success" /> ACTIVE
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-warning" /> DEGRADED
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-destructive" /> OFFLINE
+              </span>
             </div>
           </div>
           <div className="relative aspect-[4/3] w-full bg-[radial-gradient(ellipse_at_center,oklch(0.22_0.02_240)_0%,oklch(0.16_0.018_240)_75%)]">
             {/* grid overlay */}
-            <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+            <svg
+              className="absolute inset-0 h-full w-full"
+              viewBox="0 0 100 100"
+              preserveAspectRatio="none"
+            >
               <defs>
                 <pattern id="grid-fine" width="5" height="5" patternUnits="userSpaceOnUse">
-                  <path d="M 5 0 L 0 0 0 5" fill="none" stroke="oklch(0.28 0.02 240)" strokeWidth="0.08" />
+                  <path
+                    d="M 5 0 L 0 0 0 5"
+                    fill="none"
+                    stroke="oklch(0.28 0.02 240)"
+                    strokeWidth="0.08"
+                  />
                 </pattern>
                 <pattern id="grid-bold" width="20" height="20" patternUnits="userSpaceOnUse">
-                  <path d="M 20 0 L 0 0 0 20" fill="none" stroke="oklch(0.32 0.025 240)" strokeWidth="0.18" />
+                  <path
+                    d="M 20 0 L 0 0 0 20"
+                    fill="none"
+                    stroke="oklch(0.32 0.025 240)"
+                    strokeWidth="0.18"
+                  />
                 </pattern>
               </defs>
               <rect width="100" height="100" fill="url(#grid-fine)" />
@@ -149,14 +225,19 @@ function GridPage() {
                   if (!target) return null;
                   const a = projectCoords(n.coords.lat, n.coords.lng);
                   const b = projectCoords(target.coords.lat, target.coords.lng);
-                  const isActive =
-                    selected && (selected.id === n.id || selected.id === target.id);
-                  const stroke = isActive ? "oklch(0.78 0.18 145 / 0.85)" : "oklch(0.7 0.15 220 / 0.18)";
+                  const isActive = selected && (selected.id === n.id || selected.id === target.id);
+                  const stroke = isActive
+                    ? "oklch(0.78 0.18 145 / 0.85)"
+                    : "oklch(0.7 0.15 220 / 0.18)";
                   return (
                     <line
                       key={`${n.id}-${cid}`}
-                      x1={a.x * 100} y1={a.y * 100} x2={b.x * 100} y2={b.y * 100}
-                      stroke={stroke} strokeWidth={isActive ? 0.35 : 0.2}
+                      x1={a.x * 100}
+                      y1={a.y * 100}
+                      x2={b.x * 100}
+                      y2={b.y * 100}
+                      stroke={stroke}
+                      strokeWidth={isActive ? 0.35 : 0.2}
                       strokeDasharray={isActive ? "0" : "0.6 0.4"}
                     />
                   );
@@ -195,7 +276,9 @@ function GridPage() {
                 >
                   <span className="relative flex items-center justify-center">
                     {n.status === "ACTIVE" && (
-                      <span className={`absolute h-6 w-6 animate-ping rounded-full ${tone.dot} opacity-25`} />
+                      <span
+                        className={`absolute h-6 w-6 animate-ping rounded-full ${tone.dot} opacity-25`}
+                      />
                     )}
                     <span
                       className={`flex h-5 w-5 items-center justify-center rounded-full border ${tone.border} ${
@@ -220,7 +303,9 @@ function GridPage() {
                 <Activity className="h-3 w-3 text-success" /> Telemetry · Stellar Testnet
               </span>
               <span>Lat range −34° to +6° · Lng −75° to −33°</span>
-              <span>{filtered.length} of {nodes.length} nodes visible</span>
+              <span>
+                {filtered.length} of {nodes.length} nodes visible
+              </span>
             </div>
           </div>
         </Card>
@@ -234,10 +319,16 @@ function GridPage() {
               </div>
               <div className="space-y-3 p-4">
                 <div className="flex items-start gap-3">
-                  <div className={`flex h-10 w-10 items-center justify-center rounded-md border ${TONE_CLASS[STATUS_TONE[selected.status]].border} bg-background`}>
+                  <div
+                    className={`flex h-10 w-10 items-center justify-center rounded-md border ${TONE_CLASS[STATUS_TONE[selected.status]].border} bg-background`}
+                  >
                     {(() => {
                       const Icon = ENERGY_ICON[selected.energyType];
-                      return <Icon className={`h-5 w-5 ${TONE_CLASS[STATUS_TONE[selected.status]].text}`} />;
+                      return (
+                        <Icon
+                          className={`h-5 w-5 ${TONE_CLASS[STATUS_TONE[selected.status]].text}`}
+                        />
+                      );
                     })()}
                   </div>
                   <div className="flex-1">
@@ -247,23 +338,50 @@ function GridPage() {
                     <div className="mt-0.5 flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
                       {(() => {
                         const RIcon = ROLE_ICON[selected.role];
-                        return (<><RIcon className="h-3 w-3" />{selected.role}</>);
+                        return (
+                          <>
+                            <RIcon className="h-3 w-3" />
+                            {selected.role}
+                          </>
+                        );
                       })()}
                       <span>·</span>
                       <span>{selected.jurisdiction}</span>
                     </div>
                   </div>
-                  <span className={`flex items-center gap-1.5 rounded-sm border px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-widest ${TONE_CLASS[STATUS_TONE[selected.status]].border} ${TONE_CLASS[STATUS_TONE[selected.status]].text}`}>
-                    <span className={`h-1.5 w-1.5 rounded-full ${TONE_CLASS[STATUS_TONE[selected.status]].dot} ${selected.status === "ACTIVE" ? "animate-pulse" : ""}`} />
+                  <span
+                    className={`flex items-center gap-1.5 rounded-sm border px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-widest ${TONE_CLASS[STATUS_TONE[selected.status]].border} ${TONE_CLASS[STATUS_TONE[selected.status]].text}`}
+                  >
+                    <span
+                      className={`h-1.5 w-1.5 rounded-full ${TONE_CLASS[STATUS_TONE[selected.status]].dot} ${selected.status === "ACTIVE" ? "animate-pulse" : ""}`}
+                    />
                     {selected.status}
                   </span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 font-mono text-[10px] uppercase tracking-widest">
                   <Mini label="Energy Type" value={ENERGY_LABEL[selected.energyType]} />
-                  <Mini label="Capacity" value={selected.role === "GENERATOR" ? `${selected.capacityMW.toLocaleString()} MW` : "—"} tone={selected.role === "GENERATOR" ? "success" : undefined} />
+                  <Mini
+                    label="Capacity"
+                    value={
+                      selected.role === "GENERATOR"
+                        ? `${selected.capacityMW.toLocaleString()} MW`
+                        : "—"
+                    }
+                    tone={selected.role === "GENERATOR" ? "success" : undefined}
+                  />
                   <Mini label="Region" value={selected.region} />
-                  <Mini label="Uptime" value={`${selected.uptime.toFixed(2)}%`} tone={selected.uptime >= 99.5 ? "success" : selected.uptime >= 98 ? "warning" : "destructive"} />
+                  <Mini
+                    label="Uptime"
+                    value={`${selected.uptime.toFixed(2)}%`}
+                    tone={
+                      selected.uptime >= 99.5
+                        ? "success"
+                        : selected.uptime >= 98
+                          ? "warning"
+                          : "destructive"
+                    }
+                  />
                   <Mini label="Connectivity" value={`${selected.connections.length} peers`} />
                   <Mini label="Last Settlement" value={`${selected.lastSettlementAgo} ago`} />
                 </div>
@@ -278,7 +396,8 @@ function GridPage() {
                     </code>
                     <a
                       href={`https://stellar.expert/explorer/testnet/account/${selected.settlementAddress}`}
-                      target="_blank" rel="noreferrer"
+                      target="_blank"
+                      rel="noreferrer"
                       className="ml-2 flex items-center gap-1 font-mono text-[10px] uppercase tracking-widest text-muted-foreground hover:text-primary"
                     >
                       <ExternalLink className="h-3 w-3" /> Audit
@@ -295,7 +414,10 @@ function GridPage() {
                   </div>
                   <div className="mt-1 space-y-1">
                     {selected.recentSettlements.map((s) => (
-                      <div key={s.id} className="flex items-center justify-between rounded-md border border-border bg-background/40 px-2 py-1.5 font-mono text-[11px]">
+                      <div
+                        key={s.id}
+                        className="flex items-center justify-between rounded-md border border-border bg-background/40 px-2 py-1.5 font-mono text-[11px]"
+                      >
                         <span className="text-foreground">{s.id}</span>
                         <span className={s.amount < 0 ? "text-destructive" : "text-success"}>
                           {s.amount < 0 ? "-" : "+"}R$ {Math.abs(s.amount).toLocaleString()}
@@ -329,12 +451,16 @@ function GridPage() {
 
                 <div className="rounded-md border border-border bg-background/40 p-2 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
                   <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-1.5"><Signal className="h-3 w-3 text-success" /> Telemetry Feed</span>
+                    <span className="flex items-center gap-1.5">
+                      <Signal className="h-3 w-3 text-success" /> Telemetry Feed
+                    </span>
                     <span className="text-success">LIVE</span>
                   </div>
                   <div className="mt-1 flex items-center justify-between">
                     <span>Coordinates</span>
-                    <span className="text-foreground">{selected.coords.lat.toFixed(2)}, {selected.coords.lng.toFixed(2)}</span>
+                    <span className="text-foreground">
+                      {selected.coords.lat.toFixed(2)}, {selected.coords.lng.toFixed(2)}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -346,7 +472,9 @@ function GridPage() {
       {/* Registry table */}
       <Card className="border-border bg-card/60">
         <div className="flex items-center justify-between border-b border-border bg-background/40 px-3 py-2 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-          <span className="flex items-center gap-2"><Building2 className="h-3 w-3" /> Participant Registry</span>
+          <span className="flex items-center gap-2">
+            <Building2 className="h-3 w-3" /> Participant Registry
+          </span>
           <span>{filtered.length} entities</span>
         </div>
         <div className="overflow-x-auto">
@@ -373,16 +501,26 @@ function GridPage() {
                     className={`cursor-pointer border-b border-border/60 transition hover:bg-background/40 ${isSel ? "bg-primary/5" : ""}`}
                   >
                     <td className="px-3 py-2 font-mono text-foreground">{n.organization}</td>
-                    <td className="px-3 py-2 font-mono uppercase tracking-widest text-muted-foreground">{n.role}</td>
-                    <td className="px-3 py-2 font-mono uppercase tracking-widest text-muted-foreground">{n.energyType}</td>
+                    <td className="px-3 py-2 font-mono uppercase tracking-widest text-muted-foreground">
+                      {n.role}
+                    </td>
+                    <td className="px-3 py-2 font-mono uppercase tracking-widest text-muted-foreground">
+                      {n.energyType}
+                    </td>
                     <td className="px-3 py-2 text-right font-mono">
                       {n.role === "GENERATOR" ? `${n.capacityMW.toLocaleString()} MW` : "—"}
                     </td>
                     <td className="px-3 py-2 font-mono text-muted-foreground">{n.region}</td>
-                    <td className="px-3 py-2 font-mono text-muted-foreground">{maskAddress(n.settlementAddress)}</td>
+                    <td className="px-3 py-2 font-mono text-muted-foreground">
+                      {maskAddress(n.settlementAddress)}
+                    </td>
                     <td className="px-3 py-2">
-                      <span className={`inline-flex items-center gap-1.5 rounded-sm border px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-widest ${tone.border} ${tone.text}`}>
-                        <span className={`h-1.5 w-1.5 rounded-full ${tone.dot} ${n.status === "ACTIVE" ? "animate-pulse" : ""}`} />
+                      <span
+                        className={`inline-flex items-center gap-1.5 rounded-sm border px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-widest ${tone.border} ${tone.text}`}
+                      >
+                        <span
+                          className={`h-1.5 w-1.5 rounded-full ${tone.dot} ${n.status === "ACTIVE" ? "animate-pulse" : ""}`}
+                        />
                         {n.status}
                       </span>
                     </td>
@@ -395,14 +533,28 @@ function GridPage() {
       </Card>
 
       <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-        <span className="flex items-center gap-1.5"><ShieldCheck className="h-3 w-3 text-success" /> Registry Read-only · Settlement Identity Bound</span>
-        <span className="flex items-center gap-1.5"><Zap className="h-3 w-3 text-primary" /> Future API: live settlement feeds · operational telemetry · regional liquidity</span>
+        <span className="flex items-center gap-1.5">
+          <ShieldCheck className="h-3 w-3 text-success" /> Registry Read-only · Settlement Identity
+          Bound
+        </span>
+        <span className="flex items-center gap-1.5">
+          <Zap className="h-3 w-3 text-primary" /> Future API: live settlement feeds · operational
+          telemetry · regional liquidity
+        </span>
       </div>
     </div>
   );
 }
 
-function Stat({ label, value, tone }: { label: string; value: string; tone?: "success" | "warning" | "destructive" }) {
+function Stat({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone?: "success" | "warning" | "destructive";
+}) {
   const t = tone ? TONE_CLASS[tone] : null;
   return (
     <div className="flex items-center gap-1.5 rounded-md border border-border bg-card px-2 py-1">
@@ -412,7 +564,15 @@ function Stat({ label, value, tone }: { label: string; value: string; tone?: "su
   );
 }
 
-function Pill({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+function Pill({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
   return (
     <button
       onClick={onClick}
@@ -427,7 +587,15 @@ function Pill({ active, onClick, children }: { active: boolean; onClick: () => v
   );
 }
 
-function Mini({ label, value, tone }: { label: string; value: string; tone?: "success" | "warning" | "destructive" }) {
+function Mini({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone?: "success" | "warning" | "destructive";
+}) {
   const t = tone ? TONE_CLASS[tone] : null;
   return (
     <div className="rounded-md border border-border bg-background/40 px-2 py-1.5">

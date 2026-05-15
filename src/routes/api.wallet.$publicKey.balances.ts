@@ -63,10 +63,10 @@ const normalizeBalance = (b: HorizonBalance): WalletAssetEntry => {
   const isNative = b.asset_type === "native";
   return {
     asset_type: b.asset_type,
-    asset_code: isNative ? "XLM" : b.asset_code ?? "—",
-    asset_issuer: isNative ? null : b.asset_issuer ?? null,
+    asset_code: isNative ? "XLM" : (b.asset_code ?? "—"),
+    asset_issuer: isNative ? null : (b.asset_issuer ?? null),
     balance: b.balance,
-    limit: isNative ? null : b.limit ?? null,
+    limit: isNative ? null : (b.limit ?? null),
     buying_liabilities: b.buying_liabilities ?? null,
     selling_liabilities: b.selling_liabilities ?? null,
     is_authorized: b.is_authorized ?? true,
@@ -143,9 +143,7 @@ export const Route = createFileRoute("/api/wallet/$publicKey/balances")({
           const xlm = assets.find((a) => a.asset_type === "native")?.balance ?? "0";
 
           // Match either spelling ("EPRW" backend / "EPWR" frontend) for resilience.
-          const eprw = assets.find(
-            (a) => a.asset_code === "EPRW" || a.asset_code === "EPWR",
-          );
+          const eprw = assets.find((a) => a.asset_code === "EPRW" || a.asset_code === "EPWR");
 
           return json(
             200,

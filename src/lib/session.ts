@@ -8,8 +8,7 @@ export type AuthSession = {
   createdAt: string;
 };
 
-const isBrowser = () =>
-  typeof window !== "undefined";
+const isBrowser = () => typeof window !== "undefined";
 
 export const getSession = (): AuthSession | null => {
   if (!isBrowser()) return null;
@@ -25,15 +24,10 @@ export const getSession = (): AuthSession | null => {
   }
 };
 
-export const setSession = (
-  session: AuthSession
-) => {
+export const setSession = (session: AuthSession) => {
   if (!isBrowser()) return;
 
-  window.localStorage.setItem(
-    KEY,
-    JSON.stringify(session)
-  );
+  window.localStorage.setItem(KEY, JSON.stringify(session));
 };
 
 export const clearSession = () => {

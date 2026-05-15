@@ -15,30 +15,21 @@ dotenv.config();
 // Stellar Horizon Server
 // ========================================
 
-const server = new Horizon.Server(
-  "https://horizon-testnet.stellar.org"
-);
+const server = new Horizon.Server("https://horizon-testnet.stellar.org");
 
 // ========================================
 // Accounts
 // ========================================
 
-const issuerKeypair = Keypair.fromSecret(
-  process.env.ISSUER_SECRET
-);
+const issuerKeypair = Keypair.fromSecret(process.env.ISSUER_SECRET);
 
-const distributionKeypair = Keypair.fromSecret(
-  process.env.DISTRIBUTION_SECRET
-);
+const distributionKeypair = Keypair.fromSecret(process.env.DISTRIBUTION_SECRET);
 
 // ========================================
 // EPWR Asset
 // ========================================
 
-export const EPWR_ASSET = new Asset(
-  "EPWR",
-  issuerKeypair.publicKey()
-);
+export const EPWR_ASSET = new Asset("EPWR", issuerKeypair.publicKey());
 
 // ========================================
 // Create Trustline
@@ -47,10 +38,7 @@ export const EPWR_ASSET = new Asset(
 
 export async function createTrustline() {
   try {
-
-    const account = await server.loadAccount(
-      distributionKeypair.publicKey()
-    );
+    const account = await server.loadAccount(distributionKeypair.publicKey());
 
     const transaction = new TransactionBuilder(account, {
       fee: "100",
@@ -59,7 +47,7 @@ export async function createTrustline() {
       .addOperation(
         Operation.changeTrust({
           asset: EPWR_ASSET,
-        })
+        }),
       )
       .setTimeout(30)
       .build();
@@ -74,9 +62,7 @@ export async function createTrustline() {
       hash: result.hash,
       ledger: result.ledger,
     };
-
   } catch (error) {
-
     console.error("Trustline Error:", error);
 
     return {
@@ -93,10 +79,7 @@ export async function createTrustline() {
 
 export async function mintEPWR(amount = "1000") {
   try {
-
-    const issuerAccount = await server.loadAccount(
-      issuerKeypair.publicKey()
-    );
+    const issuerAccount = await server.loadAccount(issuerKeypair.publicKey());
 
     const transaction = new TransactionBuilder(issuerAccount, {
       fee: "100",
@@ -107,7 +90,7 @@ export async function mintEPWR(amount = "1000") {
           destination: distributionKeypair.publicKey(),
           asset: EPWR_ASSET,
           amount: amount.toString(),
-        })
+        }),
       )
       .setTimeout(30)
       .build();
@@ -123,9 +106,7 @@ export async function mintEPWR(amount = "1000") {
       hash: result.hash,
       ledger: result.ledger,
     };
-
   } catch (error) {
-
     console.error("Mint Error:", error);
 
     return {
@@ -141,10 +122,7 @@ export async function mintEPWR(amount = "1000") {
 
 export async function sendEPWR(destination, amount = "10") {
   try {
-
-    const distributionAccount = await server.loadAccount(
-      distributionKeypair.publicKey()
-    );
+    const distributionAccount = await server.loadAccount(distributionKeypair.publicKey());
 
     const transaction = new TransactionBuilder(distributionAccount, {
       fee: "100",
@@ -155,7 +133,7 @@ export async function sendEPWR(destination, amount = "10") {
           destination,
           asset: EPWR_ASSET,
           amount: amount.toString(),
-        })
+        }),
       )
       .setTimeout(30)
       .build();
@@ -172,9 +150,7 @@ export async function sendEPWR(destination, amount = "10") {
       hash: result.hash,
       ledger: result.ledger,
     };
-
   } catch (error) {
-
     console.error("Transfer Error:", error);
 
     return {
@@ -190,19 +166,14 @@ export async function sendEPWR(destination, amount = "10") {
 
 export async function getDistributionBalances() {
   try {
-
-    const account = await server.loadAccount(
-      distributionKeypair.publicKey()
-    );
+    const account = await server.loadAccount(distributionKeypair.publicKey());
 
     return {
       success: true,
       account: distributionKeypair.publicKey(),
       balances: account.balances,
     };
-
   } catch (error) {
-
     console.error("Balance Error:", error);
 
     return {

@@ -175,15 +175,7 @@ const TERMINALS: Item[] = [
   },
 ];
 
-function Group({
-  label,
-  items,
-  path,
-}: {
-  label: string;
-  items: Item[];
-  path: string;
-}) {
+function Group({ label, items, path }: { label: string; items: Item[]; path: string }) {
   return (
     <SidebarGroup className="py-1">
       <SidebarGroupLabel className="px-2 font-mono text-[9.5px] font-medium tracking-[0.22em] text-muted-foreground/75">
@@ -193,9 +185,7 @@ function Group({
       <SidebarGroupContent>
         <SidebarMenu className="gap-[2px]">
           {items.map((item) => {
-            const active =
-              path === item.url ||
-              (item.url !== "/" && path.startsWith(item.url));
+            const active = path === item.url || (item.url !== "/" && path.startsWith(item.url));
 
             return (
               <SidebarMenuItem key={item.url}>
@@ -214,9 +204,7 @@ function Group({
 
                     <item.icon className="h-3.5 w-3.5 shrink-0" />
 
-                    <span className="truncate text-[12px] leading-none">
-                      {item.title}
-                    </span>
+                    <span className="truncate text-[12px] leading-none">{item.title}</span>
 
                     <span className="ml-auto font-mono text-[9px] tracking-widest text-muted-foreground/55">
                       {item.code}
@@ -240,23 +228,15 @@ export function AppSidebar() {
   const buildHash = "b9f4c2e";
 
   return (
-    <Sidebar
-      collapsible="icon"
-      className="w-72"
-    >
+    <Sidebar collapsible="icon" className="w-72">
       <SidebarHeader className="border-b border-sidebar-border">
         <div className="flex items-center gap-2 px-2 py-2.5">
           <div className="flex h-7 w-7 items-center justify-center rounded-sm bg-[image:var(--gradient-primary)]">
-            <Zap
-              className="h-3.5 w-3.5 text-primary-foreground"
-              strokeWidth={2.5}
-            />
+            <Zap className="h-3.5 w-3.5 text-primary-foreground" strokeWidth={2.5} />
           </div>
 
           <div className="flex flex-col leading-tight">
-            <span className="truncate text-[12px] leading-none">
-              EnergyPay
-            </span>
+            <span className="truncate text-[12px] leading-none">EnergyPay</span>
 
             <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-muted-foreground">
               Clearing & Settlement OS
@@ -266,29 +246,13 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent className="gap-0">
-        <Group
-          label="Executive Layer"
-          items={MARKET_OPS}
-          path={path}
-        />
+        <Group label="Executive Layer" items={MARKET_OPS} path={path} />
 
-        <Group
-          label="Risk & Clearing"
-          items={RISK_DATA}
-          path={path}
-        />
+        <Group label="Risk & Clearing" items={RISK_DATA} path={path} />
 
-        <Group
-          label="Settlement Infrastructure"
-          items={SETTLEMENT}
-          path={path}
-        />
+        <Group label="Settlement Infrastructure" items={SETTLEMENT} path={path} />
 
-        <Group
-          label="Market Infrastructure"
-          items={TERMINALS}
-          path={path}
-        />
+        <Group label="Market Infrastructure" items={TERMINALS} path={path} />
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border">
@@ -300,9 +264,7 @@ export function AppSidebar() {
 
           <div className="flex items-center justify-between">
             <span>Session</span>
-            <span className="text-foreground/70">
-              sess · {buildHash}
-            </span>
+            <span className="text-foreground/70">sess · {buildHash}</span>
           </div>
 
           <div className="flex items-center justify-between">

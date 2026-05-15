@@ -108,7 +108,9 @@ export function BlockchainActivityFeed({ publicKey }: Props) {
             <Badge
               variant="outline"
               className={`font-mono text-[10px] uppercase tracking-widest ${
-                latency < 800 ? "border-success/40 text-success" : "border-amber-500/40 text-amber-500"
+                latency < 800
+                  ? "border-success/40 text-success"
+                  : "border-amber-500/40 text-amber-500"
               }`}
             >
               Horizon {latency}ms
@@ -123,7 +125,12 @@ export function BlockchainActivityFeed({ publicKey }: Props) {
             Account · Stellar Expert
             <ExternalLink className="ml-1 inline h-3 w-3" />
           </a>
-          <Button size="sm" variant="outline" onClick={refresh} disabled={loading && events.length === 0}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={refresh}
+            disabled={loading && events.length === 0}
+          >
             <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
             Refresh
           </Button>
@@ -191,9 +198,7 @@ export function BlockchainActivityFeed({ publicKey }: Props) {
 
       {/* Footer telemetry */}
       <div className="mt-5 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-        <span>
-          {fetchedAt ? `Last sync · ${fmtRelative(fetchedAt)}` : "Awaiting first sample"}
-        </span>
+        <span>{fetchedAt ? `Last sync · ${fmtRelative(fetchedAt)}` : "Awaiting first sample"}</span>
         <span>Polls · {refreshCount}</span>
         <span>Stellar Testnet · Horizon</span>
       </div>
@@ -208,8 +213,8 @@ function ActivityRow({ event }: { event: ActivityEvent }) {
     event.kind === "SETTLEMENT" && event.title.toLowerCase().includes("received")
       ? ArrowDownLeft
       : event.kind === "SETTLEMENT"
-      ? ArrowUpRight
-      : null;
+        ? ArrowUpRight
+        : null;
 
   return (
     <li className="group relative">
@@ -242,7 +247,10 @@ function ActivityRow({ event }: { event: ActivityEvent }) {
                 {event.title}
               </span>
               {!event.successful && (
-                <Badge variant="outline" className="border-destructive/40 font-mono text-[9px] uppercase text-destructive">
+                <Badge
+                  variant="outline"
+                  className="border-destructive/40 font-mono text-[9px] uppercase text-destructive"
+                >
                   FAILED
                 </Badge>
               )}
@@ -258,7 +266,9 @@ function ActivityRow({ event }: { event: ActivityEvent }) {
                   {event.asset}
                 </span>
               )}
-              <span className="truncate">tx {event.tx_hash.slice(0, 8)}…{event.tx_hash.slice(-6)}</span>
+              <span className="truncate">
+                tx {event.tx_hash.slice(0, 8)}…{event.tx_hash.slice(-6)}
+              </span>
             </div>
           </div>
 

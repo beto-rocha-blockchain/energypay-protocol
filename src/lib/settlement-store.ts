@@ -23,11 +23,11 @@ export type SettlementReceipt = {
   asset: "EPWR" | "XLM";
   amount: number;
   memo: string;
-  submitted_at: string;     // ISO-8601 — first time tx left the adapter
-  finalized_at: string;     // ISO-8601 — Horizon confirmed
-  latency_ms: number;       // finalized_at − submitted_at
-  explorer_url: string;     // stellar.expert link
-  status: SettlementState;  // FINALIZED | FAILED in practice
+  submitted_at: string; // ISO-8601 — first time tx left the adapter
+  finalized_at: string; // ISO-8601 — Horizon confirmed
+  latency_ms: number; // finalized_at − submitted_at
+  explorer_url: string; // stellar.expert link
+  status: SettlementState; // FINALIZED | FAILED in practice
   error?: string;
 };
 

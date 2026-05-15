@@ -47,25 +47,162 @@ export type Counterparty = {
   status: "ACTIVE" | "MONITOR" | "RESTRICTED" | "SUSPENDED";
 };
 
-const COUNTERPARTY_SEED: Array<Omit<Counterparty,
-  "exposureBRL" | "collateralBRL" | "collateralRatio" | "settlementConfidence" | "defaultProbBps" | "openContracts" | "status"
->> = [
-  { id: "EP-CP-0042", legalName: "Eletrobras S.A.", shortName: "Eletrobras", cnpj: "00.001.180/0001-26", type: "GENERATOR", submercado: "SE/CO", rating: "AAA" },
-  { id: "EP-CP-0061", legalName: "Engie Brasil Energia S.A.", shortName: "Engie BR", cnpj: "02.474.103/0001-19", type: "GENERATOR", submercado: "S", rating: "AA" },
-  { id: "EP-CP-0073", legalName: "AES Brasil Operações S.A.", shortName: "AES Brasil", cnpj: "37.663.076/0001-07", type: "GENERATOR", submercado: "SE/CO", rating: "AA" },
-  { id: "EP-CP-0078", legalName: "Auren Energia S.A.", shortName: "Auren", cnpj: "11.341.842/0001-26", type: "GENERATOR", submercado: "SE/CO", rating: "A" },
-  { id: "EP-CP-0084", legalName: "CTG Brasil Energia", shortName: "CTG Brasil", cnpj: "11.342.999/0001-39", type: "GENERATOR", submercado: "SE/CO", rating: "A" },
-  { id: "EP-CP-0091", legalName: "Cemig Distribuição S.A.", shortName: "Cemig D", cnpj: "06.981.180/0001-16", type: "DISTRIBUTOR", submercado: "SE/CO", rating: "A" },
-  { id: "EP-CP-0095", legalName: "Equatorial Energia S.A.", shortName: "Equatorial", cnpj: "03.220.438/0001-73", type: "DISTRIBUTOR", submercado: "NE", rating: "A" },
-  { id: "EP-CP-0102", legalName: "Neoenergia S.A.", shortName: "Neoenergia", cnpj: "01.083.200/0001-18", type: "DISTRIBUTOR", submercado: "NE", rating: "AA" },
-  { id: "EP-CP-0114", legalName: "EDP Brasil S.A.", shortName: "EDP", cnpj: "03.983.431/0001-03", type: "RETAILER", submercado: "SE/CO", rating: "A" },
-  { id: "EP-CP-0118", legalName: "Comerc Energia S.A.", shortName: "Comerc", cnpj: "04.812.243/0001-28", type: "TRADER", submercado: "SE/CO", rating: "BBB" },
-  { id: "EP-CP-0121", legalName: "Vale S.A. — Energia", shortName: "Vale Energia", cnpj: "33.592.510/0001-54", type: "CONSUMER", submercado: "SE/CO", rating: "AAA" },
-  { id: "EP-CP-0129", legalName: "Klabin S.A.", shortName: "Klabin", cnpj: "89.637.490/0001-45", type: "CONSUMER", submercado: "S", rating: "AA" },
-  { id: "EP-CP-0136", legalName: "Suzano Papel e Celulose", shortName: "Suzano", cnpj: "16.404.287/0001-55", type: "CONSUMER", submercado: "SE/CO", rating: "AA" },
-  { id: "EP-CP-0140", legalName: "Vibra Energia S.A.", shortName: "Vibra", cnpj: "33.000.167/0001-01", type: "TRADER", submercado: "SE/CO", rating: "A" },
-  { id: "EP-CP-0148", legalName: "BTG Pactual Infra IV FIP", shortName: "BTG Infra IV", cnpj: "30.306.294/0001-45", type: "INVESTOR", submercado: "SE/CO", rating: "AA" },
-  { id: "EP-CP-0152", legalName: "Pátria Energia Renovável", shortName: "Pátria Renew", cnpj: "32.500.214/0001-77", type: "INVESTOR", submercado: "SE/CO", rating: "A" },
+const COUNTERPARTY_SEED: Array<
+  Omit<
+    Counterparty,
+    | "exposureBRL"
+    | "collateralBRL"
+    | "collateralRatio"
+    | "settlementConfidence"
+    | "defaultProbBps"
+    | "openContracts"
+    | "status"
+  >
+> = [
+  {
+    id: "EP-CP-0042",
+    legalName: "Eletrobras S.A.",
+    shortName: "Eletrobras",
+    cnpj: "00.001.180/0001-26",
+    type: "GENERATOR",
+    submercado: "SE/CO",
+    rating: "AAA",
+  },
+  {
+    id: "EP-CP-0061",
+    legalName: "Engie Brasil Energia S.A.",
+    shortName: "Engie BR",
+    cnpj: "02.474.103/0001-19",
+    type: "GENERATOR",
+    submercado: "S",
+    rating: "AA",
+  },
+  {
+    id: "EP-CP-0073",
+    legalName: "AES Brasil Operações S.A.",
+    shortName: "AES Brasil",
+    cnpj: "37.663.076/0001-07",
+    type: "GENERATOR",
+    submercado: "SE/CO",
+    rating: "AA",
+  },
+  {
+    id: "EP-CP-0078",
+    legalName: "Auren Energia S.A.",
+    shortName: "Auren",
+    cnpj: "11.341.842/0001-26",
+    type: "GENERATOR",
+    submercado: "SE/CO",
+    rating: "A",
+  },
+  {
+    id: "EP-CP-0084",
+    legalName: "CTG Brasil Energia",
+    shortName: "CTG Brasil",
+    cnpj: "11.342.999/0001-39",
+    type: "GENERATOR",
+    submercado: "SE/CO",
+    rating: "A",
+  },
+  {
+    id: "EP-CP-0091",
+    legalName: "Cemig Distribuição S.A.",
+    shortName: "Cemig D",
+    cnpj: "06.981.180/0001-16",
+    type: "DISTRIBUTOR",
+    submercado: "SE/CO",
+    rating: "A",
+  },
+  {
+    id: "EP-CP-0095",
+    legalName: "Equatorial Energia S.A.",
+    shortName: "Equatorial",
+    cnpj: "03.220.438/0001-73",
+    type: "DISTRIBUTOR",
+    submercado: "NE",
+    rating: "A",
+  },
+  {
+    id: "EP-CP-0102",
+    legalName: "Neoenergia S.A.",
+    shortName: "Neoenergia",
+    cnpj: "01.083.200/0001-18",
+    type: "DISTRIBUTOR",
+    submercado: "NE",
+    rating: "AA",
+  },
+  {
+    id: "EP-CP-0114",
+    legalName: "EDP Brasil S.A.",
+    shortName: "EDP",
+    cnpj: "03.983.431/0001-03",
+    type: "RETAILER",
+    submercado: "SE/CO",
+    rating: "A",
+  },
+  {
+    id: "EP-CP-0118",
+    legalName: "Comerc Energia S.A.",
+    shortName: "Comerc",
+    cnpj: "04.812.243/0001-28",
+    type: "TRADER",
+    submercado: "SE/CO",
+    rating: "BBB",
+  },
+  {
+    id: "EP-CP-0121",
+    legalName: "Vale S.A. — Energia",
+    shortName: "Vale Energia",
+    cnpj: "33.592.510/0001-54",
+    type: "CONSUMER",
+    submercado: "SE/CO",
+    rating: "AAA",
+  },
+  {
+    id: "EP-CP-0129",
+    legalName: "Klabin S.A.",
+    shortName: "Klabin",
+    cnpj: "89.637.490/0001-45",
+    type: "CONSUMER",
+    submercado: "S",
+    rating: "AA",
+  },
+  {
+    id: "EP-CP-0136",
+    legalName: "Suzano Papel e Celulose",
+    shortName: "Suzano",
+    cnpj: "16.404.287/0001-55",
+    type: "CONSUMER",
+    submercado: "SE/CO",
+    rating: "AA",
+  },
+  {
+    id: "EP-CP-0140",
+    legalName: "Vibra Energia S.A.",
+    shortName: "Vibra",
+    cnpj: "33.000.167/0001-01",
+    type: "TRADER",
+    submercado: "SE/CO",
+    rating: "A",
+  },
+  {
+    id: "EP-CP-0148",
+    legalName: "BTG Pactual Infra IV FIP",
+    shortName: "BTG Infra IV",
+    cnpj: "30.306.294/0001-45",
+    type: "INVESTOR",
+    submercado: "SE/CO",
+    rating: "AA",
+  },
+  {
+    id: "EP-CP-0152",
+    legalName: "Pátria Energia Renovável",
+    shortName: "Pátria Renew",
+    cnpj: "32.500.214/0001-77",
+    type: "INVESTOR",
+    submercado: "SE/CO",
+    rating: "A",
+  },
 ];
 
 export const COUNTERPARTIES: Counterparty[] = COUNTERPARTY_SEED.map((s, i) => {
@@ -73,8 +210,14 @@ export const COUNTERPARTIES: Counterparty[] = COUNTERPARTY_SEED.map((s, i) => {
   const exposure = Math.round((4_000_000 + r() * 95_000_000) / 1000) * 1000;
   const ratio = 0.95 + r() * 0.9;
   const collateral = Math.round(exposure * ratio);
-  const conf = 100 - Math.round(r() * (s.rating === "AAA" ? 6 : s.rating === "AA" ? 14 : s.rating === "A" ? 24 : 38));
-  const dprob = Math.round((s.rating === "AAA" ? 3 : s.rating === "AA" ? 12 : s.rating === "A" ? 35 : 110) + r() * 40);
+  const conf =
+    100 -
+    Math.round(
+      r() * (s.rating === "AAA" ? 6 : s.rating === "AA" ? 14 : s.rating === "A" ? 24 : 38),
+    );
+  const dprob = Math.round(
+    (s.rating === "AAA" ? 3 : s.rating === "AA" ? 12 : s.rating === "A" ? 35 : 110) + r() * 40,
+  );
   const open = 1 + Math.floor(r() * 18);
   const status: Counterparty["status"] =
     ratio < 1.0 ? "MONITOR" : conf < 70 ? "RESTRICTED" : "ACTIVE";
@@ -150,7 +293,13 @@ export type ReconException = {
 };
 
 export const RECON_EXCEPTIONS: ReconException[] = (() => {
-  const kinds: ReconException["kind"][] = ["PRICE_MISMATCH", "VOLUME_DRIFT", "ORACLE_DIVERGENCE", "LEDGER_GAP", "TIMESTAMP_SKEW"];
+  const kinds: ReconException["kind"][] = [
+    "PRICE_MISMATCH",
+    "VOLUME_DRIFT",
+    "ORACLE_DIVERGENCE",
+    "LEDGER_GAP",
+    "TIMESTAMP_SKEW",
+  ];
   const sev: ReconException["severity"][] = ["INFO", "WARN", "CRITICAL"];
   const st: ReconException["state"][] = ["OPEN", "INVESTIGATING", "RESOLVED", "ESCALATED"];
   return Array.from({ length: 14 }).map((_, i) => {
@@ -160,11 +309,15 @@ export const RECON_EXCEPTIONS: ReconException[] = (() => {
     const s = sev[Math.min(2, Math.floor(r() * 3.4))];
     const age = Math.floor(r() * 220);
     const delta =
-      k === "PRICE_MISMATCH" ? `Δ R$ ${(r() * 14).toFixed(2)}/MWh` :
-      k === "VOLUME_DRIFT"   ? `Δ ${(r() * 8.4).toFixed(2)} MWh` :
-      k === "ORACLE_DIVERGENCE" ? `${(r() * 1.8).toFixed(2)}% div` :
-      k === "LEDGER_GAP"     ? `seq −${Math.floor(r() * 3) + 1}` :
-                                `${Math.floor(r() * 450)} ms`;
+      k === "PRICE_MISMATCH"
+        ? `Δ R$ ${(r() * 14).toFixed(2)}/MWh`
+        : k === "VOLUME_DRIFT"
+          ? `Δ ${(r() * 8.4).toFixed(2)} MWh`
+          : k === "ORACLE_DIVERGENCE"
+            ? `${(r() * 1.8).toFixed(2)}% div`
+            : k === "LEDGER_GAP"
+              ? `seq −${Math.floor(r() * 3) + 1}`
+              : `${Math.floor(r() * 450)} ms`;
     return {
       id: `EX-${String(38210 + i).padStart(5, "0")}`,
       counterparty: cp.shortName,
@@ -188,12 +341,48 @@ export type OpsAlert = {
 };
 
 export const OPS_ALERTS: OpsAlert[] = [
-  { id: "A-9821", ts: new Date(Date.now() - 60_000).toISOString(), severity: "WARN", source: "PLD-FEED-SECO", message: "Reference feed latency above 1.5s threshold — fallback oracle armed." },
-  { id: "A-9817", ts: new Date(Date.now() - 6 * 60_000).toISOString(), severity: "CRITICAL", source: "CLR-MARGIN", message: "Counterparty Comerc Energia — collateral ratio 0.97× below floor 1.00×." },
-  { id: "A-9810", ts: new Date(Date.now() - 14 * 60_000).toISOString(), severity: "INFO", source: "STELLAR-RAIL", message: "Horizon finality p95 within nominal envelope (4.1s)." },
-  { id: "A-9805", ts: new Date(Date.now() - 22 * 60_000).toISOString(), severity: "WARN", source: "RECON-ENGINE", message: "4 open price-mismatch exceptions on submercado NE — investigating." },
-  { id: "A-9799", ts: new Date(Date.now() - 41 * 60_000).toISOString(), severity: "INFO", source: "AUDIT", message: "Daily compliance attestation packet anchored — block 51 224 197." },
-  { id: "A-9788", ts: new Date(Date.now() - 73 * 60_000).toISOString(), severity: "WARN", source: "CUSTODY", message: "Settlement guarantee pool utilization at 71% — within tolerance." },
+  {
+    id: "A-9821",
+    ts: new Date(Date.now() - 60_000).toISOString(),
+    severity: "WARN",
+    source: "PLD-FEED-SECO",
+    message: "Reference feed latency above 1.5s threshold — fallback oracle armed.",
+  },
+  {
+    id: "A-9817",
+    ts: new Date(Date.now() - 6 * 60_000).toISOString(),
+    severity: "CRITICAL",
+    source: "CLR-MARGIN",
+    message: "Counterparty Comerc Energia — collateral ratio 0.97× below floor 1.00×.",
+  },
+  {
+    id: "A-9810",
+    ts: new Date(Date.now() - 14 * 60_000).toISOString(),
+    severity: "INFO",
+    source: "STELLAR-RAIL",
+    message: "Horizon finality p95 within nominal envelope (4.1s).",
+  },
+  {
+    id: "A-9805",
+    ts: new Date(Date.now() - 22 * 60_000).toISOString(),
+    severity: "WARN",
+    source: "RECON-ENGINE",
+    message: "4 open price-mismatch exceptions on submercado NE — investigating.",
+  },
+  {
+    id: "A-9799",
+    ts: new Date(Date.now() - 41 * 60_000).toISOString(),
+    severity: "INFO",
+    source: "AUDIT",
+    message: "Daily compliance attestation packet anchored — block 51 224 197.",
+  },
+  {
+    id: "A-9788",
+    ts: new Date(Date.now() - 73 * 60_000).toISOString(),
+    severity: "WARN",
+    source: "CUSTODY",
+    message: "Settlement guarantee pool utilization at 71% — within tolerance.",
+  },
 ];
 
 // ---------- KYC / compliance ----------
@@ -208,7 +397,8 @@ export type KycRecord = {
 
 export const KYC_RECORDS: KycRecord[] = COUNTERPARTIES.slice(0, 12).map((c, i) => {
   const r = prng(0xfee1 + i * 31);
-  const tier = c.rating === "AAA" || c.rating === "AA" ? "TIER-1" : c.rating === "A" ? "TIER-2" : "TIER-3";
+  const tier =
+    c.rating === "AAA" || c.rating === "AA" ? "TIER-1" : c.rating === "A" ? "TIER-2" : "TIER-3";
   const days = Math.floor(r() * 280);
   const status: KycRecord["status"] =
     days > 240 ? "EXPIRING" : r() > 0.92 ? "PENDING REVIEW" : "VERIFIED";
@@ -235,21 +425,134 @@ export type TopoNode = {
 };
 
 export const TOPO_NODES: TopoNode[] = [
-  { id: "N-NE-01", label: "Itaparica HPP",     type: "GENERATOR",   submercado: "NE",    x: 71, y: 32, status: "ONLINE",   loadMw: 1480 },
-  { id: "N-NE-02", label: "Neoenergia BA",     type: "DISTRIBUTOR", submercado: "NE",    x: 78, y: 40, status: "ONLINE",   loadMw: 920  },
-  { id: "N-N-01",  label: "Tucuruí HPP",       type: "GENERATOR",   submercado: "N",     x: 58, y: 18, status: "DEGRADED", loadMw: 3210 },
-  { id: "N-N-02",  label: "Equatorial PA",     type: "DISTRIBUTOR", submercado: "N",     x: 50, y: 24, status: "ONLINE",   loadMw: 540  },
-  { id: "N-SE-01", label: "Itaipu (BR)",       type: "GENERATOR",   submercado: "SE/CO", x: 38, y: 62, status: "ONLINE",   loadMw: 6810 },
-  { id: "N-SE-02", label: "Cemig D MG",        type: "DISTRIBUTOR", submercado: "SE/CO", x: 56, y: 56, status: "ONLINE",   loadMw: 2140 },
-  { id: "N-SE-03", label: "Vale Carajás",      type: "CONSUMER",    submercado: "SE/CO", x: 64, y: 48, status: "ONLINE",   loadMw: 1820 },
-  { id: "N-SE-04", label: "Auren Trading Desk",type: "TRADER",      submercado: "SE/CO", x: 52, y: 68, status: "ONLINE",   loadMw: 0    },
-  { id: "N-SE-05", label: "EDP Retail SP",     type: "RETAILER",    submercado: "SE/CO", x: 48, y: 74, status: "DEGRADED", loadMw: 760  },
-  { id: "N-S-01",  label: "Engie Jorge Lacerda",type:"GENERATOR",   submercado: "S",     x: 44, y: 86, status: "ONLINE",   loadMw: 880  },
-  { id: "N-S-02",  label: "Klabin Telêmaco",   type: "CONSUMER",    submercado: "S",     x: 40, y: 80, status: "ONLINE",   loadMw: 410  },
-  { id: "N-INV-01",label: "BTG Infra IV FIP",  type: "INVESTOR",    submercado: "SE/CO", x: 30, y: 70, status: "ONLINE",   loadMw: 0    },
+  {
+    id: "N-NE-01",
+    label: "Itaparica HPP",
+    type: "GENERATOR",
+    submercado: "NE",
+    x: 71,
+    y: 32,
+    status: "ONLINE",
+    loadMw: 1480,
+  },
+  {
+    id: "N-NE-02",
+    label: "Neoenergia BA",
+    type: "DISTRIBUTOR",
+    submercado: "NE",
+    x: 78,
+    y: 40,
+    status: "ONLINE",
+    loadMw: 920,
+  },
+  {
+    id: "N-N-01",
+    label: "Tucuruí HPP",
+    type: "GENERATOR",
+    submercado: "N",
+    x: 58,
+    y: 18,
+    status: "DEGRADED",
+    loadMw: 3210,
+  },
+  {
+    id: "N-N-02",
+    label: "Equatorial PA",
+    type: "DISTRIBUTOR",
+    submercado: "N",
+    x: 50,
+    y: 24,
+    status: "ONLINE",
+    loadMw: 540,
+  },
+  {
+    id: "N-SE-01",
+    label: "Itaipu (BR)",
+    type: "GENERATOR",
+    submercado: "SE/CO",
+    x: 38,
+    y: 62,
+    status: "ONLINE",
+    loadMw: 6810,
+  },
+  {
+    id: "N-SE-02",
+    label: "Cemig D MG",
+    type: "DISTRIBUTOR",
+    submercado: "SE/CO",
+    x: 56,
+    y: 56,
+    status: "ONLINE",
+    loadMw: 2140,
+  },
+  {
+    id: "N-SE-03",
+    label: "Vale Carajás",
+    type: "CONSUMER",
+    submercado: "SE/CO",
+    x: 64,
+    y: 48,
+    status: "ONLINE",
+    loadMw: 1820,
+  },
+  {
+    id: "N-SE-04",
+    label: "Auren Trading Desk",
+    type: "TRADER",
+    submercado: "SE/CO",
+    x: 52,
+    y: 68,
+    status: "ONLINE",
+    loadMw: 0,
+  },
+  {
+    id: "N-SE-05",
+    label: "EDP Retail SP",
+    type: "RETAILER",
+    submercado: "SE/CO",
+    x: 48,
+    y: 74,
+    status: "DEGRADED",
+    loadMw: 760,
+  },
+  {
+    id: "N-S-01",
+    label: "Engie Jorge Lacerda",
+    type: "GENERATOR",
+    submercado: "S",
+    x: 44,
+    y: 86,
+    status: "ONLINE",
+    loadMw: 880,
+  },
+  {
+    id: "N-S-02",
+    label: "Klabin Telêmaco",
+    type: "CONSUMER",
+    submercado: "S",
+    x: 40,
+    y: 80,
+    status: "ONLINE",
+    loadMw: 410,
+  },
+  {
+    id: "N-INV-01",
+    label: "BTG Infra IV FIP",
+    type: "INVESTOR",
+    submercado: "SE/CO",
+    x: 30,
+    y: 70,
+    status: "ONLINE",
+    loadMw: 0,
+  },
 ];
 
-export const TOPO_EDGES: Array<{ from: string; to: string; mw: number; status: "FLOWING" | "STANDBY" | "STRESSED" }> = [
+export const TOPO_EDGES: Array<{
+  from: string;
+  to: string;
+  mw: number;
+  status: "FLOWING" | "STANDBY" | "STRESSED";
+}> = [
   { from: "N-SE-01", to: "N-SE-02", mw: 2140, status: "FLOWING" },
   { from: "N-SE-01", to: "N-SE-05", mw: 760, status: "STRESSED" },
   { from: "N-SE-02", to: "N-SE-03", mw: 1820, status: "FLOWING" },
@@ -275,9 +578,34 @@ export type AuditEntry = {
 
 export const AUDIT_LOG: AuditEntry[] = Array.from({ length: 24 }).map((_, i) => {
   const r = prng(0xabba + i * 13);
-  const actors = ["ops.cardoso", "ops.menezes", "supervisor.dias", "clearing.admin", "compliance.silva", "system.adapter"];
-  const actions = ["SETTLEMENT_BROADCAST", "MARGIN_CALL_ISSUED", "CONTRACT_APPROVED", "ORACLE_OVERRIDE", "KYC_REVIEW", "LEDGER_ANCHOR", "OPERATOR_LOGIN", "FALLBACK_ARMED"];
-  const resources = ["EPC-2058", "EPC-2061", "EPC-2070", "CP/EP-CP-0118", "feed/PLD-SECO", "tx/9f3ab2…", "session/op-7741", "policy/clr-margin-v3"];
+  const actors = [
+    "ops.cardoso",
+    "ops.menezes",
+    "supervisor.dias",
+    "clearing.admin",
+    "compliance.silva",
+    "system.adapter",
+  ];
+  const actions = [
+    "SETTLEMENT_BROADCAST",
+    "MARGIN_CALL_ISSUED",
+    "CONTRACT_APPROVED",
+    "ORACLE_OVERRIDE",
+    "KYC_REVIEW",
+    "LEDGER_ANCHOR",
+    "OPERATOR_LOGIN",
+    "FALLBACK_ARMED",
+  ];
+  const resources = [
+    "EPC-2058",
+    "EPC-2061",
+    "EPC-2070",
+    "CP/EP-CP-0118",
+    "feed/PLD-SECO",
+    "tx/9f3ab2…",
+    "session/op-7741",
+    "policy/clr-margin-v3",
+  ];
   const ip = `10.${42 + Math.floor(r() * 8)}.${Math.floor(r() * 250)}.${Math.floor(r() * 250)}`;
   const result: AuditEntry["result"] = r() > 0.94 ? "DENIED" : r() > 0.97 ? "ERROR" : "OK";
   return {
@@ -288,14 +616,22 @@ export const AUDIT_LOG: AuditEntry[] = Array.from({ length: 24 }).map((_, i) => 
     resource: resources[i % resources.length],
     ip,
     result,
-    txHash: i % 3 === 0 ? `${Math.floor(r() * 16 ** 8).toString(16).padStart(8, "0")}${Math.floor(r() * 16 ** 8).toString(16).padStart(8, "0")}` : undefined,
+    txHash:
+      i % 3 === 0
+        ? `${Math.floor(r() * 16 ** 8)
+            .toString(16)
+            .padStart(8, "0")}${Math.floor(r() * 16 ** 8)
+            .toString(16)
+            .padStart(8, "0")}`
+        : undefined,
   };
 });
 
 // ---------- Formatters ----------
 export const fmtBRL = (n: number) =>
   n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
-export const fmtBRLm = (n: number) => `R$ ${(n / 1_000_000).toLocaleString("en-US", { maximumFractionDigits: 1 })}M`;
+export const fmtBRLm = (n: number) =>
+  `R$ ${(n / 1_000_000).toLocaleString("en-US", { maximumFractionDigits: 1 })}M`;
 export const fmtNum = (n: number, d = 0) => n.toLocaleString("en-US", { maximumFractionDigits: d });
 export const fmtPct = (n: number, d = 1) => `${n.toFixed(d)}%`;
 export const fmtUTC = (iso: string) => new Date(iso).toUTCString().slice(17, 25);

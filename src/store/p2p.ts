@@ -67,11 +67,36 @@ const COUNTERPARTY_KEYS = [
 ];
 
 const seedCounterparties: P2PCounterparty[] = [
-  { organization: "Aurora Grid Energy",       role: "GENERATOR", jurisdiction: "BR-PR", settlementAddress: COUNTERPARTY_KEYS[0] },
-  { organization: "Nexa Commercial Energy",   role: "SELLER",    jurisdiction: "BR-RJ", settlementAddress: COUNTERPARTY_KEYS[1] },
-  { organization: "Atlas Energy Holdings",    role: "INVESTOR",  jurisdiction: "BR-SP", settlementAddress: COUNTERPARTY_KEYS[2] },
-  { organization: "Metro Distribution Group", role: "USER",      jurisdiction: "BR-MG", settlementAddress: COUNTERPARTY_KEYS[3] },
-  { organization: "Horizon Power Exchange",   role: "SELLER",    jurisdiction: "BR-DF", settlementAddress: COUNTERPARTY_KEYS[4] },
+  {
+    organization: "Aurora Grid Energy",
+    role: "GENERATOR",
+    jurisdiction: "BR-PR",
+    settlementAddress: COUNTERPARTY_KEYS[0],
+  },
+  {
+    organization: "Nexa Commercial Energy",
+    role: "SELLER",
+    jurisdiction: "BR-RJ",
+    settlementAddress: COUNTERPARTY_KEYS[1],
+  },
+  {
+    organization: "Atlas Energy Holdings",
+    role: "INVESTOR",
+    jurisdiction: "BR-SP",
+    settlementAddress: COUNTERPARTY_KEYS[2],
+  },
+  {
+    organization: "Metro Distribution Group",
+    role: "USER",
+    jurisdiction: "BR-MG",
+    settlementAddress: COUNTERPARTY_KEYS[3],
+  },
+  {
+    organization: "Horizon Power Exchange",
+    role: "SELLER",
+    jurisdiction: "BR-DF",
+    settlementAddress: COUNTERPARTY_KEYS[4],
+  },
 ];
 
 type P2PState = {

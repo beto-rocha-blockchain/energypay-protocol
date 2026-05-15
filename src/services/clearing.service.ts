@@ -7,8 +7,8 @@ function generate(): BilateralContract[] {
   return Array.from({ length: 12 }).map((_, i) => {
     const buyer = COUNTERPARTIES[(i * 3) % COUNTERPARTIES.length];
     const seller = COUNTERPARTIES[(i * 5 + 1) % COUNTERPARTIES.length];
-    const price = 220 + (i * 13) % 80;
-    const volume = 800 + (i * 71) % 6400;
+    const price = 220 + ((i * 13) % 80);
+    const volume = 800 + ((i * 71) % 6400);
     const notional = price * volume;
     const startAt = new Date(Date.now() - i * 86_400_000).toISOString();
     const endAt = new Date(Date.now() + (180 - i * 7) * 86_400_000).toISOString();

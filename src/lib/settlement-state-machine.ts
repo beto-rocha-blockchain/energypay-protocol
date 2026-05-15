@@ -47,20 +47,14 @@ const TRANSITIONS: Record<SettlementState, SettlementState[]> = {
   FAILED: [],
 };
 
-export const canTransition = (
-  from: SettlementState,
-  to: SettlementState,
-): boolean => TRANSITIONS[from]?.includes(to) ?? false;
+export const canTransition = (from: SettlementState, to: SettlementState): boolean =>
+  TRANSITIONS[from]?.includes(to) ?? false;
 
-export const transition = (
-  from: SettlementState,
-  to: SettlementState,
-): SettlementState => {
+export const transition = (from: SettlementState, to: SettlementState): SettlementState => {
   if (!canTransition(from, to)) {
     throw new Error(`Illegal settlement transition: ${from} → ${to}`);
   }
   return to;
 };
 
-export const isTerminal = (s: SettlementState): boolean =>
-  s === "FINALIZED" || s === "FAILED";
+export const isTerminal = (s: SettlementState): boolean => s === "FINALIZED" || s === "FAILED";

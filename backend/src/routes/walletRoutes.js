@@ -9,7 +9,7 @@ import {
   createSellOffer,
   createBuyOffer,
   buyEPRW,
-  getOrderbook
+  getOrderbook,
 } from "../services/stellarService.js";
 
 const router = express.Router();
@@ -51,9 +51,7 @@ router.post("/create", async (req, res) => {
 
 router.get("/:publicKey", async (req, res) => {
   try {
-    const data = await getBalance(
-      req.params.publicKey
-    );
+    const data = await getBalance(req.params.publicKey);
 
     res.json({
       success: true,
@@ -73,97 +71,70 @@ router.get("/:publicKey", async (req, res) => {
 // GET FORMATTED BALANCES (XLM + EPRW)
 // =====================================================
 
-router.get(
-  "/:publicKey/balances",
-  async (req, res) => {
-    try {
-      const data = await getBalance(
-        req.params.publicKey
-      );
+router.get("/:publicKey/balances", async (req, res) => {
+  try {
+    const data = await getBalance(req.params.publicKey);
 
-      const balances =
-        data.balances || [];
+    const balances = data.balances || [];
 
-      let xlmBalance = "0";
-      let eprwBalance = "0";
+    let xlmBalance = "0";
+    let eprwBalance = "0";
 
-      for (const balance of balances) {
-        // Native XLM
-        if (
-          balance.asset_type ===
-          "native"
-        ) {
-          xlmBalance =
-            balance.balance;
-        }
-
-        // EPRW token
-        if (
-          balance.asset_code ===
-          "EPRW"
-        ) {
-          eprwBalance =
-            balance.balance;
-        }
+    for (const balance of balances) {
+      // Native XLM
+      if (balance.asset_type === "native") {
+        xlmBalance = balance.balance;
       }
 
-      return res.json({
-        success: true,
-
-        wallet:
-          req.params.publicKey,
-
-        balances: {
-          xlm: xlmBalance,
-          eprw: eprwBalance,
-        },
-      });
-    } catch (err) {
-      console.error(err);
-
-      return res.status(500).json({
-        success: false,
-        error:
-          "Erro ao obter balances",
-      });
+      // EPRW token
+      if (balance.asset_code === "EPRW") {
+        eprwBalance = balance.balance;
+      }
     }
+
+    return res.json({
+      success: true,
+
+      wallet: req.params.publicKey,
+
+      balances: {
+        xlm: xlmBalance,
+        eprw: eprwBalance,
+      },
+    });
+  } catch (err) {
+    console.error(err);
+
+    return res.status(500).json({
+      success: false,
+      error: "Erro ao obter balances",
+    });
   }
-);
+});
 
 // =====================================================
 // CREATE TRUSTLINE
 // =====================================================
 
-router.post(
-  "/trustline",
-  async (req, res) => {
-    try {
-      const {
-        privateKey,
-        issuerPublicKey,
-      } = req.body;
+router.post("/trustline", async (req, res) => {
+  try {
+    const { privateKey, issuerPublicKey } = req.body;
 
-      const result =
-        await createTrustline(
-          privateKey,
-          issuerPublicKey
-        );
+    const result = await createTrustline(privateKey, issuerPublicKey);
 
-      res.json({
-        success: true,
-        ...result,
-      });
-    } catch (err) {
-      console.error(err);
+    res.json({
+      success: true,
+      ...result,
+    });
+  } catch (err) {
+    console.error(err);
 
-      res.status(500).json({
-        success: false,
-        error:
-          "Erro ao criar trustline",
-      });
-    }
+    res.status(500).json({
+      success: false,
+      error: "Erro ao criar trustline",
+    });
   }
-);
+});
 
 // =====================================================
 // ISSUE TOKEN
@@ -171,17 +142,9 @@ router.post(
 
 router.post("/issue", async (req, res) => {
   try {
-    const {
-      issuerPrivateKey,
-      destinationPublic,
-      amount,
-    } = req.body;
+    const { issuerPrivateKey, destinationPublic, amount } = req.body;
 
-    const result = await issueToken(
-      issuerPrivateKey,
-      destinationPublic,
-      amount
-    );
+    const result = await issueToken(issuerPrivateKey, destinationPublic, amount);
 
     res.json({
       success: true,
@@ -203,20 +166,9 @@ router.post("/issue", async (req, res) => {
 
 router.post("/offer", async (req, res) => {
   try {
-    const {
-      privateKey,
-      amount,
-      price,
-      issuerPublicKey,
-    } = req.body;
+    const { privateKey, amount, price, issuerPublicKey } = req.body;
 
-    const result =
-      await createSellOffer(
-        privateKey,
-        amount,
-        price,
-        issuerPublicKey
-      );
+    const result = await createSellOffer(privateKey, amount, price, issuerPublicKey);
 
     res.json({
       success: true,
@@ -227,8 +179,7 @@ router.post("/offer", async (req, res) => {
 
     res.status(500).json({
       success: false,
-      error:
-        "Erro ao criar oferta",
+      error: "Erro ao criar oferta",
     });
   }
 });
@@ -237,40 +188,25 @@ router.post("/offer", async (req, res) => {
 // CREATE BUY OFFER (BID)
 // =====================================================
 
-router.post(
-  "/buy-offer",
-  async (req, res) => {
-    try {
-      const {
-        privateKey,
-        amount,
-        price,
-        issuerPublicKey,
-      } = req.body;
+router.post("/buy-offer", async (req, res) => {
+  try {
+    const { privateKey, amount, price, issuerPublicKey } = req.body;
 
-      const result =
-        await createBuyOffer(
-          privateKey,
-          amount,
-          price,
-          issuerPublicKey
-        );
+    const result = await createBuyOffer(privateKey, amount, price, issuerPublicKey);
 
-      res.json({
-        success: true,
-        ...result,
-      });
-    } catch (err) {
-      console.error(err);
+    res.json({
+      success: true,
+      ...result,
+    });
+  } catch (err) {
+    console.error(err);
 
-      res.status(500).json({
-        success: false,
-        error:
-          "Erro ao criar ordem de compra",
-      });
-    }
+    res.status(500).json({
+      success: false,
+      error: "Erro ao criar ordem de compra",
+    });
   }
-);
+});
 
 // =====================================================
 // DIRECT BUY
@@ -278,16 +214,10 @@ router.post(
 
 router.post("/buy", async (req, res) => {
   try {
-    const {
-      buyerPrivateKey,
-      issuerPublicKey,
-      amount,
-      maxXlm,
-    } = req.body;
+    const { buyerPrivateKey, issuerPublicKey, amount, maxXlm } = req.body;
 
     const result = await buyEPRW({
-      buyerSecret:
-        buyerPrivateKey,
+      buyerSecret: buyerPrivateKey,
 
       issuerPublicKey,
 
@@ -305,8 +235,7 @@ router.post("/buy", async (req, res) => {
 
     res.status(500).json({
       success: false,
-      error:
-        "Erro ao comprar EPRW",
+      error: "Erro ao comprar EPRW",
     });
   }
 });
@@ -315,29 +244,22 @@ router.post("/buy", async (req, res) => {
 // ORDERBOOK / PRICE
 // =====================================================
 
-router.get(
-  "/price/:issuerPublicKey",
-  async (req, res) => {
-    try {
-      const data =
-        await getOrderbook(
-          req.params.issuerPublicKey
-        );
+router.get("/price/:issuerPublicKey", async (req, res) => {
+  try {
+    const data = await getOrderbook(req.params.issuerPublicKey);
 
-      res.json({
-        success: true,
-        ...data,
-      });
-    } catch (err) {
-      console.error(err);
+    res.json({
+      success: true,
+      ...data,
+    });
+  } catch (err) {
+    console.error(err);
 
-      res.status(500).json({
-        success: false,
-        error:
-          "Erro ao obter preço",
-      });
-    }
+    res.status(500).json({
+      success: false,
+      error: "Erro ao obter preço",
+    });
   }
-);
+});
 
 export default router;

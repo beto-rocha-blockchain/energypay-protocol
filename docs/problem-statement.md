@@ -14,6 +14,7 @@ Energy markets operate with fragmented settlement processes, limited programmabi
 ## Market Opportunity
 
 The global energy market is rapidly digitalizing:
+
 - Smart grids generate unprecedented amounts of real-time data
 - Renewable energy trading is increasing exponentially
 - Peer-to-peer energy trading is emerging as a use case
@@ -32,12 +33,14 @@ Yet settlement infrastructure hasn't evolved to support these new market dynamic
 ## Why Existing Solutions Fall Short
 
 ### Traditional Finance Rails
+
 - **Expensive** - Wire fees, intermediaries, compliance overhead
 - **Slow** - ACH/SWIFT settlement takes days
 - **Inflexible** - Cannot support programmable, conditional logic
 - **Not optimized for energy** - Built for generic financial transactions
 
 ### Generic Blockchains
+
 - **High latency** - Confirmation times incompatible with real-time energy markets
 - **Expensive gas** - Micropayment scenarios (cents per transaction) become uneconomical
 - **Scalability issues** - Cannot handle volume requirements of energy settlement
@@ -69,14 +72,14 @@ Stellar offers unique advantages for energy settlement:
 
 ## Competitive Advantages
 
-| Aspect | EnergyPay | Traditional Systems | Generic Blockchains |
-|--------|-----------|-------------------|-------------------|
-| Settlement Speed | 3-5 seconds | Days to weeks | 10-60 seconds |
-| Transaction Cost | $0.0001 - $0.001 | $0.50 - $5.00 | $0.01 - $50.00 |
-| Programmability | Full smart contracts | Limited | Yes, but expensive |
-| Scalability | 1000+ tx/sec | 100-1000 tx/day | 10-100 tx/sec |
-| Energy Optimization | Native | Not applicable | No |
-| Regulatory Status | Clear (Stellar proven) | Traditional | Uncertain |
+| Aspect              | EnergyPay              | Traditional Systems | Generic Blockchains |
+| ------------------- | ---------------------- | ------------------- | ------------------- |
+| Settlement Speed    | 3-5 seconds            | Days to weeks       | 10-60 seconds       |
+| Transaction Cost    | $0.0001 - $0.001       | $0.50 - $5.00       | $0.01 - $50.00      |
+| Programmability     | Full smart contracts   | Limited             | Yes, but expensive  |
+| Scalability         | 1000+ tx/sec           | 100-1000 tx/day     | 10-100 tx/sec       |
+| Energy Optimization | Native                 | Not applicable      | No                  |
+| Regulatory Status   | Clear (Stellar proven) | Traditional         | Uncertain           |
 
 ## Success Metrics
 

@@ -33,13 +33,7 @@ const json = (status: number, body: unknown, cors: Record<string, string>) =>
     headers: { "Content-Type": "application/json", ...cors },
   });
 
-export type ActivityKind =
-  | "FUNDING"
-  | "ISSUANCE"
-  | "TRUSTLINE"
-  | "SETTLEMENT"
-  | "OFFER"
-  | "OTHER";
+export type ActivityKind = "FUNDING" | "ISSUANCE" | "TRUSTLINE" | "SETTLEMENT" | "OFFER" | "OTHER";
 
 export type ActivitySeverity = "info" | "ok" | "warn" | "critical";
 
@@ -113,18 +107,15 @@ const classifyOp = (op: HorizonOp, account: string): ActivityEvent => {
       break;
     }
     case "payment": {
-      const code = op.asset_type === "native" ? "XLM" : op.asset_code ?? "—";
+      const code = op.asset_type === "native" ? "XLM" : (op.asset_code ?? "—");
       const incoming = op.to === account;
       asset = code;
       amount = op.amount ?? null;
-      counterparty = incoming ? op.from ?? null : op.to ?? null;
+      counterparty = incoming ? (op.from ?? null) : (op.to ?? null);
 
       // Issuance heuristic: from === asset_issuer OR native-less path with EPRW issuance.
       const isIssuance =
-        code === EPRW &&
-        op.asset_issuer &&
-        op.from === op.asset_issuer &&
-        op.to === account;
+        code === EPRW && op.asset_issuer && op.from === op.asset_issuer && op.to === account;
 
       if (isIssuance) {
         kind = "ISSUANCE";
@@ -147,7 +138,7 @@ const classifyOp = (op: HorizonOp, account: string): ActivityEvent => {
       title = "Path Payment";
       asset = op.asset_code ?? "XLM";
       amount = op.amount ?? null;
-      counterparty = op.to === account ? op.from ?? null : op.to ?? null;
+      counterparty = op.to === account ? (op.from ?? null) : (op.to ?? null);
       detail = `Cross-asset settlement routed through Stellar DEX.`;
       severity = successful ? "ok" : "critical";
       break;
@@ -207,7 +198,7 @@ const classifyOp = (op: HorizonOp, account: string): ActivityEvent => {
 };
 
 const shorten = (addr?: string | null) =>
-  addr && addr.length > 12 ? `${addr.slice(0, 4)}…${addr.slice(-4)}` : addr ?? "—";
+  addr && addr.length > 12 ? `${addr.slice(0, 4)}…${addr.slice(-4)}` : (addr ?? "—");
 
 export const Route = createFileRoute("/api/wallet/$publicKey/activity")({
   server: {
@@ -220,11 +211,7 @@ export const Route = createFileRoute("/api/wallet/$publicKey/activity")({
         const publicKey = (params.publicKey ?? "").trim();
 
         if (!StrKey.isValidEd25519PublicKey(publicKey)) {
-          return json(
-            422,
-            { success: false, error: "INVALID_PUBLIC_KEY" },
-            cors,
-          );
+          return json(422, { success: false, error: "INVALID_PUBLIC_KEY" }, cors);
         }
 
         const url = new URL(request.url);

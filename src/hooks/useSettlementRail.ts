@@ -68,7 +68,12 @@ export function useSettlementRail() {
           setHealthError((err as Error).message);
           setHealth({
             status: "offline",
-            backend: { status: "offline", latency_ms: 0, checked_at: new Date().toISOString(), error: (err as Error).message },
+            backend: {
+              status: "offline",
+              latency_ms: 0,
+              checked_at: new Date().toISOString(),
+              error: (err as Error).message,
+            },
             horizon: { status: "offline", latency_ms: 0, checked_at: new Date().toISOString() },
             checked_at: new Date().toISOString(),
           });
@@ -77,7 +82,10 @@ export function useSettlementRail() {
     };
     tick();
     const id = setInterval(tick, HEALTH_INTERVAL_MS);
-    return () => { cancelled = true; clearInterval(id); };
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
   }, []);
 
   useEffect(() => {
@@ -96,10 +104,12 @@ export function useSettlementRail() {
         const data = await res.json();
         if (cancelled) return;
         const counters: TelemetryCounters = data.counters;
-        const logs: Array<{ stage?: string; message?: string }> =
-          Array.isArray(data.recent_logs) ? data.recent_logs : [];
-        const receipts: Array<unknown> =
-          Array.isArray(data.recent_receipts) ? data.recent_receipts : [];
+        const logs: Array<{ stage?: string; message?: string }> = Array.isArray(data.recent_logs)
+          ? data.recent_logs
+          : [];
+        const receipts: Array<unknown> = Array.isArray(data.recent_receipts)
+          ? data.recent_receipts
+          : [];
         const submissions = logs.filter(
           (l) => l.stage === "horizon" && /→\s*POST/i.test(l.message ?? ""),
         ).length;
@@ -111,7 +121,10 @@ export function useSettlementRail() {
     };
     tick();
     const id = setInterval(tick, TELEMETRY_INTERVAL_MS);
-    return () => { cancelled = true; clearInterval(id); };
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
   }, []);
 
   const railState = deriveRailState(health);

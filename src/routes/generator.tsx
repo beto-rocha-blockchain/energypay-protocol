@@ -61,20 +61,20 @@ export const Route = createFileRoute("/generator")({
   component: GeneratorPage,
 });
 
-const fmtN = (n: number, max = 2) =>
-  n.toLocaleString("en-US", { maximumFractionDigits: max });
+const fmtN = (n: number, max = 2) => n.toLocaleString("en-US", { maximumFractionDigits: max });
 
 function GeneratorPage() {
   const operator = useOperator((s) => s.operator);
   const isAuthenticated = useOperator((s) => s.isAuthenticated);
 
-  if (!isAuthenticated || !operator) {
-    return <Navigate to="/login" />;
-  }
-
-  const publicKey = operator.wallet.publicKey;
+  const publicKey = operator?.wallet.publicKey ?? null;
   const { data: balances, error: balErr } = useWalletBalances(publicKey);
-  const { events, error: actErr, loading: actLoading, fetchedAt: actFetchedAt } = useWalletActivity(publicKey);
+  const {
+    events,
+    error: actErr,
+    loading: actLoading,
+    fetchedAt: actFetchedAt,
+  } = useWalletActivity(publicKey);
   const { railState, isOffline } = useSettlementRail();
 
   const eprwBalance = useMemo(() => {
@@ -85,7 +85,13 @@ function GeneratorPage() {
   const xlmBalance = Number(balances?.summary.xlm ?? balances?.balances.xlm ?? 0);
   const telemetry = useGeneratorTelemetry({ eprwBalance });
 
-  const recentSettlements = events.filter((e) => e.kind === "SETTLEMENT" || e.kind === "ISSUANCE").slice(0, 6);
+  if (!isAuthenticated || !operator || !publicKey) {
+    return <Navigate to="/login" />;
+  }
+
+  const recentSettlements = events
+    .filter((e) => e.kind === "SETTLEMENT" || e.kind === "ISSUANCE")
+    .slice(0, 6);
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
@@ -99,7 +105,8 @@ function GeneratorPage() {
             Generator Operations Command Center
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Programmable settlement rail for energy producers — live generation telemetry, EPWR issuance, on-chain settlement.
+            Programmable settlement rail for energy producers — live generation telemetry, EPWR
+            issuance, on-chain settlement.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -169,15 +176,26 @@ function GeneratorPage() {
 
           <div className="mt-3 h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={telemetry.hourlySeries} margin={{ top: 10, right: 8, left: -16, bottom: 0 }}>
+              <AreaChart
+                data={telemetry.hourlySeries}
+                margin={{ top: 10, right: 8, left: -16, bottom: 0 }}
+              >
                 <defs>
                   <linearGradient id="solar" x1="0" x2="0" y1="0" y2="1">
                     <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.55} />
                     <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
                   </linearGradient>
                   <linearGradient id="wind" x1="0" x2="0" y1="0" y2="1">
-                    <stop offset="0%" stopColor="hsl(var(--success, 142 70% 45%))" stopOpacity={0.45} />
-                    <stop offset="100%" stopColor="hsl(var(--success, 142 70% 45%))" stopOpacity={0} />
+                    <stop
+                      offset="0%"
+                      stopColor="hsl(var(--success, 142 70% 45%))"
+                      stopOpacity={0.45}
+                    />
+                    <stop
+                      offset="100%"
+                      stopColor="hsl(var(--success, 142 70% 45%))"
+                      stopOpacity={0}
+                    />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} />
@@ -223,8 +241,18 @@ function GeneratorPage() {
           </p>
 
           <div className="mt-3 space-y-3">
-            <SourceRow icon={<Sun className="h-4 w-4" />} label="Solar Array" pct={telemetry.solarPct} tone="primary" />
-            <SourceRow icon={<Wind className="h-4 w-4" />} label="Wind Farm" pct={telemetry.windPct} tone="success" />
+            <SourceRow
+              icon={<Sun className="h-4 w-4" />}
+              label="Solar Array"
+              pct={telemetry.solarPct}
+              tone="primary"
+            />
+            <SourceRow
+              icon={<Wind className="h-4 w-4" />}
+              label="Wind Farm"
+              pct={telemetry.windPct}
+              tone="success"
+            />
           </div>
 
           <div className="mt-4 space-y-1.5 border-t border-border pt-3">
@@ -242,8 +270,8 @@ function GeneratorPage() {
                       r.status === "ONLINE"
                         ? "bg-success animate-pulse"
                         : r.status === "DEGRADED"
-                        ? "bg-amber-500"
-                        : "bg-destructive"
+                          ? "bg-amber-500"
+                          : "bg-destructive"
                     }`}
                   />
                   <span className="text-[11px]">{r.name}</span>
@@ -301,7 +329,6 @@ function GeneratorPage() {
 
       {/* SECTION 6 — Stellar Settlement Rails */}
       <StellarRailMonitor />
-
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card className="border-border bg-card p-4 lg:col-span-2">
@@ -412,7 +439,9 @@ function GeneratorPage() {
               <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
                 Settlement Rail · Recent activity
               </p>
-              <h2 className="mt-0.5 font-display text-base font-semibold">Latest Energy Settlements</h2>
+              <h2 className="mt-0.5 font-display text-base font-semibold">
+                Latest Energy Settlements
+              </h2>
             </div>
             <Link
               to="/wallet"
@@ -481,10 +510,16 @@ function GeneratorPage() {
           </p>
           <div className="mt-3 h-40">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={telemetry.hourlySeries} margin={{ top: 10, right: 0, left: -22, bottom: 0 }}>
+              <BarChart
+                data={telemetry.hourlySeries}
+                margin={{ top: 10, right: 0, left: -22, bottom: 0 }}
+              >
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} />
                 <XAxis dataKey="hour" hide />
-                <YAxis tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} stroke="hsl(var(--border))" />
+                <YAxis
+                  tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }}
+                  stroke="hsl(var(--border))"
+                />
                 <Tooltip
                   contentStyle={{
                     background: "hsl(var(--card))",
@@ -543,11 +578,7 @@ function KpiCard({
   sub?: string;
 }) {
   const toneCls =
-    tone === "success"
-      ? "text-success"
-      : tone === "warn"
-      ? "text-amber-500"
-      : "text-primary";
+    tone === "success" ? "text-success" : tone === "warn" ? "text-amber-500" : "text-primary";
   return (
     <Card className="relative overflow-hidden border-border bg-card p-4">
       <div
@@ -558,7 +589,9 @@ function KpiCard({
         <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
           {label}
         </p>
-        <span className={`flex h-6 w-6 items-center justify-center rounded-md border border-border ${toneCls}`}>
+        <span
+          className={`flex h-6 w-6 items-center justify-center rounded-md border border-border ${toneCls}`}
+        >
           {icon}
         </span>
       </div>
@@ -717,11 +750,15 @@ function RailIndicator({ state }: { state: string }) {
         ok
           ? "border-success/40 text-success"
           : warn
-          ? "border-amber-500/40 text-amber-500"
-          : "border-destructive/40 text-destructive"
+            ? "border-amber-500/40 text-amber-500"
+            : "border-destructive/40 text-destructive"
       }`}
     >
-      {ok ? <CheckCircle2 className="mr-1.5 h-3 w-3" /> : <AlertTriangle className="mr-1.5 h-3 w-3" />}
+      {ok ? (
+        <CheckCircle2 className="mr-1.5 h-3 w-3" />
+      ) : (
+        <AlertTriangle className="mr-1.5 h-3 w-3" />
+      )}
       Rail · {state}
     </Badge>
   );

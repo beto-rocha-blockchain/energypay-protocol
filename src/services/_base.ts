@@ -5,7 +5,11 @@ export type Unsubscribe = () => void;
 export interface ReadService<T, F = void> {
   list(filter?: F): Promise<ListResult<T>>;
   get(id: string): Promise<T | null>;
-  subscribe(onUpdate: (snapshot: ListResult<T>) => void, filter?: F, intervalMs?: number): Unsubscribe;
+  subscribe(
+    onUpdate: (snapshot: ListResult<T>) => void,
+    filter?: F,
+    intervalMs?: number,
+  ): Unsubscribe;
 }
 
 /** Helper: build a poll-based subscription out of a list() method. */

@@ -33,10 +33,10 @@ const stateColor = (s: FeedEntry["state"]) =>
   s === "FAILED"
     ? "border-destructive/40 text-destructive"
     : s === "PENDING"
-    ? "border-amber-500/40 text-amber-500"
-    : s === "CONFIRMED"
-    ? "border-primary/40 text-primary"
-    : "border-success/40 text-success";
+      ? "border-amber-500/40 text-amber-500"
+      : s === "CONFIRMED"
+        ? "border-primary/40 text-primary"
+        : "border-success/40 text-success";
 
 export function LiveSettlementFeed({
   events,
@@ -142,8 +142,8 @@ export function LiveSettlementFeed({
                       ev.state === "FAILED"
                         ? "bg-destructive"
                         : ev.state === "PENDING"
-                        ? "bg-amber-500 animate-pulse"
-                        : "bg-success animate-pulse"
+                          ? "bg-amber-500 animate-pulse"
+                          : "bg-success animate-pulse"
                     }`}
                   />
                 </div>
@@ -155,7 +155,9 @@ export function LiveSettlementFeed({
                   </div>
                   <p className="truncate font-mono text-[10px] text-muted-foreground">
                     {ev.kind} · tx {ev.tx_hash.slice(0, 6)}…{ev.tx_hash.slice(-4)} ·{" "}
-                    {new Date(ev.id.includes("-") ? Date.now() : Date.now()).toUTCString().slice(17, 25)}
+                    {new Date(ev.id.includes("-") ? Date.now() : Date.now())
+                      .toUTCString()
+                      .slice(17, 25)}
                   </p>
                 </div>
               </div>

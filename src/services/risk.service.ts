@@ -8,7 +8,7 @@ import type { ListResult } from "@/types/domain";
 function generate(): RiskExposure[] {
   const asOf = new Date().toISOString();
   return COUNTERPARTIES.map((cp) => {
-    const mtm = (cp.exposureBRL * (cp.collateralRatio - 1)) * 0.18;
+    const mtm = cp.exposureBRL * (cp.collateralRatio - 1) * 0.18;
     const e = computeExposure({
       notional: cp.exposureBRL,
       mtm,
@@ -16,9 +16,13 @@ function generate(): RiskExposure[] {
       haircut: cp.rating === "AAA" || cp.rating === "AA" ? 0.03 : cp.rating === "A" ? 0.08 : 0.15,
     });
     const severity =
-      e.coverageRatio < 0.95 ? "CRITICAL" :
-      e.coverageRatio < 1.05 ? "DEGRADED" :
-      e.coverageRatio < 1.20 ? "ELEVATED" : "NOMINAL";
+      e.coverageRatio < 0.95
+        ? "CRITICAL"
+        : e.coverageRatio < 1.05
+          ? "DEGRADED"
+          : e.coverageRatio < 1.2
+            ? "ELEVATED"
+            : "NOMINAL";
     return {
       counterpartyId: cp.id,
       counterpartyName: cp.shortName,
@@ -39,7 +43,12 @@ function generate(): RiskExposure[] {
 export const riskService: ReadService<RiskExposure, void> = {
   async list() {
     const items = generate();
-    return { items, total: items.length, asOf: nowIso(), source: "MOCK" } as ListResult<RiskExposure>;
+    return {
+      items,
+      total: items.length,
+      asOf: nowIso(),
+      source: "MOCK",
+    } as ListResult<RiskExposure>;
   },
   async get(id) {
     return generate().find((r) => r.counterpartyId === id) ?? null;

@@ -9,7 +9,10 @@ function generate(): OracleSample[] {
   const series = buildPldSeries(1);
   const point = series[series.length - 1];
   const map: Record<SubmercadoCode, number> = {
-    SE_CO: point.SECO, S: point.S, NE: point.NE, N: point.N,
+    SE_CO: point.SECO,
+    S: point.S,
+    NE: point.NE,
+    N: point.N,
   };
   return (Object.keys(map) as SubmercadoCode[]).map((sm, i) => ({
     feedId: PLD_FEED_ID(sm),
@@ -26,7 +29,12 @@ function generate(): OracleSample[] {
 export const oracleService: ReadService<OracleSample, void> = {
   async list() {
     const items = generate();
-    return { items, total: items.length, asOf: nowIso(), source: "MOCK" } as ListResult<OracleSample>;
+    return {
+      items,
+      total: items.length,
+      asOf: nowIso(),
+      source: "MOCK",
+    } as ListResult<OracleSample>;
   },
   async get(id) {
     return generate().find((s) => s.feedId === id) ?? null;
