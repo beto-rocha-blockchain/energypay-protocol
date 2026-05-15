@@ -5,6 +5,7 @@
 Energy markets still rely on fragmented and non-programmable settlement infrastructure.
 
 Main problems:
+
 - Slow settlement cycles
 - Counterparty and operational risk
 - Limited programmability in financial flows
@@ -13,6 +14,7 @@ Main problems:
 ## 2. Customer Segments
 
 Initial target users:
+
 - Energy retailers / comercializadoras
 - Free market consumers
 - Energy traders
@@ -25,6 +27,7 @@ Programmable settlement infrastructure for energy markets.
 Transforming energy contracts into digital, liquid and programmable financial assets.
 
 EnergyPay enables:
+
 - Digital energy contracts
 - On-chain settlement
 - Stablecoin-based payments
@@ -33,6 +36,7 @@ EnergyPay enables:
 ## 4. Solution
 
 EnergyPay provides:
+
 - Digital energy contract registry
 - On-chain settlement using Stellar | Stellar-based settlement layer
 - Smart contract verification via Soroban
@@ -41,6 +45,7 @@ EnergyPay provides:
 ## 5. Channels
 
 Initial channels:
+
 - Founder-led outreach
 - Energy market network
 - Stellar 37 Degrees ecosystem
@@ -57,6 +62,7 @@ Initial channels:
 ## 7. Cost Structure
 
 Initial cost drivers:
+
 - Development
 - Cloud infrastructure
 - Blockchain transaction costs
@@ -66,6 +72,7 @@ Initial cost drivers:
 ## 8. Key Metrics
 
 Early validation metrics:
+
 - Number of users interviews
 - Waitlist signups
 - Numbers of Contracts simulated
@@ -76,6 +83,7 @@ Early validation metrics:
 ## 9. Unfair Advantage
 
 EnergyPay combines:
+
 - Deep energy market expertise
 - Stellar-native settlement infrastructure
 - Real-world energy use cases

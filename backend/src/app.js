@@ -58,7 +58,6 @@ app.post("/api/settlement/execute", async (req, res) => {
       ledger: result.ledger,
       successful: result.successful,
     });
-
   } catch (err) {
     console.error(err);
 

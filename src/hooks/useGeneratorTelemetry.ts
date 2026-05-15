@@ -42,7 +42,7 @@ export type GeneratorTelemetry = {
 const HOURS = 24;
 
 const seedNoise = (i: number, base: number, span: number) =>
-  base + Math.sin(i * 0.7) * span * 0.4 + (Math.cos(i * 1.3 + 1.2) * span) * 0.2;
+  base + Math.sin(i * 0.7) * span * 0.4 + Math.cos(i * 1.3 + 1.2) * span * 0.2;
 
 const buildHourly = (now: Date, jitter: number): GenerationSample[] => {
   const out: GenerationSample[] = [];
@@ -86,8 +86,7 @@ export function useGeneratorTelemetry(opts?: { eprwBalance?: number }) {
     const hourlySeries = buildHourly(now, jitter);
 
     const last = hourlySeries[hourlySeries.length - 1];
-    const totalGeneratedMwh =
-      hourlySeries.reduce((acc, s) => acc + s.total, 0) / 1000;
+    const totalGeneratedMwh = hourlySeries.reduce((acc, s) => acc + s.total, 0) / 1000;
     const capacityKwh = 1_400; // nominal nameplate
     const currentOutputKwh = last.total;
     const efficiencyPct = Math.min(99, (currentOutputKwh / capacityKwh) * 100);
@@ -101,20 +100,12 @@ export function useGeneratorTelemetry(opts?: { eprwBalance?: number }) {
     const eprwGenerated = Math.round(totalGeneratedMwh * 1000 * 0.92);
     const eprwSold = Math.round(eprwGenerated * 0.71);
     const eprwSettlementVolume = Math.round(eprwSold * 0.84);
-    const inventoryMwh = Math.max(
-      0,
-      ((opts?.eprwBalance ?? eprwGenerated - eprwSold) / 1000),
-    );
+    const inventoryMwh = Math.max(0, (opts?.eprwBalance ?? eprwGenerated - eprwSold) / 1000);
 
     const regions = REGIONS.map((r, i) => {
-      const out = Math.max(
-        0,
-        r.base + Math.sin(tick * 0.6 + i) * 40 + Math.cos(i * 1.1) * 20,
-      );
+      const out = Math.max(0, r.base + Math.sin(tick * 0.6 + i) * 40 + Math.cos(i * 1.1) * 20);
       const status: "ONLINE" | "DEGRADED" | "OFFLINE" =
-        i === 2 && Math.sin(tick * 0.4) > 0.85
-          ? "DEGRADED"
-          : "ONLINE";
+        i === 2 && Math.sin(tick * 0.4) > 0.85 ? "DEGRADED" : "ONLINE";
       return { name: r.name, status, outputKwh: Math.round(out) };
     });
 
@@ -123,9 +114,7 @@ export function useGeneratorTelemetry(opts?: { eprwBalance?: number }) {
     const marketDemandIndex = Math.round(
       62 + Math.sin(tick * 0.5) * 12 + Math.cos(tick * 0.21) * 6,
     );
-    const liquidityIndex = Math.round(
-      71 + Math.cos(tick * 0.33) * 9 + Math.sin(tick * 0.17) * 5,
-    );
+    const liquidityIndex = Math.round(71 + Math.cos(tick * 0.33) * 9 + Math.sin(tick * 0.17) * 5);
 
     return {
       capacityKwh,

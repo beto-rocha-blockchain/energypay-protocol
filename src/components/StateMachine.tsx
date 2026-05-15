@@ -16,10 +16,10 @@ export function StateMachine({ current, failed }: { current: SettlementState; fa
                 isFailed
                   ? "border-destructive/40 bg-destructive/10 text-destructive"
                   : active
-                  ? "border-primary/50 bg-primary/10 text-primary"
-                  : done
-                  ? "border-success/30 bg-success/5 text-success"
-                  : "border-border bg-muted/30 text-muted-foreground"
+                    ? "border-primary/50 bg-primary/10 text-primary"
+                    : done
+                      ? "border-success/30 bg-success/5 text-success"
+                      : "border-border bg-muted/30 text-muted-foreground"
               }`}
             >
               {done ? (

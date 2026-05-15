@@ -112,9 +112,7 @@ export function TokenAllocationPanel({ publicKey }: Props) {
       {data && (
         <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
           {xlmEntry && <AssetCard asset={xlmEntry} />}
-          {credits.length === 0 && data.account_funded && (
-            <UntrustedCard />
-          )}
+          {credits.length === 0 && data.account_funded && <UntrustedCard />}
           {credits.map((a) => (
             <AssetCard key={`${a.asset_code}-${a.asset_issuer}`} asset={a} />
           ))}
@@ -167,13 +165,7 @@ function AssetCard({ asset }: { asset: WalletAssetEntry }) {
   const limit = asset.limit ? Number(asset.limit) : null;
   const used = limit && limit > 0 ? Math.min(100, (balance / limit) * 100) : null;
 
-  const tone = !asset.is_authorized
-    ? "warn"
-    : balance > 0
-    ? "ok"
-    : isNative
-    ? "warn"
-    : "muted";
+  const tone = !asset.is_authorized ? "warn" : balance > 0 ? "ok" : isNative ? "warn" : "muted";
 
   const copyIssuer = async () => {
     if (!asset.asset_issuer) return;
@@ -203,9 +195,7 @@ function AssetCard({ asset }: { asset: WalletAssetEntry }) {
             )}
           </div>
           <div>
-            <p className="font-display text-base font-semibold leading-tight">
-              {asset.asset_code}
-            </p>
+            <p className="font-display text-base font-semibold leading-tight">{asset.asset_code}</p>
             <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
               {isNative ? "Native · Stellar Lumens" : "Issued credit · trustline asset"}
             </p>
@@ -216,7 +206,9 @@ function AssetCard({ asset }: { asset: WalletAssetEntry }) {
             <Badge
               variant="outline"
               className={`font-mono text-[9px] uppercase tracking-widest ${
-                tone === "ok" ? "border-success/40 text-success" : "border-amber-500/40 text-amber-500"
+                tone === "ok"
+                  ? "border-success/40 text-success"
+                  : "border-amber-500/40 text-amber-500"
               }`}
             >
               <ShieldCheck className="mr-1 h-3 w-3" /> Reserve
@@ -320,12 +312,10 @@ function AssetCard({ asset }: { asset: WalletAssetEntry }) {
       {/* Liabilities telemetry */}
       <div className="relative mt-2 grid grid-cols-2 gap-2 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
         <span>
-          Buy ·{" "}
-          <span className="text-foreground">{fmt(asset.buying_liabilities ?? "0", 2)}</span>
+          Buy · <span className="text-foreground">{fmt(asset.buying_liabilities ?? "0", 2)}</span>
         </span>
         <span className="text-right">
-          Sell ·{" "}
-          <span className="text-foreground">{fmt(asset.selling_liabilities ?? "0", 2)}</span>
+          Sell · <span className="text-foreground">{fmt(asset.selling_liabilities ?? "0", 2)}</span>
         </span>
       </div>
     </div>
@@ -340,8 +330,8 @@ function UntrustedCard() {
         <p className="font-display text-sm font-semibold">No Issued Tokens</p>
       </div>
       <p className="text-xs text-muted-foreground">
-        This account has no trustlines. Establish a trustline to receive issued
-        settlement assets such as EPRW.
+        This account has no trustlines. Establish a trustline to receive issued settlement assets
+        such as EPRW.
       </p>
       <Badge
         variant="outline"

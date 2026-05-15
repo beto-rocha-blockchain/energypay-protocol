@@ -17,7 +17,10 @@ export const Route = createFileRoute("/contracts/new")({
   head: () => ({
     meta: [
       { title: "New Contract — EnergyPay" },
-      { name: "description", content: "Register a bilateral energy contract for programmable settlement." },
+      {
+        name: "description",
+        content: "Register a bilateral energy contract for programmable settlement.",
+      },
     ],
   }),
   component: NewContract,
@@ -28,18 +31,33 @@ const toIso = (d?: Date) => (d ? d.toISOString().slice(0, 10) : "");
 function NewContract() {
   const navigate = useNavigate();
   const registerContract = useOps((s) => s.registerContract);
-  const [form, setForm] = useState<{ buyer: string; seller: string; volume: string; price: string; startDate?: Date; endDate?: Date }>({
-    buyer: "", seller: "", volume: "", price: "",
+  const [form, setForm] = useState<{
+    buyer: string;
+    seller: string;
+    volume: string;
+    price: string;
+    startDate?: Date;
+    endDate?: Date;
+  }>({
+    buyer: "",
+    seller: "",
+    volume: "",
+    price: "",
   });
   const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
 
-  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
   const datesValid = !!(form.startDate && form.endDate && form.endDate >= form.startDate);
 
   const periodStatus: "UPCOMING" | "ACTIVE" | "EXPIRED" | null =
     datesValid && form.startDate && form.endDate
-      ? today < form.startDate ? "UPCOMING" : today > form.endDate ? "EXPIRED" : "ACTIVE"
+      ? today < form.startDate
+        ? "UPCOMING"
+        : today > form.endDate
+          ? "EXPIRED"
+          : "ACTIVE"
       : null;
 
   const durationDays =
@@ -50,7 +68,9 @@ function NewContract() {
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!datesValid) {
-      toast.error("Invalid contract period", { description: "End date must be on or after start date." });
+      toast.error("Invalid contract period", {
+        description: "End date must be on or after start date.",
+      });
       return;
     }
     const startDate = toIso(form.startDate);
@@ -78,8 +98,12 @@ function NewContract() {
         <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
           Contract Registry / New Entry
         </p>
-        <h1 className="mt-1 font-display text-3xl font-semibold tracking-tight">Register Bilateral Contract</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Issued contracts are deployed as programmable settlement schedules on Stellar.</p>
+        <h1 className="mt-1 font-display text-3xl font-semibold tracking-tight">
+          Register Bilateral Contract
+        </h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Issued contracts are deployed as programmable settlement schedules on Stellar.
+        </p>
       </div>
 
       <form onSubmit={submit}>
@@ -92,20 +116,49 @@ function NewContract() {
 
             <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
               <Field label="Buyer" id="buyer">
-                <Input id="buyer" required value={form.buyer} onChange={(e) => set("buyer", e.target.value)}
-                  placeholder="e.g. Metro Distribution Group" className="bg-input" />
+                <Input
+                  id="buyer"
+                  required
+                  value={form.buyer}
+                  onChange={(e) => set("buyer", e.target.value)}
+                  placeholder="e.g. Metro Distribution Group"
+                  className="bg-input"
+                />
               </Field>
               <Field label="Seller" id="seller">
-                <Input id="seller" required value={form.seller} onChange={(e) => set("seller", e.target.value)}
-                  placeholder="e.g. Meridian Trading Desk" className="bg-input" />
+                <Input
+                  id="seller"
+                  required
+                  value={form.seller}
+                  onChange={(e) => set("seller", e.target.value)}
+                  placeholder="e.g. Meridian Trading Desk"
+                  className="bg-input"
+                />
               </Field>
               <Field label="Energy Volume (MWh)" id="vol">
-                <Input id="vol" type="number" required min="1" value={form.volume}
-                  onChange={(e) => set("volume", e.target.value)} placeholder="2400" className="bg-input font-mono" />
+                <Input
+                  id="vol"
+                  type="number"
+                  required
+                  min="1"
+                  value={form.volume}
+                  onChange={(e) => set("volume", e.target.value)}
+                  placeholder="2400"
+                  className="bg-input font-mono"
+                />
               </Field>
               <Field label="Contract Price (R$ / MWh)" id="price">
-                <Input id="price" type="number" required step="0.01" min="0" value={form.price}
-                  onChange={(e) => set("price", e.target.value)} placeholder="248.50" className="bg-input font-mono" />
+                <Input
+                  id="price"
+                  type="number"
+                  required
+                  step="0.01"
+                  min="0"
+                  value={form.price}
+                  onChange={(e) => set("price", e.target.value)}
+                  placeholder="248.50"
+                  className="bg-input font-mono"
+                />
               </Field>
 
               <Field label="Start Date" id="startDate">
@@ -132,13 +185,18 @@ function NewContract() {
                   {periodStatus ? (
                     <PeriodBadge status={periodStatus} />
                   ) : (
-                    <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Awaiting dates</span>
+                    <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                      Awaiting dates
+                    </span>
                   )}
                 </div>
               </Field>
               <Field label="Operational Status" id="status">
                 <div className="flex h-9 items-center rounded-md border border-border bg-input px-3">
-                  <Badge variant="outline" className="border-success/40 bg-success/10 font-mono text-[10px] text-success">
+                  <Badge
+                    variant="outline"
+                    className="border-success/40 bg-success/10 font-mono text-[10px] text-success"
+                  >
                     ● ACTIVE
                   </Badge>
                 </div>
@@ -156,9 +214,13 @@ function NewContract() {
               <Row k="End" v={form.endDate ? format(form.endDate, "yyyy-MM-dd") : "—"} />
               <Row k="Duration" v={durationDays ? `${durationDays} d` : "—"} />
               <div className="border-t border-border pt-4">
-                <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Notional</p>
+                <p className="text-[11px] uppercase tracking-widest text-muted-foreground">
+                  Notional
+                </p>
                 <p className="mt-1 font-mono text-2xl font-semibold text-primary">
-                  {notional ? notional.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : "R$ 0,00"}
+                  {notional
+                    ? notional.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+                    : "R$ 0,00"}
                 </p>
               </div>
             </div>
@@ -177,7 +239,12 @@ function NewContract() {
 }
 
 function DatePickerField({
-  id, value, onChange, placeholder, disabled, invalid,
+  id,
+  value,
+  onChange,
+  placeholder,
+  disabled,
+  invalid,
 }: {
   id: string;
   value?: Date;
@@ -219,18 +286,24 @@ function DatePickerField({
 
 function PeriodBadge({ status }: { status: "UPCOMING" | "ACTIVE" | "EXPIRED" }) {
   const cls =
-    status === "ACTIVE" ? "border-success/40 bg-success/10 text-success" :
-    status === "UPCOMING" ? "border-warning/40 bg-warning/10 text-warning" :
-    "border-muted/40 bg-muted/10 text-muted-foreground";
+    status === "ACTIVE"
+      ? "border-success/40 bg-success/10 text-success"
+      : status === "UPCOMING"
+        ? "border-warning/40 bg-warning/10 text-warning"
+        : "border-muted/40 bg-muted/10 text-muted-foreground";
   return (
-    <Badge variant="outline" className={`${cls} font-mono text-[10px]`}>● {status}</Badge>
+    <Badge variant="outline" className={`${cls} font-mono text-[10px]`}>
+      ● {status}
+    </Badge>
   );
 }
 
 function Field({ label, id, children }: { label: string; id: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <Label htmlFor={id} className="text-[11px] uppercase tracking-widest text-muted-foreground">{label}</Label>
+      <Label htmlFor={id} className="text-[11px] uppercase tracking-widest text-muted-foreground">
+        {label}
+      </Label>
       {children}
     </div>
   );

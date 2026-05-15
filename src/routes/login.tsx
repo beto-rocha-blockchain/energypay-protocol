@@ -1,6 +1,16 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Zap, KeyRound, Building2, Mail, ShieldCheck, Activity, Terminal, Loader2, ArrowRight } from "lucide-react";
+import {
+  Zap,
+  KeyRound,
+  Building2,
+  Mail,
+  ShieldCheck,
+  Activity,
+  Terminal,
+  Loader2,
+  ArrowRight,
+} from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -68,7 +78,9 @@ function LoginPage() {
                 Operator Access · Pilot Environment
               </div>
               <h1 className="font-display text-2xl font-semibold leading-tight">
-                Programmable settlement<br />for power markets.
+                Programmable settlement
+                <br />
+                for power markets.
               </h1>
               <p className="mt-2 max-w-sm text-xs text-muted-foreground">
                 Operator access connects an existing settlement identity to the EnergyPay clearing
@@ -81,15 +93,24 @@ function LoginPage() {
             <ul className="space-y-2.5 text-xs">
               <li className="flex items-start gap-2">
                 <ShieldCheck className="mt-0.5 h-3.5 w-3.5 text-success" />
-                <span><span className="font-mono text-foreground">Operational credentials</span> · scoped to clearing desk &amp; reconciliation</span>
+                <span>
+                  <span className="font-mono text-foreground">Operational credentials</span> ·
+                  scoped to clearing desk &amp; reconciliation
+                </span>
               </li>
               <li className="flex items-start gap-2">
                 <Terminal className="mt-0.5 h-3.5 w-3.5 text-accent" />
-                <span><span className="font-mono text-foreground">Settlement identity</span> · ed25519 keypair bound to operator</span>
+                <span>
+                  <span className="font-mono text-foreground">Settlement identity</span> · ed25519
+                  keypair bound to operator
+                </span>
               </li>
               <li className="flex items-start gap-2">
                 <Activity className="mt-0.5 h-3.5 w-3.5 text-success" />
-                <span><span className="font-mono text-foreground">Network status</span> · Stellar Testnet · Settlement Network</span>
+                <span>
+                  <span className="font-mono text-foreground">Network status</span> · Stellar
+                  Testnet · Settlement Network
+                </span>
               </li>
             </ul>
           </div>
@@ -105,59 +126,93 @@ function LoginPage() {
         <Card className="overflow-hidden border-border bg-card/70">
           <div className="flex items-center justify-between border-b border-border bg-background/40 px-4 py-2.5">
             <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-              <span className="h-1.5 w-1.5 rounded-full bg-success" /> Settlement Network · Access Terminal
+              <span className="h-1.5 w-1.5 rounded-full bg-success" /> Settlement Network · Access
+              Terminal
             </div>
             <div className="font-mono text-[10px] text-muted-foreground">SECURE · TLS</div>
           </div>
 
           <form onSubmit={onAccess} className="space-y-4 p-5">
             <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+              <Label
+                htmlFor="email"
+                className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground"
+              >
                 Operator Email
               </Label>
               <div className="relative">
                 <Mail className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                <Input id="email" type="email" autoComplete="username" value={email}
+                <Input
+                  id="email"
+                  type="email"
+                  autoComplete="username"
+                  value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="operator@clearing-desk.com" className="h-9 pl-8 font-mono text-xs" />
+                  placeholder="operator@clearing-desk.com"
+                  className="h-9 pl-8 font-mono text-xs"
+                />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="org" className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+              <Label
+                htmlFor="org"
+                className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground"
+              >
                 Organization
               </Label>
               <div className="relative">
                 <Building2 className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                <Input id="org" value={organization} onChange={(e) => setOrganization(e.target.value)}
-                  placeholder="Treasury · Energy Trading Desk" className="h-9 pl-8 font-mono text-xs" />
+                <Input
+                  id="org"
+                  value={organization}
+                  onChange={(e) => setOrganization(e.target.value)}
+                  placeholder="Treasury · Energy Trading Desk"
+                  className="h-9 pl-8 font-mono text-xs"
+                />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="key" className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+              <Label
+                htmlFor="key"
+                className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground"
+              >
                 Password
               </Label>
               <div className="relative">
                 <KeyRound className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                <Input id="key" type="password" autoComplete="current-password" value={password}
+                <Input
+                  id="key"
+                  type="password"
+                  autoComplete="current-password"
+                  value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••••••••••" className="h-9 pl-8 font-mono text-xs tracking-widest" />
+                  placeholder="••••••••••••••••"
+                  className="h-9 pl-8 font-mono text-xs tracking-widest"
+                />
               </div>
               <p className="text-[10px] font-mono text-muted-foreground">
-                Authenticated against the EnergyPay clearing backend. Sessions are scoped to this browser tab.
+                Authenticated against the EnergyPay clearing backend. Sessions are scoped to this
+                browser tab.
               </p>
             </div>
 
-            <Button type="submit" disabled={busy} className="h-9 w-full font-mono text-xs uppercase tracking-widest">
+            <Button
+              type="submit"
+              disabled={busy}
+              className="h-9 w-full font-mono text-xs uppercase tracking-widest"
+            >
               {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
               {busy ? "Authenticating…" : "Access Clearing Environment"}
             </Button>
 
             <Separator className="bg-border/60" />
 
-            <Link to="/register"
-              className="flex items-center justify-between rounded-md border border-border bg-background/40 px-3 py-2.5 text-xs transition hover:border-primary/40 hover:bg-primary/5">
+            <Link
+              to="/register"
+              className="flex items-center justify-between rounded-md border border-border bg-background/40 px-3 py-2.5 text-xs transition hover:border-primary/40 hover:bg-primary/5"
+            >
               <span>
                 <span className="block font-mono uppercase tracking-widest text-foreground">
                   Provision new settlement identity

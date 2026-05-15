@@ -5,9 +5,28 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   computeExposure,
   contractOperationalTimeline,
@@ -27,7 +46,10 @@ export const Route = createFileRoute("/contracts/")({
   head: () => ({
     meta: [
       { title: "Contract Registry — EnergyPay" },
-      { name: "description", content: "Bilateral PPAs registered for programmable settlement and reconciliation." },
+      {
+        name: "description",
+        content: "Bilateral PPAs registered for programmable settlement and reconciliation.",
+      },
     ],
   }),
   component: ContractsList,
@@ -36,7 +58,35 @@ export const Route = createFileRoute("/contracts/")({
 const fmtBRL = (n: number) =>
   n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 
-type SortKey = "id" | "volumeMWh" | "priceBRL" | "pldBRL" | "exposure" | "settlementDate" | "startDate" | "endDate";
+type SortKey =
+  | "id"
+  | "volumeMWh"
+  | "priceBRL"
+  | "pldBRL"
+  | "exposure"
+  | "settlementDate"
+  | "startDate"
+  | "endDate";
+
+type StatusFilter = "ALL" | ContractStatus;
+
+const CONTRACT_SORT_ACCESSORS: Record<SortKey, (contract: Contract) => number | string> = {
+  id: (contract) => contract.id,
+  volumeMWh: (contract) => contract.volumeMWh,
+  priceBRL: (contract) => contract.priceBRL,
+  pldBRL: (contract) => contract.pldBRL,
+  exposure: computeExposure,
+  settlementDate: (contract) => contract.settlementDate,
+  startDate: contractStartDate,
+  endDate: contractEndDate,
+};
+
+const isStatusFilter = (value: string): value is StatusFilter =>
+  value === "ALL" ||
+  value === "ACTIVE" ||
+  value === "PENDING" ||
+  value === "SETTLED" ||
+  value === "FAILED";
 
 function StatusBadge({ status }: { status: ContractStatus }) {
   const map: Record<ContractStatus, string> = {
@@ -68,8 +118,11 @@ function PeriodBadge({ status }: { status: ContractPeriodStatus }) {
 function ContractsList() {
   const contracts = useOps((s) => s.contracts);
   const [q, setQ] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"ALL" | ContractStatus>("ALL");
-  const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" }>({ key: "settlementDate", dir: "desc" });
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
+  const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" }>({
+    key: "settlementDate",
+    dir: "desc",
+  });
   const [selected, setSelected] = useState<Contract | null>(null);
 
   const rows = useMemo(() => {
@@ -82,15 +135,9 @@ function ContractsList() {
       const matchS = statusFilter === "ALL" || c.status === statusFilter;
       return matchQ && matchS;
     });
-    const accessor = (c: Contract, key: SortKey): number | string => {
-      if (key === "exposure") return computeExposure(c);
-      if (key === "startDate") return contractStartDate(c);
-      if (key === "endDate") return contractEndDate(c);
-      return (c as any)[key];
-    };
     r = [...r].sort((a, b) => {
-      const va = accessor(a, sort.key);
-      const vb = accessor(b, sort.key);
+      const va = CONTRACT_SORT_ACCESSORS[sort.key](a);
+      const vb = CONTRACT_SORT_ACCESSORS[sort.key](b);
       if (va < vb) return sort.dir === "asc" ? -1 : 1;
       if (va > vb) return sort.dir === "asc" ? 1 : -1;
       return 0;
@@ -98,11 +145,25 @@ function ContractsList() {
     return r;
   }, [contracts, q, statusFilter, sort]);
 
-  const toggle = (key: SortKey) => setSort((s) => ({ key, dir: s.key === key && s.dir === "asc" ? "desc" : "asc" }));
+  const toggle = (key: SortKey) =>
+    setSort((s) => ({ key, dir: s.key === key && s.dir === "asc" ? "desc" : "asc" }));
 
-  const SortableHead = ({ k, label, align = "left" }: { k: SortKey; label: string; align?: "left" | "right" }) => (
-    <TableHead className={`text-[11px] uppercase tracking-wider ${align === "right" ? "text-right" : ""}`}>
-      <button onClick={() => toggle(k)} className="inline-flex items-center gap-1 hover:text-foreground">
+  const SortableHead = ({
+    k,
+    label,
+    align = "left",
+  }: {
+    k: SortKey;
+    label: string;
+    align?: "left" | "right";
+  }) => (
+    <TableHead
+      className={`text-[11px] uppercase tracking-wider ${align === "right" ? "text-right" : ""}`}
+    >
+      <button
+        onClick={() => toggle(k)}
+        className="inline-flex items-center gap-1 hover:text-foreground"
+      >
         {label} <ArrowUpDown className="h-3 w-3 opacity-60" />
       </button>
     </TableHead>
@@ -114,9 +175,12 @@ function ContractsList() {
         <p className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
           Clearing & Reconciliation / Contract Registry
         </p>
-        <h1 className="mt-1 font-display text-2xl font-semibold tracking-tight">Contract Registry</h1>
+        <h1 className="mt-1 font-display text-2xl font-semibold tracking-tight">
+          Contract Registry
+        </h1>
         <p className="mt-1 text-xs text-muted-foreground">
-          Bilateral PPAs under settlement supervision · counterparty exposure, PLD reference and transaction finality.
+          Bilateral PPAs under settlement supervision · counterparty exposure, PLD reference and
+          transaction finality.
         </p>
       </div>
 
@@ -145,7 +209,12 @@ function ContractsList() {
           </div>
           <div className="flex items-center gap-2">
             <Filter className="h-3.5 w-3.5 text-muted-foreground" />
-            <Select value={statusFilter} onValueChange={(v: any) => setStatusFilter(v)}>
+            <Select
+              value={statusFilter}
+              onValueChange={(value) => {
+                if (isStatusFilter(value)) setStatusFilter(value);
+              }}
+            >
               <SelectTrigger className="h-8 w-[160px] bg-input text-xs">
                 <SelectValue />
               </SelectTrigger>
@@ -175,7 +244,9 @@ function ContractsList() {
                 <TableHead className="text-[10px] uppercase tracking-wider">Period</TableHead>
                 <SortableHead k="startDate" label="Start" />
                 <SortableHead k="endDate" label="End" />
-                <TableHead className="text-[10px] uppercase tracking-wider text-right">Duration</TableHead>
+                <TableHead className="text-[10px] uppercase tracking-wider text-right">
+                  Duration
+                </TableHead>
                 <TableHead className="text-[10px] uppercase tracking-wider">State</TableHead>
                 <SortableHead k="settlementDate" label="Settles" />
                 <TableHead className="text-[10px] uppercase tracking-wider">Ledger</TableHead>
@@ -201,7 +272,9 @@ function ContractsList() {
                     <TableCell className="text-right font-mono text-xs">
                       {c.volumeMWh.toLocaleString("pt-BR")}
                     </TableCell>
-                    <TableCell className="text-right font-mono text-xs">{c.priceBRL.toFixed(2)}</TableCell>
+                    <TableCell className="text-right font-mono text-xs">
+                      {c.priceBRL.toFixed(2)}
+                    </TableCell>
                     <TableCell className="text-right font-mono text-xs text-muted-foreground">
                       {c.pldBRL.toFixed(2)}
                     </TableCell>
@@ -217,28 +290,36 @@ function ContractsList() {
                     <TableCell>
                       <PeriodBadge status={period} />
                     </TableCell>
-                    <TableCell className="font-mono text-[11px] text-muted-foreground">{start}</TableCell>
-                    <TableCell className="font-mono text-[11px] text-muted-foreground">{end}</TableCell>
+                    <TableCell className="font-mono text-[11px] text-muted-foreground">
+                      {start}
+                    </TableCell>
+                    <TableCell className="font-mono text-[11px] text-muted-foreground">
+                      {end}
+                    </TableCell>
                     <TableCell className="text-right font-mono text-[11px] text-muted-foreground">
                       {duration}d
                     </TableCell>
                     <TableCell className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
                       {c.state}
                     </TableCell>
-                    <TableCell className="font-mono text-[11px] text-muted-foreground">{c.settlementDate}</TableCell>
+                    <TableCell className="font-mono text-[11px] text-muted-foreground">
+                      {c.settlementDate}
+                    </TableCell>
                     <TableCell className="font-mono text-[10px] text-muted-foreground">
                       {c.ledger ? `#${c.ledger.toLocaleString("en-US")}` : "—"}
                     </TableCell>
                     <TableCell className="font-mono text-[10px] text-muted-foreground">
-                      {c.txHash
-                        ? `${c.txHash.slice(0, 6)}…${c.txHash.slice(-6)}`
-                        : "—"}                    </TableCell>
+                      {c.txHash ? `${c.txHash.slice(0, 6)}…${c.txHash.slice(-6)}` : "—"}{" "}
+                    </TableCell>
                   </TableRow>
                 );
               })}
               {rows.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={16} className="py-10 text-center text-xs text-muted-foreground">
+                  <TableCell
+                    colSpan={16}
+                    className="py-10 text-center text-xs text-muted-foreground"
+                  >
                     No contracts match the current filters.
                   </TableCell>
                 </TableRow>
@@ -289,10 +370,18 @@ function ContractsList() {
                       <KV k="Contract price" v={`R$ ${selected.priceBRL.toFixed(2)}`} mono />
                       <KV k="PLD reference" v={`R$ ${selected.pldBRL.toFixed(2)}`} mono />
                       <KV k="Settlement window" v={selected.window} mono />
-                      <KV k="Active period" v={`${contractStartDate(selected)} → ${contractEndDate(selected)}`} mono />
+                      <KV
+                        k="Active period"
+                        v={`${contractStartDate(selected)} → ${contractEndDate(selected)}`}
+                        mono
+                      />
                       <KV k="Duration" v={`${contractDurationDays(selected)} days`} mono />
                       <KV k="Settlement date" v={selected.settlementDate} mono />
-                      <KV k="Ledger #" v={selected.ledger ? selected.ledger.toLocaleString("en-US") : "—"} mono />
+                      <KV
+                        k="Ledger #"
+                        v={selected.ledger ? selected.ledger.toLocaleString("en-US") : "—"}
+                        mono
+                      />
                       <KV
                         k="Finality latency"
                         v={selected.latencyMs ? `${(selected.latencyMs / 1000).toFixed(2)}s` : "—"}
@@ -318,9 +407,13 @@ function ContractsList() {
                           <div className="flex-1 pb-0.5">
                             <div className="flex items-baseline justify-between gap-2">
                               <p className="text-[11px] font-medium leading-tight">{e.label}</p>
-                              <span className="font-mono text-[10px] text-muted-foreground">{e.ts}</span>
+                              <span className="font-mono text-[10px] text-muted-foreground">
+                                {e.ts}
+                              </span>
                             </div>
-                            <p className="text-[10px] leading-snug text-muted-foreground">{e.detail}</p>
+                            <p className="text-[10px] leading-snug text-muted-foreground">
+                              {e.detail}
+                            </p>
                           </div>
                         </li>
                       ))}
@@ -371,11 +464,23 @@ function ContractsList() {
   );
 }
 
-function KV({ k, v, mono, highlight }: { k: string; v: string; mono?: boolean; highlight?: boolean }) {
+function KV({
+  k,
+  v,
+  mono,
+  highlight,
+}: {
+  k: string;
+  v: string;
+  mono?: boolean;
+  highlight?: boolean;
+}) {
   return (
     <div className="flex items-center justify-between gap-4">
       <span className="text-xs text-muted-foreground">{k}</span>
-      <span className={`${mono ? "font-mono" : ""} ${highlight ? "text-base font-semibold text-primary" : "text-sm"}`}>
+      <span
+        className={`${mono ? "font-mono" : ""} ${highlight ? "text-base font-semibold text-primary" : "text-sm"}`}
+      >
         {v}
       </span>
     </div>

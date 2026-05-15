@@ -19,8 +19,7 @@ type Props = {
   liquidityIndex: number;
 };
 
-const fmt = (n: number, d = 0) =>
-  n.toLocaleString("en-US", { maximumFractionDigits: d });
+const fmt = (n: number, d = 0) => n.toLocaleString("en-US", { maximumFractionDigits: d });
 
 export function AIForecastPanel({
   hourlySeries,
@@ -45,7 +44,9 @@ export function AIForecastPanel({
 
   const surplus = forecastNext24Mwh * 1000 - forecastNext24Mwh * 1000 * (marketDemandIndex / 100);
   const congestion = Math.max(0, Math.min(100, 100 - liquidityIndex + (marketDemandIndex - 60)));
-  const confidence = Math.round(72 + (liquidityIndex - 60) * 0.2 + Math.sin(Date.now() / 30000) * 4);
+  const confidence = Math.round(
+    72 + (liquidityIndex - 60) * 0.2 + Math.sin(Date.now() / 30000) * 4,
+  );
 
   return (
     <Card className="relative overflow-hidden border-border bg-card p-4">
@@ -55,7 +56,9 @@ export function AIForecastPanel({
           <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
             AI Operational Forecasting · Predictive Layer
           </p>
-          <h2 className="mt-0.5 font-display text-base font-semibold">Generation & Settlement Outlook</h2>
+          <h2 className="mt-0.5 font-display text-base font-semibold">
+            Generation & Settlement Outlook
+          </h2>
         </div>
         <div className="flex items-center gap-2 rounded-md border border-border bg-background/40 px-2.5 py-1.5">
           <Cpu className="h-3.5 w-3.5 text-primary animate-pulse" />
@@ -84,8 +87,11 @@ export function AIForecastPanel({
             Surplus Indicator
           </p>
           <div className="mt-1 flex items-baseline gap-1.5">
-            <span className={`font-display text-xl font-semibold ${surplus > 0 ? "text-success" : "text-destructive"}`}>
-              {surplus > 0 ? "+" : ""}{fmt(surplus / 1000, 2)}
+            <span
+              className={`font-display text-xl font-semibold ${surplus > 0 ? "text-success" : "text-destructive"}`}
+            >
+              {surplus > 0 ? "+" : ""}
+              {fmt(surplus / 1000, 2)}
             </span>
             <span className="font-mono text-[10px] uppercase text-muted-foreground">MWh net</span>
           </div>
@@ -98,7 +104,9 @@ export function AIForecastPanel({
             Settlement Congestion Risk
           </p>
           <div className="mt-1 flex items-baseline gap-1.5">
-            <span className={`font-display text-xl font-semibold ${congestion > 60 ? "text-destructive" : congestion > 35 ? "text-amber-500" : "text-success"}`}>
+            <span
+              className={`font-display text-xl font-semibold ${congestion > 60 ? "text-destructive" : congestion > 35 ? "text-amber-500" : "text-success"}`}
+            >
               {Math.round(congestion)}
             </span>
             <span className="font-mono text-[10px] uppercase text-muted-foreground">/100</span>
@@ -131,8 +139,15 @@ export function AIForecastPanel({
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.28 0.02 240)" opacity={0.4} />
-                <XAxis dataKey="day" tick={{ fontSize: 10, fill: "oklch(0.68 0.02 240)" }} stroke="oklch(0.28 0.02 240)" />
-                <YAxis tick={{ fontSize: 9, fill: "oklch(0.68 0.02 240)" }} stroke="oklch(0.28 0.02 240)" />
+                <XAxis
+                  dataKey="day"
+                  tick={{ fontSize: 10, fill: "oklch(0.68 0.02 240)" }}
+                  stroke="oklch(0.28 0.02 240)"
+                />
+                <YAxis
+                  tick={{ fontSize: 9, fill: "oklch(0.68 0.02 240)" }}
+                  stroke="oklch(0.28 0.02 240)"
+                />
                 <Tooltip
                   contentStyle={{
                     background: "oklch(0.205 0.02 240)",
@@ -140,19 +155,56 @@ export function AIForecastPanel({
                     fontSize: 11,
                   }}
                 />
-                <Area type="monotone" dataKey="gen" stroke="oklch(0.78 0.18 145)" fill="url(#ai-gen)" strokeWidth={1.5} />
-                <Area type="monotone" dataKey="demand" stroke="oklch(0.7 0.15 220)" fill="url(#ai-dem)" strokeWidth={1.5} />
+                <Area
+                  type="monotone"
+                  dataKey="gen"
+                  stroke="oklch(0.78 0.18 145)"
+                  fill="url(#ai-gen)"
+                  strokeWidth={1.5}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="demand"
+                  stroke="oklch(0.7 0.15 220)"
+                  fill="url(#ai-dem)"
+                  strokeWidth={1.5}
+                />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
         <div className="space-y-2">
-          <ImpactRow icon={<CloudRain className="h-3.5 w-3.5" />} label="Weather impact · NE" value="LOW" tone="ok" />
-          <ImpactRow icon={<Droplets className="h-3.5 w-3.5" />} label="Hydro reservoir level" value="62%" tone="ok" />
-          <ImpactRow icon={<Zap className="h-3.5 w-3.5" />} label="Spot price PLD signal" value="R$ 287" tone="warn" />
-          <ImpactRow icon={<TrendingUp className="h-3.5 w-3.5" />} label="Liquidity availability" value={`${liquidityIndex}/100`} tone="ok" />
-          <ImpactRow icon={<AlertTriangle className="h-3.5 w-3.5" />} label="Regional demand · SE peak" value="HIGH" tone="warn" />
+          <ImpactRow
+            icon={<CloudRain className="h-3.5 w-3.5" />}
+            label="Weather impact · NE"
+            value="LOW"
+            tone="ok"
+          />
+          <ImpactRow
+            icon={<Droplets className="h-3.5 w-3.5" />}
+            label="Hydro reservoir level"
+            value="62%"
+            tone="ok"
+          />
+          <ImpactRow
+            icon={<Zap className="h-3.5 w-3.5" />}
+            label="Spot price PLD signal"
+            value="R$ 287"
+            tone="warn"
+          />
+          <ImpactRow
+            icon={<TrendingUp className="h-3.5 w-3.5" />}
+            label="Liquidity availability"
+            value={`${liquidityIndex}/100`}
+            tone="ok"
+          />
+          <ImpactRow
+            icon={<AlertTriangle className="h-3.5 w-3.5" />}
+            label="Regional demand · SE peak"
+            value="HIGH"
+            tone="warn"
+          />
         </div>
       </div>
     </Card>
@@ -170,7 +222,8 @@ function ImpactRow({
   value: string;
   tone: "ok" | "warn" | "bad";
 }) {
-  const cls = tone === "ok" ? "text-success" : tone === "warn" ? "text-amber-500" : "text-destructive";
+  const cls =
+    tone === "ok" ? "text-success" : tone === "warn" ? "text-amber-500" : "text-destructive";
   return (
     <div className="flex items-center justify-between rounded-md border border-border bg-background/40 px-2.5 py-1.5">
       <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">

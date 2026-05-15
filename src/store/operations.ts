@@ -16,7 +16,6 @@ import {
   type QueuePhase,
 } from "@/lib/mock-data";
 
-
 const API_BASE = "http://localhost:3000/api";
 
 export async function loadContractsFromApi() {
@@ -34,7 +33,6 @@ export async function loadContractsFromApi() {
   }
 }
 
-
 /* ------------------------------------------------------------------ */
 /*  Operational Log                                                    */
 /* ------------------------------------------------------------------ */
@@ -45,7 +43,7 @@ export type ExecutionLog = {
   id: string;
   contractId: string;
   settlementId?: string;
-  ts: string;            // wall-clock HH:MM:SS
+  ts: string; // wall-clock HH:MM:SS
   state: SettlementState;
   level: LogLevel;
   message: string;
@@ -66,7 +64,6 @@ type OpsState = {
   logs: ExecutionLog[];
   counters: Counters;
   lastTick: number;
-  
 
   /* selectors (computed) */
   getContract: (id: string) => Contract | undefined;
@@ -74,8 +71,13 @@ type OpsState = {
 
   /* mutations */
   registerContract: (input: {
-    buyer: string; seller: string; volumeMWh: number; priceBRL: number;
-    settlementDate: string; startDate?: string; endDate?: string;
+    buyer: string;
+    seller: string;
+    volumeMWh: number;
+    priceBRL: number;
+    settlementDate: string;
+    startDate?: string;
+    endDate?: string;
   }) => Contract;
 
   appendLog: (l: Omit<ExecutionLog, "id" | "ts"> & { ts?: string }) => void;
@@ -126,7 +128,11 @@ const seedLogs = (): ExecutionLog[] => {
   const sample = mockContracts.slice(0, 3);
   const out: ExecutionLog[] = [];
   sample.forEach((c, ci) => {
-    const base = ["contract registered in clearing pool", "counterparty validated · KYC + collateral OK", "PLD ingested from GridRef oracle"];
+    const base = [
+      "contract registered in clearing pool",
+      "counterparty validated · KYC + collateral OK",
+      "PLD ingested from GridRef oracle",
+    ];
     base.forEach((m, i) => {
       out.push({
         id: `LOG-${1000 + ci * 10 + i}`,
@@ -156,16 +162,27 @@ export const useOps = create<OpsState>()(
       getContract: (id) => get().contracts.find((c) => c.id === id),
       getLogsFor: (cid) => get().logs.filter((l) => l.contractId === cid),
 
-      registerContract: ({ buyer, seller, volumeMWh, priceBRL, settlementDate, startDate, endDate }) => {
+      registerContract: ({
+        buyer,
+        seller,
+        volumeMWh,
+        priceBRL,
+        settlementDate,
+        startDate,
+        endDate,
+      }) => {
         const c = get();
         const epc = c.counters.epc + 1;
         const id = `EPC-${epc}`;
         const resolvedEnd = endDate ?? settlementDate;
         const today = new Date().toISOString().slice(0, 10);
-        const status: Contract["status"] =
-          startDate && startDate > today ? "PENDING" : "ACTIVE";
+        const status: Contract["status"] = startDate && startDate > today ? "PENDING" : "ACTIVE";
         const contract: Contract = {
-          id, buyer, seller, volumeMWh, priceBRL,
+          id,
+          buyer,
+          seller,
+          volumeMWh,
+          priceBRL,
           pldBRL: priceBRL,
           settlementDate: resolvedEnd,
           startDate,
@@ -227,7 +244,15 @@ export const useOps = create<OpsState>()(
             feed: [feedItem, ...s.feed].slice(0, 8),
             contracts: s.contracts.map((c) =>
               c.id === settlement.contractId
-                ? { ...c, state: "SETTLED", status: "SETTLED", ledger: settlement.ledger, latencyMs: settlement.latencyMs, txHash: settlement.txHash, pldBRL: settlement.pld }
+                ? {
+                    ...c,
+                    state: "SETTLED",
+                    status: "SETTLED",
+                    ledger: settlement.ledger,
+                    latencyMs: settlement.latencyMs,
+                    txHash: settlement.txHash,
+                    pldBRL: settlement.pld,
+                  }
                 : c,
             ),
             queue: s.queue.filter((q) => q.contractId !== settlement.contractId),
@@ -258,7 +283,10 @@ export const useOps = create<OpsState>()(
         const completed: QueueItem[] = [];
 
         s.queue.forEach((q) => {
-          if (!advanceIds.includes(q.id)) { newQueue.push(q); return; }
+          if (!advanceIds.includes(q.id)) {
+            newQueue.push(q);
+            return;
+          }
           const np = nextPhase(q.phase);
           if (np === "DONE") {
             completed.push(q);
@@ -270,10 +298,13 @@ export const useOps = create<OpsState>()(
               state: PHASE_TO_STATE[np],
               level: np === "broadcasting" ? "info" : np === "confirming" ? "ok" : "info",
               message:
-                np === "validating" ? `validating ${q.contractId} · counterparty limits OK` :
-                np === "signing" ? `signing payload · EPWR keypair (ed25519)` :
-                np === "broadcasting" ? `broadcasting ${q.id} → Stellar Testnet horizon` :
-                `awaiting confirmation · ledger window…`,
+                np === "validating"
+                  ? `validating ${q.contractId} · counterparty limits OK`
+                  : np === "signing"
+                    ? `signing payload · EPWR keypair (ed25519)`
+                    : np === "broadcasting"
+                      ? `broadcasting ${q.id} → Stellar Testnet horizon`
+                      : `awaiting confirmation · ledger window…`,
             });
           }
         });
@@ -283,25 +314,22 @@ export const useOps = create<OpsState>()(
           const c = s.contracts.find((cc) => cc.id === q.contractId);
           if (!c) return;
           const ledger = s.counters.ledger + Math.floor(Math.random() * 30);
-          const response = await fetch(
-  "http://localhost:3000/api/settlement/execute",
-  {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      contractId: q.contractId,
-      amount: q.amount,
-    }),
-  }
-);
+          const response = await fetch("http://localhost:3000/api/settlement/execute", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              contractId: q.contractId,
+              amount: q.amount,
+            }),
+          });
 
-if (!response.ok) {
-  throw new Error("Settlement execution failed");
-}
+          if (!response.ok) {
+            throw new Error("Settlement execution failed");
+          }
 
-const settlementResult = await response.json();
+          const settlementResult = await response.json();
           const stl: Settlement = {
             id: q.id,
             contractId: q.contractId,
@@ -340,10 +368,26 @@ const settlementResult = await response.json();
         // occasionally emit an operational alert (~1 in 6 ticks)
         if (Math.random() < 0.16) {
           const candidates: Array<Omit<AlertItem, "id" | "time">> = [
-            { level: "warn", title: "Counterparty ack delay", detail: "ack pending > 60s on active settlement" },
-            { level: "info", title: "Reconciliation queue normalising", detail: "pending items decreasing" },
-            { level: "warn", title: "Oracle PLD lag", detail: "GridRef feed drift 4.1s vs reference clock" },
-            { level: "info", title: "New cycle window opened", detail: "D+1 17:00 BRT clearing window active" },
+            {
+              level: "warn",
+              title: "Counterparty ack delay",
+              detail: "ack pending > 60s on active settlement",
+            },
+            {
+              level: "info",
+              title: "Reconciliation queue normalising",
+              detail: "pending items decreasing",
+            },
+            {
+              level: "warn",
+              title: "Oracle PLD lag",
+              detail: "GridRef feed drift 4.1s vs reference clock",
+            },
+            {
+              level: "info",
+              title: "New cycle window opened",
+              detail: "D+1 17:00 BRT clearing window active",
+            },
           ];
           get().pushAlert(candidates[Math.floor(Math.random() * candidates.length)]);
         }

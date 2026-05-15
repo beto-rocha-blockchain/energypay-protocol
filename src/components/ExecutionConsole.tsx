@@ -1,17 +1,18 @@
 import { useEffect, useRef, useState } from "react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink, Copy, Terminal, ShieldCheck, KeyRound, AlertTriangle } from "lucide-react";
 import { StateMachine } from "@/components/StateMachine";
 import { type SettlementState, type Contract, type Settlement } from "@/lib/mock-data";
 import { useOps } from "@/store/operations";
-import {
-  useOperator,
-  maskAddress,
-  canExecuteSettlement,
-  ROLE_META,
-} from "@/store/operator";
+import { useOperator, maskAddress, canExecuteSettlement, ROLE_META } from "@/store/operator";
 import { apiExecuteSettlement, type SettlementResult } from "@/lib/api";
 import { stellarExpertTx, stellarExpertAccount } from "@/lib/stellar";
 import { toast } from "sonner";
@@ -100,15 +101,24 @@ export function ExecutionConsole({
     const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
     (async () => {
-      log("CREATED", `→ session opened · operator=${operator.operatorId} · ${operator.organization}`);
+      log(
+        "CREATED",
+        `→ session opened · operator=${operator.operatorId} · ${operator.organization}`,
+      );
       await wait(160);
-      log("CREATED", `authorizing identity · roles=[${roleLabel}] · access=${operator.accessLevel}`);
+      log(
+        "CREATED",
+        `authorizing identity · roles=[${roleLabel}] · access=${operator.accessLevel}`,
+      );
       await wait(160);
       log("CREATED", `binding execution signer · source=${signer}`, "ok");
       await wait(180);
       log("VALIDATED", `pld ingested from GridRef oracle feed · R$ ${pld.toFixed(2)}/MWh`);
       await wait(160);
-      log("VALIDATED", `exposure calculated · ${fmtBRL(amount)} (${amount >= 0 ? "buyer" : "seller"} receives)`);
+      log(
+        "VALIDATED",
+        `exposure calculated · ${fmtBRL(amount)} (${amount >= 0 ? "buyer" : "seller"} receives)`,
+      );
       await wait(180);
       log("PENDING_SIGNATURE", `▸ requesting backend settlement execution · ${settlementId}`);
       log("BROADCASTING", `→ POST /api/settlement/execute · backend signs & broadcasts`, "info");
@@ -180,7 +190,19 @@ export function ExecutionConsole({
     return () => {
       cancelled = true;
     };
-  }, [open, contract.id, contract.seller, contract.window, pld, amount, operator, authorized, appendOpsLog, updateContractState, recordSettlement]);
+  }, [
+    open,
+    contract.id,
+    contract.seller,
+    contract.window,
+    pld,
+    amount,
+    operator,
+    authorized,
+    appendOpsLog,
+    updateContractState,
+    recordSettlement,
+  ]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -190,10 +212,7 @@ export function ExecutionConsole({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side="right"
-        className="w-full overflow-y-auto bg-background p-0 sm:max-w-xl"
-      >
+      <SheetContent side="right" className="w-full overflow-y-auto bg-background p-0 sm:max-w-xl">
         <div className="border-b border-border px-5 py-4">
           <SheetHeader className="space-y-1 text-left">
             <div className="flex items-center justify-between gap-2">
@@ -207,15 +226,23 @@ export function ExecutionConsole({
                   failed
                     ? "border-destructive/40 bg-destructive/10 font-mono text-[10px] text-destructive"
                     : running
-                    ? "border-primary/40 bg-primary/10 font-mono text-[10px] text-primary"
-                    : done
-                    ? "border-success/40 bg-success/10 font-mono text-[10px] text-success"
-                    : !authorized
-                    ? "border-destructive/40 bg-destructive/10 font-mono text-[10px] text-destructive"
-                    : "font-mono text-[10px]"
+                      ? "border-primary/40 bg-primary/10 font-mono text-[10px] text-primary"
+                      : done
+                        ? "border-success/40 bg-success/10 font-mono text-[10px] text-success"
+                        : !authorized
+                          ? "border-destructive/40 bg-destructive/10 font-mono text-[10px] text-destructive"
+                          : "font-mono text-[10px]"
                 }
               >
-                {!authorized ? "● UNAUTHORIZED" : failed ? "● FAILED" : running ? "● SIGNING" : done ? "● FINALIZED" : "IDLE"}
+                {!authorized
+                  ? "● UNAUTHORIZED"
+                  : failed
+                    ? "● FAILED"
+                    : running
+                      ? "● SIGNING"
+                      : done
+                        ? "● FINALIZED"
+                        : "IDLE"}
               </Badge>
             </div>
             <SheetDescription className="font-mono text-[11px] uppercase tracking-widest">
@@ -239,13 +266,21 @@ export function ExecutionConsole({
           </div>
           {operator ? (
             <div className="grid grid-cols-2 gap-2 text-[11px]">
-              <SignerCell label="Source Public Key" value={operator.wallet.publicKey} mono truncate />
+              <SignerCell
+                label="Source Public Key"
+                value={operator.wallet.publicKey}
+                mono
+                truncate
+              />
               <SignerCell label="Settlement Authority" value={operator.organization} />
               <SignerCell
                 label="Active Roles"
                 value={operator.roles.map((r) => ROLE_META[r].label).join(" · ") || "—"}
               />
-              <SignerCell label="Wallet Status" value={`${operator.wallet.status}${operator.funded ? " · FUNDED" : ""}`} />
+              <SignerCell
+                label="Wallet Status"
+                value={`${operator.wallet.status}${operator.funded ? " · FUNDED" : ""}`}
+              />
             </div>
           ) : (
             <div className="flex items-center gap-2 font-mono text-[11px] text-destructive">
@@ -283,8 +318,8 @@ export function ExecutionConsole({
                     l.level === "ok"
                       ? "text-success"
                       : l.level === "warn"
-                      ? "text-warning"
-                      : "text-foreground/85"
+                        ? "text-warning"
+                        : "text-foreground/85"
                   }
                 >
                   {l.text}
@@ -313,7 +348,11 @@ export function ExecutionConsole({
               <Meta k="Ledger #" v={ledger?.toLocaleString("en-US") ?? "—"} />
               <Meta k="Finality" v={`${((latency ?? 0) / 1000).toFixed(2)}s`} />
               <Meta k="Signer Operator" v={operator.operatorId} />
-              <Meta k="Source Account" v={maskAddress(result.source_public_key ?? operator.wallet.publicKey)} highlight />
+              <Meta
+                k="Source Account"
+                v={maskAddress(result.source_public_key ?? operator.wallet.publicKey)}
+                highlight
+              />
               <Meta k="Window" v={contract.window} />
               <Meta k="Status" v={result.status} highlight />
             </dl>
@@ -372,7 +411,8 @@ export function ExecutionConsole({
             </p>
             <p className="mt-1 font-mono text-[11px] text-muted-foreground">{failed}</p>
             <p className="mt-1 font-mono text-[10px] text-muted-foreground">
-              Verify backend connectivity ({"http://localhost:3000"}) and Horizon network status, then retry.
+              Verify backend connectivity ({"http://localhost:3000"}) and Horizon network status,
+              then retry.
             </p>
           </div>
         )}
@@ -385,8 +425,9 @@ export function ExecutionConsole({
             </p>
             <p className="mt-1 font-mono text-[11px] text-muted-foreground">
               The current session has no provisioned settlement authority. Sign in with an
-              operational identity holding <span className="text-foreground">settlements.execute</span>{" "}
-              to authorize this transaction.
+              operational identity holding{" "}
+              <span className="text-foreground">settlements.execute</span> to authorize this
+              transaction.
             </p>
           </div>
         )}
@@ -396,12 +437,24 @@ export function ExecutionConsole({
 }
 
 function SignerCell({
-  label, value, mono, truncate,
-}: { label: string; value: string; mono?: boolean; truncate?: boolean }) {
+  label,
+  value,
+  mono,
+  truncate,
+}: {
+  label: string;
+  value: string;
+  mono?: boolean;
+  truncate?: boolean;
+}) {
   return (
     <div className="rounded-md border border-border bg-background/40 px-2 py-1.5">
-      <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{label}</div>
-      <div className={`mt-0.5 text-[11px] ${mono ? "font-mono" : ""} ${truncate ? "truncate" : ""}`}>
+      <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+        {label}
+      </div>
+      <div
+        className={`mt-0.5 text-[11px] ${mono ? "font-mono" : ""} ${truncate ? "truncate" : ""}`}
+      >
         {value}
       </div>
     </div>

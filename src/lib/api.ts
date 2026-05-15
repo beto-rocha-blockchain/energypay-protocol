@@ -39,10 +39,7 @@ type RequestOptions = {
   signal?: AbortSignal;
 };
 
-export async function apiRequest<T = unknown>(
-  path: string,
-  opts: RequestOptions = {},
-): Promise<T> {
+export async function apiRequest<T = unknown>(path: string, opts: RequestOptions = {}): Promise<T> {
   const { method = "GET", body, auth = true, signal } = opts;
   const headers: Record<string, string> = {
     Accept: "application/json",
@@ -63,16 +60,27 @@ export async function apiRequest<T = unknown>(
       signal,
     });
   } catch (err) {
-    throw buildError(0, `Network error reaching backend (${API_BASE_URL}). ${(err as Error).message}`);
+    throw buildError(
+      0,
+      `Network error reaching backend (${API_BASE_URL}). ${(err as Error).message}`,
+    );
   }
 
   const ctype = res.headers.get("content-type") || "";
-  const data = ctype.includes("application/json") ? await res.json().catch(() => null) : await res.text().catch(() => null);
+  const data = ctype.includes("application/json")
+    ? await res.json().catch(() => null)
+    : await res.text().catch(() => null);
 
   if (!res.ok) {
     const message =
-      (data && typeof data === "object" && "error" in (data as Record<string, unknown>) && String((data as Record<string, unknown>).error)) ||
-      (data && typeof data === "object" && "message" in (data as Record<string, unknown>) && String((data as Record<string, unknown>).message)) ||
+      (data &&
+        typeof data === "object" &&
+        "error" in (data as Record<string, unknown>) &&
+        String((data as Record<string, unknown>).error)) ||
+      (data &&
+        typeof data === "object" &&
+        "message" in (data as Record<string, unknown>) &&
+        String((data as Record<string, unknown>).message)) ||
       `Request failed with ${res.status}`;
     throw buildError(res.status, message, data);
   }
@@ -271,7 +279,6 @@ export async function apiValidatedP2PTransfer(
   }
   return data as P2PTransferResult;
 }
-
 
 /* ------------------------------------------------------------------ */
 /*  Registry (best-effort) — counterparties & grid nodes              */

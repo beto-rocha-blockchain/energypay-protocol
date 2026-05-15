@@ -25,7 +25,9 @@ export function StellarRailMonitor() {
           <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
             Settlement Rails · Stellar Mainnet Test Anchor
           </p>
-          <h2 className="mt-0.5 font-display text-base font-semibold">Blockchain Operational Monitor</h2>
+          <h2 className="mt-0.5 font-display text-base font-semibold">
+            Blockchain Operational Monitor
+          </h2>
         </div>
         <Badge
           variant="outline"
@@ -33,11 +35,15 @@ export function StellarRailMonitor() {
             railState === "CONNECTED"
               ? "border-success/40 text-success"
               : railState === "DEGRADED"
-              ? "border-amber-500/40 text-amber-500"
-              : "border-destructive/40 text-destructive"
+                ? "border-amber-500/40 text-amber-500"
+                : "border-destructive/40 text-destructive"
           }`}
         >
-          {isOffline ? <AlertTriangle className="mr-1.5 h-3 w-3" /> : <CheckCircle2 className="mr-1.5 h-3 w-3 animate-pulse" />}
+          {isOffline ? (
+            <AlertTriangle className="mr-1.5 h-3 w-3" />
+          ) : (
+            <CheckCircle2 className="mr-1.5 h-3 w-3 animate-pulse" />
+          )}
           Rail · {railState}
         </Badge>
       </div>
@@ -70,7 +76,12 @@ export function StellarRailMonitor() {
       </div>
 
       <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
-        <RailBar label="Rail Uptime" value={uptimePct} tone={uptimePct > 95 ? "ok" : "warn"} suffix="%" />
+        <RailBar
+          label="Rail Uptime"
+          value={uptimePct}
+          tone={uptimePct > 95 ? "ok" : "warn"}
+          suffix="%"
+        />
         <RailBar
           label="Backend Probe"
           value={Math.max(0, 100 - Math.min(100, backendMs / 20))}
@@ -100,7 +111,8 @@ function RailStat({
   value: string;
   tone: "ok" | "warn" | "bad";
 }) {
-  const cls = tone === "ok" ? "text-success" : tone === "warn" ? "text-amber-500" : "text-destructive";
+  const cls =
+    tone === "ok" ? "text-success" : tone === "warn" ? "text-amber-500" : "text-destructive";
   return (
     <div className="rounded-md border border-border bg-background/40 p-3">
       <p className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
@@ -129,11 +141,16 @@ function RailBar({
   return (
     <div className="rounded-md border border-border bg-background/40 p-3">
       <div className="flex items-center justify-between">
-        <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{label}</p>
+        <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+          {label}
+        </p>
         <p className="font-mono text-[11px]">{display ?? `${Math.round(value)}${suffix ?? ""}`}</p>
       </div>
       <div className="relative mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-        <div className={`h-full transition-all duration-700 ${bar}`} style={{ width: `${Math.min(100, value)}%` }} />
+        <div
+          className={`h-full transition-all duration-700 ${bar}`}
+          style={{ width: `${Math.min(100, value)}%` }}
+        />
         <div className="pointer-events-none absolute inset-0 animate-scada-scan bg-gradient-to-r from-transparent via-white/20 to-transparent" />
       </div>
     </div>
@@ -150,7 +167,9 @@ function NodeChip({ label, status }: { label: string; status: string }) {
           ok ? "bg-success" : warn ? "bg-amber-500" : "bg-destructive"
         }`}
       />
-      <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{label}</span>
+      <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+        {label}
+      </span>
     </div>
   );
 }

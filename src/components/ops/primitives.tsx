@@ -13,11 +13,15 @@ export function StatusDot({
   className?: string;
 }) {
   const color =
-    tone === "ok" ? "bg-success" :
-    tone === "warn" ? "bg-warning" :
-    tone === "bad" ? "bg-destructive" :
-    tone === "info" ? "bg-primary" :
-    "bg-muted-foreground/50";
+    tone === "ok"
+      ? "bg-success"
+      : tone === "warn"
+        ? "bg-warning"
+        : tone === "bad"
+          ? "bg-destructive"
+          : tone === "info"
+            ? "bg-primary"
+            : "bg-muted-foreground/50";
   return (
     <span
       aria-hidden
@@ -42,16 +46,23 @@ export function SeverityBadge({
   className?: string;
 }) {
   const tone =
-    level === "CRITICAL" ? "border-destructive/50 text-destructive bg-destructive/5" :
-    level === "WARN"     ? "border-warning/50 text-warning bg-warning/5" :
-    level === "OK"       ? "border-success/50 text-success bg-success/5" :
-    level === "PENDING"  ? "border-primary/50 text-primary bg-primary/5" :
-                            "border-border text-muted-foreground";
+    level === "CRITICAL"
+      ? "border-destructive/50 text-destructive bg-destructive/5"
+      : level === "WARN"
+        ? "border-warning/50 text-warning bg-warning/5"
+        : level === "OK"
+          ? "border-success/50 text-success bg-success/5"
+          : level === "PENDING"
+            ? "border-primary/50 text-primary bg-primary/5"
+            : "border-border text-muted-foreground";
   return (
-    <span className={cn(
-      "inline-flex items-center gap-1 rounded-sm border px-1.5 py-[1px] font-mono text-[9px] tracking-widest uppercase",
-      tone, className,
-    )}>
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 rounded-sm border px-1.5 py-[1px] font-mono text-[9px] tracking-widest uppercase",
+        tone,
+        className,
+      )}
+    >
       {label ?? level}
     </span>
   );
@@ -74,11 +85,15 @@ export function KpiTile({
   unit?: string;
 }) {
   const valueColor =
-    tone === "ok" ? "text-success" :
-    tone === "warn" ? "text-warning" :
-    tone === "bad" ? "text-destructive" :
-    tone === "primary" ? "text-primary" :
-    "text-foreground";
+    tone === "ok"
+      ? "text-success"
+      : tone === "warn"
+        ? "text-warning"
+        : tone === "bad"
+          ? "text-destructive"
+          : tone === "primary"
+            ? "text-primary"
+            : "text-foreground";
   return (
     <div className="panel relative overflow-hidden p-3">
       <div className="flex items-center justify-between">
@@ -88,11 +103,19 @@ export function KpiTile({
       <div className="mt-2 flex items-end justify-between gap-2">
         <div className="leading-none">
           <span className={cn("kpi-num text-2xl font-semibold", valueColor)}>{value}</span>
-          {unit && <span className="ml-1 font-mono text-[10px] uppercase text-muted-foreground">{unit}</span>}
+          {unit && (
+            <span className="ml-1 font-mono text-[10px] uppercase text-muted-foreground">
+              {unit}
+            </span>
+          )}
         </div>
         {spark && <div className="h-8 w-20 opacity-80">{spark}</div>}
       </div>
-      {sub && <p className="mt-1.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{sub}</p>}
+      {sub && (
+        <p className="mt-1.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+          {sub}
+        </p>
+      )}
     </div>
   );
 }
@@ -153,7 +176,9 @@ export function Sparkline({
   const max = Math.max(...values);
   const span = max - min || 1;
   const stepX = width / (values.length - 1 || 1);
-  const points = values.map((v, i) => `${(i * stepX).toFixed(1)},${(height - ((v - min) / span) * height).toFixed(1)}`).join(" ");
+  const points = values
+    .map((v, i) => `${(i * stepX).toFixed(1)},${(height - ((v - min) / span) * height).toFixed(1)}`)
+    .join(" ");
   return (
     <svg viewBox={`0 0 ${width} ${height}`} className="h-full w-full">
       <polyline fill="none" stroke={color} strokeWidth={1.25} points={points} />
@@ -162,11 +187,20 @@ export function Sparkline({
 }
 
 /* -------- Severity dot for tables -------- */
-export function CellNum({ children, tone = "default" }: { children: ReactNode; tone?: "default" | "ok" | "warn" | "bad" }) {
+export function CellNum({
+  children,
+  tone = "default",
+}: {
+  children: ReactNode;
+  tone?: "default" | "ok" | "warn" | "bad";
+}) {
   const color =
-    tone === "ok" ? "text-success" :
-    tone === "warn" ? "text-warning" :
-    tone === "bad" ? "text-destructive" :
-    "";
+    tone === "ok"
+      ? "text-success"
+      : tone === "warn"
+        ? "text-warning"
+        : tone === "bad"
+          ? "text-destructive"
+          : "";
   return <span className={cn("font-mono tabular text-[11.5px]", color)}>{children}</span>;
 }

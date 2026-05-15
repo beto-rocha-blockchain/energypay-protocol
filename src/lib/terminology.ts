@@ -9,14 +9,14 @@
 
 // ─── Transaction / Settlement Lifecycle ──────────────────────────────
 export const LIFECYCLE_STATES = [
-  "INTAKE",      // received from intake gateway
-  "VALIDATED",   // schema + counterparty checks passed
-  "MATCHED",     // matched against bilateral or pool book
-  "ANCHORED",    // anchored on Stellar ledger (txSubmitted)
-  "CLEARED",     // finality + audit attestation complete
-  "SETTLED",     // financial settlement finalized
-  "REJECTED",    // failed validation/match
-  "REVERSED",    // post-clearing reversal (compliance / exception)
+  "INTAKE", // received from intake gateway
+  "VALIDATED", // schema + counterparty checks passed
+  "MATCHED", // matched against bilateral or pool book
+  "ANCHORED", // anchored on Stellar ledger (txSubmitted)
+  "CLEARED", // finality + audit attestation complete
+  "SETTLED", // financial settlement finalized
+  "REJECTED", // failed validation/match
+  "REVERSED", // post-clearing reversal (compliance / exception)
 ] as const;
 export type LifecycleState = (typeof LIFECYCLE_STATES)[number];
 

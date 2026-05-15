@@ -31,8 +31,7 @@ const PHASE_HINT: Record<LiveStatusPhase, string> = {
   SETTLED: "Direct settlement rail closed · receipt issued",
 };
 
-const phaseRank = (p: LiveStatusPhase | null) =>
-  p === null ? -1 : ORDER.indexOf(p);
+const phaseRank = (p: LiveStatusPhase | null) => (p === null ? -1 : ORDER.indexOf(p));
 
 export function P2PLiveStatusPanel({ data }: { data: LiveStatusData }) {
   const failed = data.state === "FAILED";
@@ -51,10 +50,10 @@ export function P2PLiveStatusPanel({ data }: { data: LiveStatusData }) {
             failed
               ? "border-destructive/40 bg-destructive/10 font-mono text-[10px] text-destructive"
               : data.state === "FINALIZED"
-              ? "border-success/40 bg-success/10 font-mono text-[10px] text-success"
-              : idle
-              ? "font-mono text-[10px]"
-              : "border-primary/40 bg-primary/10 font-mono text-[10px] text-primary"
+                ? "border-success/40 bg-success/10 font-mono text-[10px] text-success"
+                : idle
+                  ? "font-mono text-[10px]"
+                  : "border-primary/40 bg-primary/10 font-mono text-[10px] text-primary"
           }
         >
           {failed ? "● FAILED" : idle ? "IDLE" : `● ${data.state}`}
@@ -81,8 +80,8 @@ export function P2PLiveStatusPanel({ data }: { data: LiveStatusData }) {
                   done
                     ? "border-success/30 bg-success/5"
                     : active
-                    ? "border-primary/40 bg-primary/5"
-                    : "border-border bg-background/30"
+                      ? "border-primary/40 bg-primary/5"
+                      : "border-border bg-background/30"
                 }`}
               >
                 <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center">
@@ -137,7 +136,8 @@ export function P2PLiveStatusPanel({ data }: { data: LiveStatusData }) {
 
         {idle && (
           <p className="font-mono text-[11px] text-muted-foreground">
-            $ awaiting settlement authorization · status feed will stream phases as the backend confirms.
+            $ awaiting settlement authorization · status feed will stream phases as the backend
+            confirms.
           </p>
         )}
       </div>

@@ -1,14 +1,20 @@
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import {
-  Popover, PopoverTrigger, PopoverContent,
-} from "@/components/ui/popover";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useOperator, maskAddress, ROLE_META } from "@/store/operator";
 import {
-  Copy, LogOut, ShieldCheck, Activity, Building2, Mail, Hash, Check,
-  KeyRound, MapPin,
+  Copy,
+  LogOut,
+  ShieldCheck,
+  Activity,
+  Building2,
+  Mail,
+  Hash,
+  Check,
+  KeyRound,
+  MapPin,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -67,11 +73,29 @@ export function OperatorBadge() {
         </div>
 
         <div className="space-y-3 p-3.5">
-          <Row icon={<Hash className="h-3 w-3" />} label="Operator ID" value={operator.operatorId} mono />
+          <Row
+            icon={<Hash className="h-3 w-3" />}
+            label="Operator ID"
+            value={operator.operatorId}
+            mono
+          />
           <Row icon={<Hash className="h-3 w-3" />} label="Full Name" value={operator.fullName} />
-          <Row icon={<Building2 className="h-3 w-3" />} label="Organization" value={operator.organization} />
-          <Row icon={<Mail className="h-3 w-3" />} label="Operator Email" value={operator.email} mono />
-          <Row icon={<MapPin className="h-3 w-3" />} label="Jurisdiction" value={`${operator.city} · ${operator.country}`} />
+          <Row
+            icon={<Building2 className="h-3 w-3" />}
+            label="Organization"
+            value={operator.organization}
+          />
+          <Row
+            icon={<Mail className="h-3 w-3" />}
+            label="Operator Email"
+            value={operator.email}
+            mono
+          />
+          <Row
+            icon={<MapPin className="h-3 w-3" />}
+            label="Jurisdiction"
+            value={`${operator.city} · ${operator.country}`}
+          />
 
           <div>
             <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
@@ -82,8 +106,13 @@ export function OperatorBadge() {
               <code className="flex-1 truncate rounded-md border border-border bg-background/60 px-2 py-1 font-mono text-[11px] text-foreground">
                 {operator.wallet.publicKey}
               </code>
-              <Button type="button" variant="outline" size="sm" onClick={copy}
-                className="h-7 px-2 font-mono text-[10px] uppercase tracking-widest">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={copy}
+                className="h-7 px-2 font-mono text-[10px] uppercase tracking-widest"
+              >
                 {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
               </Button>
             </div>
@@ -101,7 +130,8 @@ export function OperatorBadge() {
               Backend custody · ed25519 · {operator.wallet.status}
             </div>
             <div className="mt-1 font-mono text-[10px] text-muted-foreground">
-              Secret seed is held by the EnergyPay backend. Settlement signing is performed server-side on Stellar Testnet.
+              Secret seed is held by the EnergyPay backend. Settlement signing is performed
+              server-side on Stellar Testnet.
             </div>
           </div>
 
@@ -113,11 +143,15 @@ export function OperatorBadge() {
             </div>
             <div className="mt-1 flex flex-wrap gap-1">
               {operator.roles.length === 0 && (
-                <span className="font-mono text-[10px] text-muted-foreground">No roles provisioned</span>
+                <span className="font-mono text-[10px] text-muted-foreground">
+                  No roles provisioned
+                </span>
               )}
               {operator.roles.map((r) => (
-                <span key={r}
-                  className="rounded-sm border border-primary/40 bg-primary/10 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-widest text-primary">
+                <span
+                  key={r}
+                  className="rounded-sm border border-primary/40 bg-primary/10 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-widest text-primary"
+                >
                   {ROLE_META[r].label}
                 </span>
               ))}
@@ -137,8 +171,10 @@ export function OperatorBadge() {
             </div>
             <div className="mt-1 flex flex-wrap gap-1">
               {operator.permissions.map((p) => (
-                <span key={p}
-                  className="rounded-sm border border-border bg-background/60 px-1.5 py-0.5 font-mono text-[10px] text-foreground">
+                <span
+                  key={p}
+                  className="rounded-sm border border-border bg-background/60 px-1.5 py-0.5 font-mono text-[10px] text-foreground"
+                >
                   {p}
                 </span>
               ))}
@@ -167,8 +203,16 @@ export function OperatorBadge() {
 }
 
 function Row({
-  icon, label, value, mono,
-}: { icon: React.ReactNode; label: string; value: string; mono?: boolean }) {
+  icon,
+  label,
+  value,
+  mono,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  mono?: boolean;
+}) {
   return (
     <div>
       <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
@@ -184,7 +228,9 @@ function Mini({ label, value, tone }: { label: string; value: string; tone?: "su
   return (
     <div className="rounded-md border border-border bg-background/40 px-2 py-1.5">
       <div className="text-[10px] text-muted-foreground">{label}</div>
-      <div className={`mt-0.5 text-[11px] ${tone === "success" ? "text-success" : "text-foreground"}`}>
+      <div
+        className={`mt-0.5 text-[11px] ${tone === "success" ? "text-success" : "text-foreground"}`}
+      >
         {value}
       </div>
     </div>

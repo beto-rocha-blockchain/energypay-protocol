@@ -15,7 +15,6 @@ const router = express.Router();
 // ========================================
 
 router.post("/trustline", async (req, res) => {
-
   const result = await createTrustline();
 
   res.json(result);
@@ -26,12 +25,9 @@ router.post("/trustline", async (req, res) => {
 // ========================================
 
 router.post("/mint", async (req, res) => {
-
   const { amount } = req.body;
 
-  const result = await mintEPWR(
-    amount || "1000"
-  );
+  const result = await mintEPWR(amount || "1000");
 
   res.json(result);
 });
@@ -41,9 +37,7 @@ router.post("/mint", async (req, res) => {
 // ========================================
 
 router.get("/balances", async (req, res) => {
-
-  const result =
-    await getDistributionBalances();
+  const result = await getDistributionBalances();
 
   res.json(result);
 });
@@ -53,11 +47,9 @@ router.get("/balances", async (req, res) => {
 // ========================================
 
 router.get("/addresses", async (req, res) => {
-
   res.json({
     issuer: getIssuerAddress(),
-    distribution:
-      getDistributionAddress(),
+    distribution: getDistributionAddress(),
   });
 });
 

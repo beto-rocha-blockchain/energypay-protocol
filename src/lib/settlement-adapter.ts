@@ -24,22 +24,12 @@ import {
   type P2PTransferInput,
   type ValidationFailure,
 } from "@/lib/p2p-validation";
-import {
-  settlementStore,
-  type SettlementReceipt,
-} from "@/lib/settlement-store";
-import {
-  isTerminal,
-  type SettlementState,
-} from "@/lib/settlement-state-machine";
-import {
-  recordFailed,
-  recordFinalized,
-} from "@/lib/settlement-telemetry";
+import { settlementStore, type SettlementReceipt } from "@/lib/settlement-store";
+import { isTerminal, type SettlementState } from "@/lib/settlement-state-machine";
+import { recordFailed, recordFinalized } from "@/lib/settlement-telemetry";
 import { opsLog } from "@/lib/settlement-ops-log";
 
-const STELLAR_EXPERT_TX = (hash: string) =>
-  `https://stellar.expert/explorer/testnet/tx/${hash}`;
+const STELLAR_EXPERT_TX = (hash: string) => `https://stellar.expert/explorer/testnet/tx/${hash}`;
 
 /* ------------------------------------------------------------------ */
 /*  Adapter result shape                                              */
@@ -143,8 +133,7 @@ export async function executeSettlement(
       });
 
       // ── 4. Horizon submission via configured backend ────────────────
-      const backend = (process.env.P2P_BACKEND_URL ?? "http://localhost:3000")
-        .replace(/\/+$/, "");
+      const backend = (process.env.P2P_BACKEND_URL ?? "http://localhost:3000").replace(/\/+$/, "");
       const submittedAt = new Date();
       const horizonStart = Date.now();
       opsLog("horizon", `→ POST ${backend}/api/p2p/transfer · ${transferId}`);
@@ -252,5 +241,7 @@ function cryptoRandom6(): string {
   crypto.getRandomValues(bytes);
   let n = 0;
   for (const b of bytes) n = (n << 8) | b;
-  return Math.abs(n % 1_000_000).toString().padStart(6, "0");
+  return Math.abs(n % 1_000_000)
+    .toString()
+    .padStart(6, "0");
 }

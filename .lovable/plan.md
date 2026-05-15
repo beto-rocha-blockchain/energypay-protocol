@@ -9,6 +9,7 @@ Goal: remove crypto/hackathon aesthetic, enforce clearing-house language and for
 Files touched (existing): `src/lib/institutional-data.ts`, `src/lib/mock-data.ts`, `src/lib/settlement-*.ts`, all `src/routes/{ops,clearing,reconciliation,oracle,risk,treasury,audit,topology,generator,wallet}.tsx`, `src/components/ops/*`, `src/components/generator/*`, `src/components/BlockchainActivityFeed.tsx`, `src/components/TokenAllocationPanel.tsx`.
 
 Changes:
+
 - Centralize terminology constants in new `src/lib/terminology.ts`:
   - Lifecycle states: `INTAKE → VALIDATED → MATCHED → ANCHORED → CLEARED → SETTLED | REJECTED | REVERSED`.
   - Severities: `NOMINAL | ELEVATED | DEGRADED | CRITICAL`.
@@ -32,6 +33,7 @@ Changes:
 Goal: separate UI from mock data, define normalized schemas, ready for real backend.
 
 New files:
+
 - `src/types/domain.ts` — canonical schemas (Zod) and TS types: `SettlementEvent`, `BilateralContract`, `Counterparty`, `OperatorIdentity`, `AuditEvent`, `ReconciliationRow`, `OracleSample`, `RiskExposure`, `TreasuryBalance`, `LedgerOperation`, plus `LifecycleState` and `Severity` enums.
 - `src/services/` adapter layer (interface + mock impl):
   - `settlements.service.ts`, `clearing.service.ts`, `reconciliation.service.ts`, `oracle.service.ts`, `risk.service.ts`, `audit.service.ts`, `treasury.service.ts`, `topology.service.ts`.
@@ -48,6 +50,7 @@ New files:
 - Table primitive `src/components/ops/LiveTable.tsx` — accepts a `subscribe` adapter, renders sticky-header dense table with row-level "updated" pulse; used to replace inline tables in `/clearing`, `/reconciliation`, `/audit`, `/risk`.
 
 Routes reorganization:
+
 - Group operational routes under a `_ops` layout (`src/routes/_ops.tsx`) sharing `StatusRail` + sidebar context: ops, clearing, reconciliation, oracle, risk, treasury, audit, topology.
 - Keep `/wallet`, `/generator`, `/register`, `/login` outside this layout.
 - This is a non-breaking move — child files renamed to `_ops.ops.tsx` etc. so URLs stay identical.

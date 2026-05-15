@@ -6,7 +6,7 @@ import type { ListResult } from "@/types/domain";
 
 function generate(): AuditEvent[] {
   return AUDIT_LOG.map((a, i) => {
-    const action = (a.action as AuditAction);
+    const action = a.action as AuditAction;
     return {
       id: a.id,
       ts: a.ts,

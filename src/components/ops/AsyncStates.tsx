@@ -20,11 +20,17 @@ export function LoadingRows({
   return (
     <div className={cn("animate-pulse divide-y divide-border/60", className)}>
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="grid items-center gap-3 px-3 py-2"
-          style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
+        <div
+          key={i}
+          className="grid items-center gap-3 px-3 py-2"
+          style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
+        >
           {Array.from({ length: cols }).map((__, c) => (
-            <div key={c} className="h-2.5 rounded-sm bg-border/70"
-              style={{ opacity: 0.4 + (((i + c) * 17) % 50) / 100 }} />
+            <div
+              key={c}
+              className="h-2.5 rounded-sm bg-border/70"
+              style={{ opacity: 0.4 + (((i + c) * 17) % 50) / 100 }}
+            />
           ))}
         </div>
       ))}
@@ -46,7 +52,12 @@ export function EmptyState({
   className?: string;
 }) {
   return (
-    <div className={cn("flex flex-col items-center justify-center gap-2 px-6 py-10 text-center", className)}>
+    <div
+      className={cn(
+        "flex flex-col items-center justify-center gap-2 px-6 py-10 text-center",
+        className,
+      )}
+    >
       <div className="rounded-sm border border-border bg-card p-2 text-muted-foreground">
         {icon ?? <Inbox className="h-4 w-4" />}
       </div>
@@ -69,10 +80,12 @@ export function DegradedBanner({
   className?: string;
 }) {
   return (
-    <div className={cn(
-      "flex items-center justify-between gap-3 border-b border-warning/30 bg-warning/5 px-3 py-1.5",
-      className,
-    )}>
+    <div
+      className={cn(
+        "flex items-center justify-between gap-3 border-b border-warning/30 bg-warning/5 px-3 py-1.5",
+        className,
+      )}
+    >
       <div className="flex items-center gap-2">
         <AlertTriangle className="h-3.5 w-3.5 text-warning" />
         <span className="label-op text-warning">Degraded · </span>

@@ -40,9 +40,7 @@ export const zOperatorIdentity = z.object({
   id: z.string(), // "OP-7741"
   email: z.string(),
   displayName: z.string(),
-  roles: z.array(
-    z.enum(["VIEWER", "OPERATOR", "SUPERVISOR", "RISK", "COMPLIANCE", "ADMIN"]),
-  ),
+  roles: z.array(z.enum(["VIEWER", "OPERATOR", "SUPERVISOR", "RISK", "COMPLIANCE", "ADMIN"])),
   sessionId: z.string(),
   sessionStartedAt: z.string(),
   ipMasked: z.string().optional(),
@@ -227,6 +225,4 @@ export type ListResult<T> = {
   degraded?: boolean;
 };
 
-export type Result<T, E = Error> =
-  | { ok: true; value: T }
-  | { ok: false; error: E };
+export type Result<T, E = Error> = { ok: true; value: T } | { ok: false; error: E };

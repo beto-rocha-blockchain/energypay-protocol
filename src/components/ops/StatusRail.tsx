@@ -18,7 +18,13 @@ export function StatusRail() {
   }, []);
 
   const tone =
-    railState === "CONNECTED" ? "ok" : railState === "DEGRADED" ? "warn" : railState === "OFFLINE" ? "bad" : "muted";
+    railState === "CONNECTED"
+      ? "ok"
+      : railState === "DEGRADED"
+        ? "warn"
+        : railState === "OFFLINE"
+          ? "bad"
+          : "muted";
   const horizonMs = health?.horizon.latency_ms ?? 0;
   const backendMs = health?.backend.latency_ms ?? 0;
 
@@ -26,7 +32,17 @@ export function StatusRail() {
     <div className="hidden items-center gap-3 font-mono text-[10px] uppercase tracking-widest text-muted-foreground md:flex">
       <span className="flex items-center gap-1.5">
         <StatusDot tone={tone} />
-        <span className={tone === "ok" ? "text-success" : tone === "warn" ? "text-warning" : tone === "bad" ? "text-destructive" : ""}>
+        <span
+          className={
+            tone === "ok"
+              ? "text-success"
+              : tone === "warn"
+                ? "text-warning"
+                : tone === "bad"
+                  ? "text-destructive"
+                  : ""
+          }
+        >
           Rail · {railState}
         </span>
       </span>

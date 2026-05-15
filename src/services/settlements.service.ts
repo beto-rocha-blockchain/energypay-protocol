@@ -5,8 +5,17 @@ import { pollSubscription, type ReadService, nowIso } from "./_base";
 import type { ListResult } from "@/types/domain";
 
 const lifeStates: LifecycleState[] = [
-  "INTAKE", "VALIDATED", "MATCHED", "ANCHORED", "CLEARED", "SETTLED",
-  "ANCHORED", "CLEARED", "SETTLED", "SETTLED", "REJECTED",
+  "INTAKE",
+  "VALIDATED",
+  "MATCHED",
+  "ANCHORED",
+  "CLEARED",
+  "SETTLED",
+  "ANCHORED",
+  "CLEARED",
+  "SETTLED",
+  "SETTLED",
+  "REJECTED",
 ];
 
 function generate(): SettlementEvent[] {
@@ -27,25 +36,34 @@ function generate(): SettlementEvent[] {
       counterpartyId: cp.id,
       lifecycle,
       severity:
-        lifecycle === "REJECTED" ? "CRITICAL" :
-        lifecycle === "ANCHORED" ? "ELEVATED" : "NOMINAL",
-      notionalBRL: Math.round((90_000 + (i * 911) % 540_000) / 10) * 10,
+        lifecycle === "REJECTED" ? "CRITICAL" : lifecycle === "ANCHORED" ? "ELEVATED" : "NOMINAL",
+      notionalBRL: Math.round((90_000 + ((i * 911) % 540_000)) / 10) * 10,
       volumeMWh: Math.round(((i * 13) % 240) + 4),
       txHash: hashBytes,
       ledgerSeq: ledger,
       submittedAt,
-      anchoredAt: lifecycle !== "INTAKE" && lifecycle !== "VALIDATED"
-        ? new Date(new Date(submittedAt).getTime() + anchorMs).toISOString() : undefined,
+      anchoredAt:
+        lifecycle !== "INTAKE" && lifecycle !== "VALIDATED"
+          ? new Date(new Date(submittedAt).getTime() + anchorMs).toISOString()
+          : undefined,
       clearedAt: ["CLEARED", "SETTLED"].includes(lifecycle)
-        ? new Date(new Date(submittedAt).getTime() + anchorMs + 950).toISOString() : undefined,
-      settledAt: lifecycle === "SETTLED"
-        ? new Date(new Date(submittedAt).getTime() + anchorMs + 1400).toISOString() : undefined,
-      rejectedAt: lifecycle === "REJECTED"
-        ? new Date(new Date(submittedAt).getTime() + 280).toISOString() : undefined,
+        ? new Date(new Date(submittedAt).getTime() + anchorMs + 950).toISOString()
+        : undefined,
+      settledAt:
+        lifecycle === "SETTLED"
+          ? new Date(new Date(submittedAt).getTime() + anchorMs + 1400).toISOString()
+          : undefined,
+      rejectedAt:
+        lifecycle === "REJECTED"
+          ? new Date(new Date(submittedAt).getTime() + 280).toISOString()
+          : undefined,
       latencyMs: anchorMs + ((i * 7) % 800),
       channel: (["BILATERAL", "POOL", "P2P", "OTC"] as const)[i % 4],
       failureCode: lifecycle === "REJECTED" ? "E_MATCH_TOLERANCE" : undefined,
-      failureReason: lifecycle === "REJECTED" ? "Price tolerance exceeded against PLD reference (Δ > 1.20%)" : undefined,
+      failureReason:
+        lifecycle === "REJECTED"
+          ? "Price tolerance exceeded against PLD reference (Δ > 1.20%)"
+          : undefined,
       retries: lifecycle === "REJECTED" ? 1 + (i % 2) : 0,
     } satisfies SettlementEvent;
   });

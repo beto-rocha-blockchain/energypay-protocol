@@ -55,9 +55,7 @@ const VALID_ROLES = new Set(["GENERATOR", "SELLER", "INVESTOR", "USER"]);
 
 export function rolesFromClaims(claims: JwtClaims | null): string[] {
   if (!claims?.roles?.length) return [];
-  return claims.roles
-    .map((r) => String(r).toUpperCase())
-    .filter((r) => VALID_ROLES.has(r));
+  return claims.roles.map((r) => String(r).toUpperCase()).filter((r) => VALID_ROLES.has(r));
 }
 
 export function isExpired(claims: JwtClaims | null): boolean {

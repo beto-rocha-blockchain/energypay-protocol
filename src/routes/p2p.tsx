@@ -21,17 +21,29 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import { useOperator, maskAddress, ROLE_META } from "@/store/operator";
 import {
-  useP2P, buildP2PAuthorization, isValidStellarPublicKey,
-  type P2PAsset, type P2PTransfer, type P2PTransferState,
+  useP2P,
+  buildP2PAuthorization,
+  isValidStellarPublicKey,
+  type P2PAsset,
+  type P2PTransfer,
+  type P2PTransferState,
 } from "@/store/p2p";
 import { stellarExpertTx } from "@/lib/stellar";
 import { apiValidatedP2PTransfer, type P2PValidationError } from "@/lib/api";
 import { validateP2PTransfer } from "@/lib/p2p-validation";
-import { P2PLiveStatusPanel, type LiveStatusData, type LiveStatusPhase } from "@/components/P2PLiveStatusPanel";
+import {
+  P2PLiveStatusPanel,
+  type LiveStatusData,
+  type LiveStatusPhase,
+} from "@/components/P2PLiveStatusPanel";
 import { SettlementRailBanner } from "@/components/SettlementRailBanner";
 import { useSettlementRail } from "@/hooks/useSettlementRail";
 import { toast } from "sonner";
@@ -40,7 +52,11 @@ export const Route = createFileRoute("/p2p")({
   head: () => ({
     meta: [
       { title: "Direct Settlement — EnergyPay" },
-      { name: "description", content: "Real-time peer-to-peer settlement rail for energy market participants on Stellar." },
+      {
+        name: "description",
+        content:
+          "Real-time peer-to-peer settlement rail for energy market participants on Stellar.",
+      },
     ],
   }),
   component: P2PPage,
@@ -49,7 +65,7 @@ export const Route = createFileRoute("/p2p")({
 type LogLine = { ts: string; text: string; level: "info" | "ok" | "warn" };
 
 const fmtTs = (d: Date) =>
-  `${d.getHours().toString().padStart(2,"0")}:${d.getMinutes().toString().padStart(2,"0")}:${d.getSeconds().toString().padStart(2,"0")}`;
+  `${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}:${d.getSeconds().toString().padStart(2, "0")}`;
 
 const ROLE_CONTEXT: Record<string, string> = {
   GENERATOR: "Distribute generated energy assets to counterparties",
@@ -100,7 +116,12 @@ function P2PPage() {
   const numericAmount = Number(amount);
   const validAmount = numericAmount > 0;
   const canExecute =
-    !!operator && validAddress && validAmount && !running && destinationOrg.trim().length > 0 && isExecutable;
+    !!operator &&
+    validAddress &&
+    validAmount &&
+    !running &&
+    destinationOrg.trim().length > 0 &&
+    isExecutable;
 
   const authorization = useMemo(() => {
     if (!operator || !validAddress || !validAmount) return null;
@@ -157,7 +178,7 @@ function P2PPage() {
       errorMessage: null,
     });
 
-    const append = (s: P2PTransferState, text: string, level: "info"|"ok"|"warn" = "info") => {
+    const append = (s: P2PTransferState, text: string, level: "info" | "ok" | "warn" = "info") => {
       setState(s);
       setLogs((l) => [...l, { ts: fmtTs(new Date()), text, level }]);
     };
@@ -197,7 +218,11 @@ function P2PPage() {
       await wait(160);
       append("SIGNING", `delegating ed25519 signing to backend custody · in-memory only`);
       await wait(160);
-      append("BROADCASTING", `→ POST /api/p2p/validate · server validation + Horizon broadcast`, "info");
+      append(
+        "BROADCASTING",
+        `→ POST /api/p2p/validate · server validation + Horizon broadcast`,
+        "info",
+      );
       setPhase("SUBMITTED", "BROADCASTING");
 
       // Server-validated submission. The TanStack gateway re-validates on the
@@ -215,9 +240,12 @@ function P2PPage() {
       }
 
       // Canonical receipt fields (with backwards-compatible fallbacks).
-      const explorer = submission.explorer_url || submission.explorer_link || stellarExpertTx(submission.tx_hash);
-      const senderKey = submission.sender || submission.source_public_key || operator.wallet.publicKey;
-      const finalizedTs = submission.finalized_at || submission.timestamp || new Date().toISOString();
+      const explorer =
+        submission.explorer_url || submission.explorer_link || stellarExpertTx(submission.tx_hash);
+      const senderKey =
+        submission.sender || submission.source_public_key || operator.wallet.publicKey;
+      const finalizedTs =
+        submission.finalized_at || submission.timestamp || new Date().toISOString();
       append("CONFIRMING", `awaiting Horizon confirmation · ledger pending`);
       setPhase("CONFIRMED", "CONFIRMING", {
         txHash: submission.tx_hash,
@@ -225,7 +253,11 @@ function P2PPage() {
         explorerLink: explorer,
       });
       await wait(140);
-      append("CONFIRMING", `✓ tx confirmed · ledger #${submission.ledger.toLocaleString("en-US")}`, "ok");
+      append(
+        "CONFIRMING",
+        `✓ tx confirmed · ledger #${submission.ledger.toLocaleString("en-US")}`,
+        "ok",
+      );
       append("CONFIRMING", `tx hash: ${submission.tx_hash}`);
       await wait(140);
       append("FINALIZED", `✓ settlement finality reached · direct rail closed`, "ok");
@@ -277,7 +309,9 @@ function P2PPage() {
       Object.keys(sessionStorage)
         .filter((k) => k.startsWith("p2p_draft_"))
         .forEach((k) => sessionStorage.removeItem(k));
-    } catch { /* sessionStorage unavailable */ }
+    } catch {
+      /* sessionStorage unavailable */
+    }
     setResult(null);
     setLogs([]);
     setState("DRAFT");
@@ -311,10 +345,13 @@ function P2PPage() {
   }
 
   const stateBadge =
-    state === "DRAFT" ? "IDLE"
-    : state === "FINALIZED" ? "● FINALIZED"
-    : state === "FAILED" ? "● FAILED"
-    : `● ${state}`;
+    state === "DRAFT"
+      ? "IDLE"
+      : state === "FINALIZED"
+        ? "● FINALIZED"
+        : state === "FAILED"
+          ? "● FAILED"
+          : `● ${state}`;
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
@@ -327,7 +364,8 @@ function P2PPage() {
             Direct Settlement Rail
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Real-time operator-to-operator settlement on Stellar. Programmable transfer authorization between market participants.
+            Real-time operator-to-operator settlement on Stellar. Programmable transfer
+            authorization between market participants.
           </p>
         </div>
         <div className="flex items-center gap-2 text-xs">
@@ -344,13 +382,13 @@ function P2PPage() {
 
       {isOffline && (
         <div className="rounded-md border border-destructive/40 bg-destructive/10 px-4 py-3 font-mono text-[11px] text-destructive">
-          ✗ Settlement backend unreachable at <span className="font-semibold">http://localhost:3000</span>.
-          Execute Settlement is disabled. Verify the backend service is running and Horizon is reachable.
+          ✗ Settlement backend unreachable at{" "}
+          <span className="font-semibold">http://localhost:3000</span>. Execute Settlement is
+          disabled. Verify the backend service is running and Horizon is reachable.
         </div>
       )}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-
         <Card className="border-border bg-card p-6 lg:col-span-2">
           <div className="mb-5 flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -363,8 +401,8 @@ function P2PPage() {
                 running
                   ? "border-primary/40 bg-primary/10 font-mono text-[10px] text-primary"
                   : result
-                  ? "border-success/40 bg-success/10 font-mono text-[10px] text-success"
-                  : "font-mono text-[10px]"
+                    ? "border-success/40 bg-success/10 font-mono text-[10px] text-success"
+                    : "font-mono text-[10px]"
               }
             >
               {stateBadge}
@@ -448,7 +486,9 @@ function P2PPage() {
                   Asset
                 </Label>
                 <Select value={asset} onValueChange={(v) => setAsset(v as P2PAsset)}>
-                  <SelectTrigger className="bg-input"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="bg-input">
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="EPWR">EPWR · Energy Power Token</SelectItem>
                     <SelectItem value="XLM">XLM · Stellar Lumen</SelectItem>
@@ -491,14 +531,20 @@ function P2PPage() {
 
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
               <p className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-                <ShieldCheck className="h-3 w-3 text-success" /> Direct settlement rail · Stellar finality ~2s
+                <ShieldCheck className="h-3 w-3 text-success" /> Direct settlement rail · Stellar
+                finality ~2s
                 <span className="ml-2 inline-flex items-center gap-1 rounded border border-border bg-background/40 px-1.5 py-0.5">
-                  <span className={`h-1.5 w-1.5 rounded-full ${
-                    railState === "CONNECTED" ? "bg-success animate-pulse"
-                    : railState === "DEGRADED" ? "bg-warning animate-pulse"
-                    : railState === "OFFLINE" ? "bg-destructive"
-                    : "bg-muted-foreground"
-                  }`} />
+                  <span
+                    className={`h-1.5 w-1.5 rounded-full ${
+                      railState === "CONNECTED"
+                        ? "bg-success animate-pulse"
+                        : railState === "DEGRADED"
+                          ? "bg-warning animate-pulse"
+                          : railState === "OFFLINE"
+                            ? "bg-destructive"
+                            : "bg-muted-foreground"
+                    }`}
+                  />
                   {railState}
                 </span>
               </p>
@@ -523,7 +569,10 @@ function P2PPage() {
             <p className="font-display text-base font-semibold">Settlement Authorization</p>
           </div>
           <div className="space-y-2 text-[11px]">
-            <SignerCell label="Source operator" value={`${operator.operatorId} · ${operator.organization}`} />
+            <SignerCell
+              label="Source operator"
+              value={`${operator.operatorId} · ${operator.organization}`}
+            />
             <SignerCell label="Signer address" value={operator.wallet.publicKey} mono truncate />
             <SignerCell label="Active network" value="Stellar Testnet · horizon.stellar.org" />
             <SignerCell
@@ -577,9 +626,7 @@ function P2PPage() {
             className="h-[260px] overflow-y-auto p-4 font-mono text-[11px] leading-relaxed"
           >
             {logs.length === 0 && (
-              <p className="text-muted-foreground/70">
-                $ awaiting transfer authorization…
-              </p>
+              <p className="text-muted-foreground/70">$ awaiting transfer authorization…</p>
             )}
             {logs.map((l, i) => (
               <div key={i} className="flex gap-3">
@@ -589,8 +636,8 @@ function P2PPage() {
                     l.level === "ok"
                       ? "text-success"
                       : l.level === "warn"
-                      ? "text-warning"
-                      : "text-foreground/85"
+                        ? "text-warning"
+                        : "text-foreground/85"
                   }
                 >
                   {l.text}
@@ -699,7 +746,9 @@ function P2PPage() {
                       <span className="inline-flex items-center gap-1 text-muted-foreground">
                         {maskAddress(t.sourcePublicKey)}
                         <ArrowRight className="h-3 w-3" />
-                        <span className="text-foreground">{maskAddress(t.destinationPublicKey)}</span>
+                        <span className="text-foreground">
+                          {maskAddress(t.destinationPublicKey)}
+                        </span>
                       </span>
                     </td>
                     <td className="px-3 py-2.5 text-right">
@@ -707,7 +756,10 @@ function P2PPage() {
                     </td>
                     <td className="px-3 py-2.5">#{t.ledger.toLocaleString("en-US")}</td>
                     <td className="px-3 py-2.5">
-                      <Badge variant="outline" className="border-success/40 bg-success/10 font-mono text-[10px] text-success">
+                      <Badge
+                        variant="outline"
+                        className="border-success/40 bg-success/10 font-mono text-[10px] text-success"
+                      >
                         {t.state}
                       </Badge>
                     </td>
@@ -733,12 +785,25 @@ function P2PPage() {
 }
 
 function SignerCell({
-  label, value, mono, truncate, tone,
-}: { label: string; value: string; mono?: boolean; truncate?: boolean; tone?: "ok"|"warn"|"info" }) {
-  const toneCls = tone === "ok" ? "text-success" : tone === "warn" ? "text-warning" : "text-foreground";
+  label,
+  value,
+  mono,
+  truncate,
+  tone,
+}: {
+  label: string;
+  value: string;
+  mono?: boolean;
+  truncate?: boolean;
+  tone?: "ok" | "warn" | "info";
+}) {
+  const toneCls =
+    tone === "ok" ? "text-success" : tone === "warn" ? "text-warning" : "text-foreground";
   return (
     <div className="rounded-md border border-border bg-background/40 px-2 py-1.5">
-      <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{label}</div>
+      <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+        {label}
+      </div>
       <div className={`mt-0.5 ${mono ? "font-mono" : ""} ${truncate ? "truncate" : ""} ${toneCls}`}>
         {value}
       </div>

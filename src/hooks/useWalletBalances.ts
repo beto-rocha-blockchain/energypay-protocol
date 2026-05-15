@@ -62,7 +62,10 @@ export function useWalletBalances(publicKey: string | null | undefined): WalletB
         headers: { Accept: "application/json" },
         signal: ctrl.signal,
       });
-      const body = (await res.json().catch(() => null)) as WalletBalances | WalletBalancesError | null;
+      const body = (await res.json().catch(() => null)) as
+        | WalletBalances
+        | WalletBalancesError
+        | null;
       if (!res.ok || !body || body.success === false) {
         const msg =
           (body && body.success === false && (body.message || body.error)) ||

@@ -29,15 +29,9 @@ Our mission is to modernize how energy transactions are settled, reconciled and 
 
 # Core Infrastructure
 
+=======
+
 EnergyPay is building infrastructure for:
-
-## ⚡ Programmable Energy Settlement
-
-Atomic settlement execution for electricity contracts using Stellar multi-operation transactions.
-
-## 💸 Stablecoin Payment Rails
-
-Cross-border and real-time settlement using USDC, XLM and interoperable digital assets.
 
 ## 🏦 Treasury & Reserve Infrastructure
 
@@ -63,35 +57,9 @@ EnergyPay combines institutional financial infrastructure with modern blockchain
 
 ## Built with
 
-* Stellar
-* Soroban
-* Rust
-* WebAssembly
-* TypeScript
-* React
-* TanStack Router
-* Zustand
-* Express.js
-* Stablecoins
-* Atomic Multi-Operation Transactions
-* x402
-* Future-ready RWA integrations
-
 ---
 
 # Key Capabilities
-
-* Atomic programmable settlement
-* Real-time Stellar execution
-* On-chain treasury orchestration
-* Settlement telemetry & audit logs
-* Institutional operational dashboards
-* Clearinghouse-style architecture
-* P2P settlement rail
-* Multi-role operational environment
-* SCADA-inspired market operations UI
-* Programmable reserve allocation
-* Future-ready tokenized asset support
 
 ---
 
@@ -101,12 +69,6 @@ Global electricity markets still rely on fragmented reconciliation systems, dela
 
 EnergyPay introduces:
 
-* Programmable settlement rails
-* Interoperable financial infrastructure
-* Automated reconciliation
-* Blockchain-native treasury systems
-* Real-time financial coordination
-
 for the next generation of energy markets.
 
 ---
@@ -114,12 +76,6 @@ for the next generation of energy markets.
 # Strategic Direction
 
 EnergyPay is evolving beyond a hackathon project into a specialized financial infrastructure platform for:
-
-* Energy trading
-* Treasury automation
-* Settlement orchestration
-* Digital asset interoperability
-* Institutional programmable finance
 
 ---
 
@@ -155,13 +111,6 @@ SCF, institutional partnerships, RWA integrations and ecosystem growth.
 
 EnergyPay aligns with the future direction of blockchain-powered financial infrastructure:
 
-* Real-world assets (RWAs)
-* Stablecoin settlement
-* Treasury automation
-* Programmable finance
-* Cross-border liquidity
-* Institutional blockchain infrastructure
-
 ---
 
 # Status
@@ -176,3 +125,5 @@ EnergyPay aligns with the future direction of blockchain-powered financial infra
 # EnergyPay
 
 Building the programmable financial rail for electricity markets.
+
+=======

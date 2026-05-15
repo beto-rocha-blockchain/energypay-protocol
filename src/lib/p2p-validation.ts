@@ -72,19 +72,24 @@ export type ValidationSuccess = { ok: true; data: P2PTransferValidated };
 
 const codeForField = (field: string): ValidationFailure["code"] => {
   switch (field) {
-    case "recipient_public_key": return "INVALID_DESTINATION";
-    case "asset": return "UNSUPPORTED_ASSET";
-    case "amount": return "INVALID_AMOUNT";
-    case "memo": return "INVALID_MEMO";
-    case "transfer_id": return "INVALID_TRANSFER_ID";
-    case "sender_user_id": return "MISSING_OPERATOR";
-    default: return "INVALID_PAYLOAD";
+    case "recipient_public_key":
+      return "INVALID_DESTINATION";
+    case "asset":
+      return "UNSUPPORTED_ASSET";
+    case "amount":
+      return "INVALID_AMOUNT";
+    case "memo":
+      return "INVALID_MEMO";
+    case "transfer_id":
+      return "INVALID_TRANSFER_ID";
+    case "sender_user_id":
+      return "MISSING_OPERATOR";
+    default:
+      return "INVALID_PAYLOAD";
   }
 };
 
-export const validateP2PTransfer = (
-  input: unknown,
-): ValidationSuccess | ValidationFailure => {
+export const validateP2PTransfer = (input: unknown): ValidationSuccess | ValidationFailure => {
   const parsed = p2pTransferSchema.safeParse(input);
   if (parsed.success) return { ok: true, data: parsed.data };
   const issue = parsed.error.issues[0];

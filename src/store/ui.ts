@@ -57,8 +57,15 @@ interface LiveState {
   setHealth: (ch: TelemetryChannel, health: ChannelHealth) => void;
 }
 const channels: TelemetryChannel[] = [
-  "settlements", "clearing", "reconciliation", "oracle",
-  "risk", "treasury", "audit", "topology", "rail",
+  "settlements",
+  "clearing",
+  "reconciliation",
+  "oracle",
+  "risk",
+  "treasury",
+  "audit",
+  "topology",
+  "rail",
 ];
 export const useLiveStore = create<LiveState>((set) => ({
   channels: Object.fromEntries(

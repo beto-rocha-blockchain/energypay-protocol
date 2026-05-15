@@ -91,8 +91,8 @@ export function WalletBalancesPanel({ publicKey, organization, funded }: Props) 
               health.tone === "ok"
                 ? "border-success/40 text-success"
                 : health.tone === "warn"
-                ? "border-destructive/40 text-destructive"
-                : "text-muted-foreground"
+                  ? "border-destructive/40 text-destructive"
+                  : "text-muted-foreground"
             }`}
           >
             <Activity className="mr-1.5 h-3 w-3" /> {health.label}
@@ -122,7 +122,11 @@ export function WalletBalancesPanel({ publicKey, organization, funded }: Props) 
                   className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                   aria-label="Copy public key"
                 >
-                  {copied ? <CheckCircle2 className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
+                  {copied ? (
+                    <CheckCircle2 className="h-3.5 w-3.5 text-success" />
+                  ) : (
+                    <Copy className="h-3.5 w-3.5" />
+                  )}
                 </button>
                 <a
                   href={stellarExpertAccount(publicKey)}
@@ -140,11 +144,7 @@ export function WalletBalancesPanel({ publicKey, organization, funded }: Props) 
             </div>
           </div>
           <div className="grid grid-cols-3 gap-2 md:gap-4">
-            <Indicator
-              label="Funded"
-              value={funded ? "YES" : "—"}
-              tone={funded ? "ok" : "muted"}
-            />
+            <Indicator label="Funded" value={funded ? "YES" : "—"} tone={funded ? "ok" : "muted"} />
             <Indicator
               label="Trustline"
               value={trustline ? "EPRW" : "PENDING"}
@@ -258,10 +258,10 @@ export function WalletBalancesPanel({ publicKey, organization, funded }: Props) 
                 loading && !data
                   ? "Initializing balance feed…"
                   : data
-                  ? `Horizon snapshot resolved · ${data.checked_at.slice(11, 19)}`
-                  : error
-                  ? "Horizon snapshot unavailable"
-                  : "Awaiting first sample"
+                    ? `Horizon snapshot resolved · ${data.checked_at.slice(11, 19)}`
+                    : error
+                      ? "Horizon snapshot unavailable"
+                      : "Awaiting first sample"
               }
             />
             <ActivityLine
@@ -274,7 +274,11 @@ export function WalletBalancesPanel({ publicKey, organization, funded }: Props) 
             />
             <ActivityLine
               ok={xlmNum >= 1}
-              text={xlmNum >= 1 ? "Reserve sufficient for fee submission" : "Reserve below 1 XLM threshold"}
+              text={
+                xlmNum >= 1
+                  ? "Reserve sufficient for fee submission"
+                  : "Reserve below 1 XLM threshold"
+              }
             />
             <ActivityLine
               ok={!error}
@@ -300,7 +304,9 @@ function Indicator({
     tone === "ok" ? "text-success" : tone === "warn" ? "text-destructive" : "text-muted-foreground";
   return (
     <div className="rounded-md border border-border bg-background/40 px-3 py-2">
-      <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">{label}</p>
+      <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
+        {label}
+      </p>
       <p className={`mt-0.5 font-mono text-xs font-semibold ${color}`}>{value}</p>
     </div>
   );
@@ -389,7 +395,9 @@ function ActivityLine({ ok, text }: { ok: boolean; text: string }) {
     <div className="flex items-center gap-2">
       <span
         className={`inline-block h-1.5 w-1.5 rounded-full ${
-          ok ? "bg-success shadow-[0_0_6px_var(--success,theme(colors.green.500))]" : "bg-destructive"
+          ok
+            ? "bg-success shadow-[0_0_6px_var(--success,theme(colors.green.500))]"
+            : "bg-destructive"
         }`}
       />
       <span className="text-muted-foreground">{text}</span>
