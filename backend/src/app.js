@@ -1,5 +1,6 @@
 import p2pRoutes from "./routes/p2p.js";
 import dotenv from "dotenv";
+import x402Routes from "./routes/x402.js";
 
 dotenv.config();
 
@@ -30,7 +31,7 @@ app.use("/api/wallet", walletRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/token", tokenRoutes);
 app.use("/api/p2p", p2pRoutes);
-
+app.use("/api/x402", x402Routes);
 // ========================================
 // Health Check
 // ========================================
