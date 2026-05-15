@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as X402RouteImport } from './routes/x402'
 import { Route as WalletRouteImport } from './routes/wallet'
 import { Route as TreasuryRouteImport } from './routes/treasury'
 import { Route as TopologyRouteImport } from './routes/topology'
@@ -33,6 +34,11 @@ import { Route as ApiP2pValidateRouteImport } from './routes/api.p2p.validate'
 import { Route as ApiWalletPublicKeyBalancesRouteImport } from './routes/api.wallet.$publicKey.balances'
 import { Route as ApiWalletPublicKeyActivityRouteImport } from './routes/api.wallet.$publicKey.activity'
 
+const X402Route = X402RouteImport.update({
+  id: '/x402',
+  path: '/x402',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const WalletRoute = WalletRouteImport.update({
   id: '/wallet',
   path: '/wallet',
@@ -168,6 +174,7 @@ export interface FileRoutesByFullPath {
   '/topology': typeof TopologyRoute
   '/treasury': typeof TreasuryRoute
   '/wallet': typeof WalletRoute
+  '/x402': typeof X402Route
   '/api/health': typeof ApiHealthRoute
   '/contracts/new': typeof ContractsNewRoute
   '/contracts/': typeof ContractsIndexRoute
@@ -193,6 +200,7 @@ export interface FileRoutesByTo {
   '/topology': typeof TopologyRoute
   '/treasury': typeof TreasuryRoute
   '/wallet': typeof WalletRoute
+  '/x402': typeof X402Route
   '/api/health': typeof ApiHealthRoute
   '/contracts/new': typeof ContractsNewRoute
   '/contracts': typeof ContractsIndexRoute
@@ -219,6 +227,7 @@ export interface FileRoutesById {
   '/topology': typeof TopologyRoute
   '/treasury': typeof TreasuryRoute
   '/wallet': typeof WalletRoute
+  '/x402': typeof X402Route
   '/api/health': typeof ApiHealthRoute
   '/contracts/new': typeof ContractsNewRoute
   '/contracts/': typeof ContractsIndexRoute
@@ -246,6 +255,7 @@ export interface FileRouteTypes {
     | '/topology'
     | '/treasury'
     | '/wallet'
+    | '/x402'
     | '/api/health'
     | '/contracts/new'
     | '/contracts/'
@@ -271,6 +281,7 @@ export interface FileRouteTypes {
     | '/topology'
     | '/treasury'
     | '/wallet'
+    | '/x402'
     | '/api/health'
     | '/contracts/new'
     | '/contracts'
@@ -296,6 +307,7 @@ export interface FileRouteTypes {
     | '/topology'
     | '/treasury'
     | '/wallet'
+    | '/x402'
     | '/api/health'
     | '/contracts/new'
     | '/contracts/'
@@ -322,6 +334,7 @@ export interface RootRouteChildren {
   TopologyRoute: typeof TopologyRoute
   TreasuryRoute: typeof TreasuryRoute
   WalletRoute: typeof WalletRoute
+  X402Route: typeof X402Route
   ApiHealthRoute: typeof ApiHealthRoute
   ContractsNewRoute: typeof ContractsNewRoute
   ContractsIndexRoute: typeof ContractsIndexRoute
@@ -333,6 +346,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/x402': {
+      id: '/x402'
+      path: '/x402'
+      fullPath: '/x402'
+      preLoaderRoute: typeof X402RouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/wallet': {
       id: '/wallet'
       path: '/wallet'
@@ -514,6 +534,7 @@ const rootRouteChildren: RootRouteChildren = {
   TopologyRoute: TopologyRoute,
   TreasuryRoute: TreasuryRoute,
   WalletRoute: WalletRoute,
+  X402Route: X402Route,
   ApiHealthRoute: ApiHealthRoute,
   ContractsNewRoute: ContractsNewRoute,
   ContractsIndexRoute: ContractsIndexRoute,

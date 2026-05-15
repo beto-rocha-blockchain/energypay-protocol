@@ -17,6 +17,7 @@ import {
   Network,
   BookLock,
   Banknote,
+  PlugZap,
 } from "lucide-react";
 
 import {
@@ -131,6 +132,12 @@ const SETTLEMENT: Item[] = [
     url: "/p2p",
     icon: Send,
     code: "STL-03",
+  },
+  {
+    title: "x402 API Access",
+    url: "/x402",
+    icon: PlugZap,
+    code: "STL-05",
   },
 
   {
