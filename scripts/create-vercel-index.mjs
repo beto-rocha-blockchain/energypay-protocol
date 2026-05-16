@@ -24,7 +24,7 @@ const jsCandidates = files
     file,
     size: fs.statSync(path.join(assetsDir, file)).size,
   }))
-  .sort((a, b) => b.size - a.size);
+  .sort((a, b) => a.size - b.size);
 
 const entryFile = jsCandidates[0]?.file;
 
