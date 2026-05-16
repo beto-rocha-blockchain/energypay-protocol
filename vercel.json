@@ -1,6 +1,7 @@
 {
   "version": 2,
-  "buildCommand": "npm run build",
+  "buildCommand": "npm run build:vercel",
+  "outputDirectory": "dist/client",
   "installCommand": "npm install && cd backend && npm install",
   "rewrites": [
     {
@@ -9,7 +10,7 @@
     },
     {
       "source": "/(.*)",
-      "destination": "/"
+      "destination": "/index.html"
     }
   ]
 }
