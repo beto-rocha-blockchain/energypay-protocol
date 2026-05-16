@@ -12,11 +12,19 @@ const files = fs.readdirSync(assetsDir);
 
 const cssFile = files.find((file) => file.startsWith("styles-") && file.endsWith(".css"));
 
-const startEntry = files.find((file) => file.startsWith("start-") && file.endsWith(".js"));
+const indexCandidates = files
+  .filter((file) => file.startsWith("index-") && file.endsWith(".js"))
+  .map((file) => ({
+    file,
+    size: fs.statSync(path.join(assetsDir, file)).size,
+  }))
+  .sort((a, b) => a.size - b.size);
 
-if (!startEntry) {
-  throw new Error("No start-*.js client entry found in dist/client/assets.");
+if (indexCandidates.length === 0) {
+  throw new Error("No index-*.js bundle found in dist/client/assets.");
 }
+
+const entryFile = indexCandidates[0].file;
 
 const html = `<!doctype html>
 <html lang="en" class="dark">
@@ -28,11 +36,11 @@ const html = `<!doctype html>
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/assets/${startEntry}"></script>
+    <script type="module" src="/assets/${entryFile}"></script>
   </body>
 </html>
 `;
 
 fs.writeFileSync(path.join(clientDir, "index.html"), html);
 
-console.log(`Created dist/client/index.html using ${startEntry}`);
+console.log(`Created dist/client/index.html using ${entryFile}`);
