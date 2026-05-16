@@ -18,7 +18,7 @@ const indexCandidates = files
     file,
     size: fs.statSync(path.join(assetsDir, file)).size,
   }))
-  .sort((a, b) => b.size - a.size);
+  .sort((a, b) => a.size - b.size);
 
 if (indexCandidates.length === 0) {
   throw new Error("No index-*.js bundle found in dist/client/assets.");
