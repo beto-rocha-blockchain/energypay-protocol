@@ -16,7 +16,11 @@ import {
   type QueuePhase,
 } from "@/lib/mock-data";
 
-const API_BASE = "http://localhost:3000/api";
+const API_ORIGIN =
+  (import.meta.env?.VITE_API_URL as string | undefined)?.replace(/\/$/, "") ||
+  (typeof window !== "undefined" ? window.location.origin : "");
+
+const API_BASE = `${API_ORIGIN}/api`;
 
 export async function loadContractsFromApi() {
   try {
@@ -314,7 +318,7 @@ export const useOps = create<OpsState>()(
           const c = s.contracts.find((cc) => cc.id === q.contractId);
           if (!c) return;
           const ledger = s.counters.ledger + Math.floor(Math.random() * 30);
-          const response = await fetch("http://localhost:3000/api/settlement/execute", {
+          const response = await fetch(`${API_BASE}/settlement/execute`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
