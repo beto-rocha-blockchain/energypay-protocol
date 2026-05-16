@@ -54,7 +54,7 @@ export type AdapterSuccess = {
 export type AdapterResult = AdapterSuccess | AdapterFailure;
 
 /* ------------------------------------------------------------------ */
-/*  Backend response shape (from http://localhost:3000/api/p2p/transfer) */
+/*  Backend response shape (from /api/p2p/transfer) */
 /* ------------------------------------------------------------------ */
 
 type BackendTransferResponse = {
