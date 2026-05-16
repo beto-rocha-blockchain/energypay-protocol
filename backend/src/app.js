@@ -1,18 +1,16 @@
-import p2pRoutes from "./routes/p2p.js";
 import dotenv from "dotenv";
-import x402Routes from "./routes/x402.js";
-
 dotenv.config();
 
 import express from "express";
 import cors from "cors";
 
+import p2pRoutes from "./routes/p2p.js";
+import x402Routes from "./routes/x402.js";
 import walletRoutes from "./routes/walletRoutes.js";
 import authRoutes from "./routes/auth.js";
+import tokenRoutes from "./routes/tokenRoutes.js";
 
 import { executeSettlement } from "./services/stellarSettlementService.js";
-
-import tokenRoutes from "./routes/tokenRoutes.js";
 
 const app = express();
 
@@ -32,6 +30,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/token", tokenRoutes);
 app.use("/api/p2p", p2pRoutes);
 app.use("/api/x402", x402Routes);
+
 // ========================================
 // Health Check
 // ========================================
@@ -60,7 +59,7 @@ app.post("/api/settlement/execute", async (req, res) => {
       successful: result.successful,
     });
   } catch (err) {
-    console.error(err);
+    console.error("Settlement execution failed:", err);
 
     res.status(500).json({
       success: false,
@@ -79,26 +78,16 @@ app.get("/", (req, res) => {
 
 // ========================================
 // Start Server
+// Local: starts Express server
+// Vercel: exports app as serverless function
 // ========================================
 
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
-  console.log(`🚀 API rodando em http://localhost:${PORT}`);
-});
-
-const PORT = process.env.PORT || 3000;
-
-if (process.env.NODE_ENV !== "production") {
-const PORT = process.env.PORT || 3000;
-
 if (process.env.NODE_ENV !== "production") {
   app.listen(PORT, () => {
-    console.log(`API rodando em http://localhost:${PORT}`);
+    console.log(`🚀 API rodando em http://localhost:${PORT}`);
   });
-}
-
-export default app;
 }
 
 export default app;
