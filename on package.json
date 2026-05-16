@@ -1,0 +1,24 @@
+[1mdiff --git a/package.json b/package.json[m
+[1mindex 6a88748..ecc3c21 100644[m
+[1m--- a/package.json[m
+[1m+++ b/package.json[m
+[36m@@ -6,7 +6,7 @@[m
+   "scripts": {[m
+     "dev": "vite dev",[m
+     "build": "vite build",[m
+[31m-    "build:vercel": "vite build && node scripts/create-vercel-index.mjs",[m
+[32m+[m[32m    "build:vercel": "vite build",[m
+     "build:dev": "vite build --mode development",[m
+     "preview": "vite preview",[m
+     "lint": "eslint .",[m
+[1mdiff --git a/vercel.json b/vercel.json[m
+[1mindex fe0ee84..5c00f12 100644[m
+[1m--- a/vercel.json[m
+[1m+++ b/vercel.json[m
+[36m@@ -12,4 +12,4 @@[m
+       "destination": "/"[m
+     }[m
+   ][m
+[31m-}[m
+\ No newline at end of file[m
+[32m+[m[32m}[m
