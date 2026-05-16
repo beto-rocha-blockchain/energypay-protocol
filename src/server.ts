@@ -1,3 +1,9 @@
+if (typeof globalThis.self === "undefined") {
+  // Polyfill required by browser-oriented dependencies during SSR on Vercel.
+  // @ts-expect-error - self is not declared in all server runtimes
+  globalThis.self = globalThis;
+}
+
 import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
