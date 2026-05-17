@@ -135,9 +135,8 @@ function RootComponent() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      import("@/store/operations").then((m) => m.startOpsTicker());
-    }
+    // Disabled for production demo stability.
+    // The operational ticker is visual-only and should not block routing/rendering.
   }, []);
 
   const isPublicRoute = pathname === "/login" || pathname === "/register";
