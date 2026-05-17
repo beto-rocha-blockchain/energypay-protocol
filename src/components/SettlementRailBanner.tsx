@@ -59,7 +59,7 @@ export function SettlementRailBanner({ compact = false }: { compact?: boolean })
                 : "text-destructive"
           }
         >
-          fmtMs(health?.backend?.latency_ms ?? 0)
+          {fmtMs(health?.backend?.latency_ms ?? 0)}
         </span>
       </span>
 
@@ -74,7 +74,7 @@ export function SettlementRailBanner({ compact = false }: { compact?: boolean })
                 : "text-destructive"
           }
         >
-          fmtMs(health?.backend?.latency_ms ?? 0)
+          {fmtMs(health?.horizon?.latency_ms ?? 0)}
         </span>
       </span>
 
