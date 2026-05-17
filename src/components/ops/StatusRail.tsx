@@ -25,8 +25,8 @@ export function StatusRail() {
         : railState === "OFFLINE"
           ? "bad"
           : "muted";
-  const horizonMs = health?.horizon.latency_ms ?? 0;
-  const backendMs = health?.backend.latency_ms ?? 0;
+  const horizonMs = health?.horizon?.latency_ms ?? 0;
+  const backendMs = health?.backend?.latency_ms ?? 0;
 
   return (
     <div className="hidden items-center gap-3 font-mono text-[10px] uppercase tracking-widest text-muted-foreground md:flex">
