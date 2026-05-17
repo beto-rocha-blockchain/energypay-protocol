@@ -85,11 +85,11 @@ function RegisterPage() {
   // provisioning), send the operator to the dashboard. Never redirect once we
   // are mid-flow or showing the success screen — that would clobber the
   // provisioned identity view.
-  useEffect(() => {
-    if (isAuthenticated && step === "form" && !provisionError) {
-      navigate({ to: "/" });
-    }
-  }, [isAuthenticated, step, provisionError, navigate]);
+  // Disabled for demo stability.
+// Do not auto-redirect after session hydration or registration.
+useEffect(() => {
+  // Intentionally empty.
+}, []);
 
   const toggleRole = (r: ParticipantRole) =>
     setRoles((prev) => (prev.includes(r) ? prev.filter((x) => x !== r) : [...prev, r]));
@@ -747,7 +747,7 @@ function RegisterPage() {
               </a>
 
               <Button
-                onClick={() => navigate({ to: "/" })}
+                onClick={() => navigate({ to: "/ops" })}
                 className="h-10 w-full font-mono text-xs uppercase tracking-widest"
               >
                 Enter Settlement Control Room
