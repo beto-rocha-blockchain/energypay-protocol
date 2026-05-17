@@ -180,7 +180,7 @@ function RootComponent() {
               </div>
             </header>
             <main className="flex-1 space-y-4 p-4 md:p-6 lg:p-8">
-              {isAuthenticated ? <Outlet /> : null}
+              <Outlet />
             </main>
           </div>
         </div>
