@@ -8,11 +8,11 @@ const fmt = (n: number) => n.toLocaleString("en-US", { maximumFractionDigits: 0 
 export function StellarRailMonitor() {
   const { health, telemetry, railState, isOffline } = useSettlementRail();
 
-  const horizonMs = health?.horizon.latency_ms ?? 0;
-  const backendMs = health?.backend.latency_ms ?? 0;
-  const finalized = telemetry?.counters.finalized_count ?? 0;
-  const failed = telemetry?.counters.failed_count ?? 0;
-  const avgFinality = telemetry?.counters.avg_finality_ms ?? 0;
+  const horizonMs = health?.horizon?.latency_ms ?? 0;
+  const backendMs = health?.backend?.latency_ms ?? 0;
+  const finalized = telemetry?.counters?.finalized_count ?? 0;
+  const failed = telemetry?.counters?.failed_count ?? 0;
+  const avgFinality = telemetry?.counters?.avg_finality_ms ?? 0;
   const pending = telemetry?.pending_confirmations ?? 0;
 
   const uptimePct =
@@ -91,8 +91,8 @@ export function StellarRailMonitor() {
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-2 md:grid-cols-4">
-        <NodeChip label="horizon-testnet" status={health?.horizon.status ?? "ok"} />
-        <NodeChip label="settlement-adapter" status={health?.backend.status ?? "ok"} />
+        <NodeChip label="horizon-testnet" status={health?.horizon?.status ?? "ok"} />
+        <NodeChip label="settlement-adapter" status={health?.backend?.status ?? "ok"} />
         <NodeChip label="ledger-stream" status={isOffline ? "offline" : "ok"} />
         <NodeChip label="trustline-monitor" status="ok" />
       </div>

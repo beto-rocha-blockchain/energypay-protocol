@@ -65,7 +65,7 @@ function MarketOpsPage() {
         100 +
       14,
   );
-  const finalityP95 = telemetry?.counters.avg_finality_ms ?? 4180;
+  const finalityP95 = telemetry?.counters?.avg_finality_ms ?? 4180;
 
   return (
     <div className="space-y-3">
@@ -117,7 +117,7 @@ function MarketOpsPage() {
           label="Finality p95"
           value={`${(finalityP95 / 1000).toFixed(2)}s`}
           tone={finalityP95 < 6000 ? "ok" : "warn"}
-          sub={`Horizon · ${health?.horizon.latency_ms ?? 0} ms`}
+          sub={`Horizon · ${health?.horizon?.latency_ms ?? 0} ms`}
         />
       </KpiStrip>
 

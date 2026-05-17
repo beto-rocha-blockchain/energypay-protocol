@@ -52,14 +52,14 @@ export function SettlementRailBanner({ compact = false }: { compact?: boolean })
         <span className="uppercase tracking-widest">Backend</span>
         <span
           className={
-            health?.backend.status === "ok"
+            health?.backend?.status === "ok"
               ? "text-success"
-              : health?.backend.status === "degraded"
+              : health?.backend?.status === "degraded"
                 ? "text-warning"
                 : "text-destructive"
           }
         >
-          {fmtMs(health?.backend.latency_ms)}
+          fmtMs(health?.backend?.latency_ms ?? 0)
         </span>
       </span>
 
@@ -67,14 +67,14 @@ export function SettlementRailBanner({ compact = false }: { compact?: boolean })
         <span className="uppercase tracking-widest">Horizon</span>
         <span
           className={
-            health?.horizon.status === "ok"
+            health?.horizon?.status === "ok"
               ? "text-success"
-              : health?.horizon.status === "degraded"
+              : health?.horizon?.status === "degraded"
                 ? "text-warning"
                 : "text-destructive"
           }
         >
-          {fmtMs(health?.horizon.latency_ms)}
+          fmtMs(health?.backend?.latency_ms ?? 0)
         </span>
       </span>
 
@@ -83,14 +83,14 @@ export function SettlementRailBanner({ compact = false }: { compact?: boolean })
           <span className="flex items-center gap-1 text-muted-foreground">
             <Activity className="h-3 w-3" />
             <span className="uppercase tracking-widest">Finalized</span>
-            <span className="text-foreground">{telemetry?.counters.finalized_count ?? 0}</span>
+            <span className="text-foreground">{telemetry?.counters?.finalized_count ?? 0}</span>
           </span>
           <span className="flex items-center gap-1 text-muted-foreground">
             <span className="uppercase tracking-widest">Failed</span>
             <span
-              className={`${(telemetry?.counters.failed_count ?? 0) > 0 ? "text-destructive" : "text-foreground"}`}
+              className={`${(telemetry?.counters?.failed_count ?? 0) > 0 ? "text-destructive" : "text-foreground"}`}
             >
-              {telemetry?.counters.failed_count ?? 0}
+              {telemetry?.counters?.failed_count ?? 0}
             </span>
           </span>
           <span className="flex items-center gap-1 text-muted-foreground">
@@ -103,7 +103,7 @@ export function SettlementRailBanner({ compact = false }: { compact?: boolean })
           </span>
           <span className="flex items-center gap-1 text-muted-foreground">
             <span className="uppercase tracking-widest">Avg finality</span>
-            <span className="text-foreground">{fmtMs(telemetry?.counters.avg_finality_ms)}</span>
+            <span className="text-foreground">{fmtMs(telemetry?.counters?.avg_finality_ms)}</span>
           </span>
         </>
       )}
