@@ -173,7 +173,7 @@ function RootComponent() {
                   {operator ? operator.organization : "Clearing Desk · BRL"}
                 </span>
                 <span className="hidden h-3 w-px bg-border md:inline" />
-                <StatusRail />
+                {/* <StatusRail /> */}
               </div>
               <div className="flex items-center gap-2 text-xs">
                 <OperatorBadge />
