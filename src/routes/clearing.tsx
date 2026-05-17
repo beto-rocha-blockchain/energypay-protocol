@@ -125,9 +125,9 @@ function ClearingPage() {
     return c;
   }, [queue]);
 
-  const finalized = telemetry?.counters.finalized_count ?? 1284;
-  const failed = telemetry?.counters.failed_count ?? 7;
-  const avgFinality = telemetry?.counters.avg_finality_ms ?? 4180;
+  const finalized = telemetry?.counters?.finalized_count ?? 1284;
+  const failed = telemetry?.counters?.failed_count ?? 7;
+  const avgFinality = telemetry?.counters?.avg_finality_ms ?? 4180;
 
   return (
     <div className="space-y-3">
