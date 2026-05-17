@@ -2,13 +2,6 @@
   "version": 2,
   "buildCommand": "npm run build",
   "installCommand": "npm install && cd backend && npm install",
-  "redirects": [
-    {
-      "source": "/",
-      "destination": "/login",
-      "permanent": false
-    }
-  ],
   "rewrites": [
     {
       "source": "/api/(.*)",
