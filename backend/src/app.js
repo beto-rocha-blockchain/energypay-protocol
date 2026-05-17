@@ -46,6 +46,42 @@ app.get("/api/health", (req, res) => {
 });
 
 // ========================================
+// Settlement Telemetry - Production Safe Mock
+// ========================================
+
+app.get("/api/settlements/telemetry", (req, res) => {
+  res.json({
+    success: true,
+    counters: {
+      total_settlements: 24,
+      pending_settlements: 3,
+      completed_settlements: 21,
+      failed_settlements: 0,
+      latency_ms: 128,
+    },
+    recent_receipts: [
+      {
+        id: "EP-DEMO-001",
+        status: "CONFIRMED",
+        amount: "1250.00",
+        asset: "XLM",
+        latency_ms: 128,
+        created_at: new Date().toISOString(),
+      },
+    ],
+    recent_logs: [
+      {
+        id: "LOG-001",
+        level: "info",
+        message: "Settlement telemetry online",
+        latency_ms: 128,
+        created_at: new Date().toISOString(),
+      },
+    ],
+  });
+});
+
+// ========================================
 // Execute Settlement
 // ========================================
 
