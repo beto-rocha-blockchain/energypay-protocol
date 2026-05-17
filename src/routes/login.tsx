@@ -35,7 +35,7 @@ function LoginPage() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (isAuthenticated) navigate({ to: "/" });
+    if (isAuthenticated) navigate({ to: "/ops" });
   }, [isAuthenticated, navigate]);
 
   const onAccess = async (e: React.FormEvent) => {
