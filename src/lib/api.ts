@@ -17,8 +17,11 @@
 
 import { getSession } from "@/lib/session";
 
-export const API_BASE_URL =
-  (import.meta.env?.VITE_API_URL as string | undefined) ?? "http://localhost:3000";
+const API_ORIGIN =
+  (import.meta.env?.VITE_API_URL as string | undefined)?.replace(/\/$/, "") ||
+  (typeof window !== "undefined" ? window.location.origin : "");
+
+export const API_BASE_URL = API_ORIGIN;
 
 export type ApiError = Error & {
   status?: number;
