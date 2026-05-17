@@ -67,7 +67,7 @@ function GeneratorPage() {
   const operator = useOperator((s) => s.operator);
   const isAuthenticated = useOperator((s) => s.isAuthenticated);
 
-  const publicKey = operator?.wallet.publicKey ?? null;
+  const publicKey = operator?.wallet?.publicKey ?? null;
   const { data: balances, error: balErr } = useWalletBalances(publicKey);
   const {
     events,
@@ -78,11 +78,11 @@ function GeneratorPage() {
   const { railState, isOffline } = useSettlementRail();
 
   const eprwBalance = useMemo(() => {
-    const v = Number(balances?.summary.eprw ?? balances?.balances.eprw ?? 0);
+    const v = Number(balances?.summary?.eprw ?? balances?.balances?.eprw ?? 0);
     return Number.isFinite(v) ? v : 0;
   }, [balances]);
 
-  const xlmBalance = Number(balances?.summary.xlm ?? balances?.balances.xlm ?? 0);
+  const xlmBalance = Number(balances?.summary?.xlm ?? balances?.balances?.xlm ?? 0);
   const telemetry = useGeneratorTelemetry({ eprwBalance });
 
   if (!isAuthenticated || !operator || !publicKey) {

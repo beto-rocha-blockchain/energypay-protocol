@@ -32,12 +32,12 @@ export const Route = createFileRoute("/treasury")({
 
 function TreasuryPage() {
   const operator = useOperator((s) => s.operator);
-  const pk = operator?.wallet.publicKey ?? null;
+  const pk = operator?.wallet?.publicKey ?? null;
   const balances = useWalletBalances(pk);
   const activity = useWalletActivity(pk);
 
-  const xlm = balances.data?.summary.xlm ?? "0.0000000";
-  const eprw = balances.data?.summary.eprw ?? "0.0000000";
+  const xlm = balances.data?.summary?.xlm ?? "0.0000000";
+  const eprw = balances.data?.summary?.eprw ?? "0.0000000";
 
   return (
     <div className="space-y-3">
