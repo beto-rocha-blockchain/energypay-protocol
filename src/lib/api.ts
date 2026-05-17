@@ -266,7 +266,7 @@ export async function apiValidatedP2PTransfer(
   };
   if (session?.token) headers.Authorization = `Bearer ${session.token}`;
 
-  const res = await fetch("/api/p2p/validate", {
+  const res = await fetch("/api/p2p/transfer", {
     method: "POST",
     headers,
     body: JSON.stringify(payload),
