@@ -46,6 +46,23 @@ router.post("/create", async (req, res) => {
 });
 
 // =====================================================
+// GET WALLET ACTIVITY FEED - DEMO SAFE
+// =====================================================
+
+router.get("/:publicKey/activity", async (req, res) => {
+  const startedAt = Date.now();
+
+  return res.json({
+    success: true,
+    wallet: req.params.publicKey,
+    events: [],
+    latency_ms: Date.now() - startedAt,
+    checked_at: new Date().toISOString(),
+    note: "No recent wallet activity available in demo feed.",
+  });
+});
+
+// =====================================================
 // GET ACCOUNT BALANCE
 // =====================================================
 
