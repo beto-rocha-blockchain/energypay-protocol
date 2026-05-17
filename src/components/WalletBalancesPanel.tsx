@@ -40,8 +40,8 @@ export function WalletBalancesPanel({ publicKey, organization, funded }: Props) 
   const { data, error, loading, fetchedAt, refreshCount, refresh } = useWalletBalances(publicKey);
   const [copied, setCopied] = useState(false);
 
-  const xlm = data?.balances.xlm ?? "0";
-  const eprw = data?.balances.eprw ?? "0";
+  const xlm = data?.balances?.xlm ?? "0";
+  const eprw = data?.balances?.eprw ?? "0";
   const xlmNum = Number(xlm);
   const eprwNum = Number(eprw);
 

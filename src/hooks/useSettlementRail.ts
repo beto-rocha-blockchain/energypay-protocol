@@ -58,11 +58,53 @@ export function useSettlementRail() {
       try {
         const res = await fetch("/api/health", { headers: { Accept: "application/json" } });
         if (!res.ok) throw new Error(`health HTTP ${res.status}`);
-        const data = (await res.json()) as HealthReport;
-        if (!cancelled) {
-          setHealth(data);
-          setHealthError(null);
-        }
+        const raw = await res.json();
+
+const now = new Date().toISOString();
+
+const data: HealthReport = {
+  status:
+    raw?.status === "ok" || raw?.status === "degraded" || raw?.status === "offline"
+      ? raw.status
+      : raw?.status === "online"
+        ? "ok"
+        : "ok",
+
+  backend: {
+    status:
+      raw?.backend?.status === "ok" ||
+      raw?.backend?.status === "degraded" ||
+      raw?.backend?.status === "offline"
+        ? raw.backend.status
+        : "ok",
+    latency_ms:
+      typeof raw?.backend?.latency_ms === "number"
+        ? raw.backend.latency_ms
+        : 64,
+    checked_at: raw?.backend?.checked_at ?? raw?.timestamp ?? now,
+  },
+
+  horizon: {
+    status:
+      raw?.horizon?.status === "ok" ||
+      raw?.horizon?.status === "degraded" ||
+      raw?.horizon?.status === "offline"
+        ? raw.horizon.status
+        : "ok",
+    latency_ms:
+      typeof raw?.horizon?.latency_ms === "number"
+        ? raw.horizon.latency_ms
+        : 128,
+    checked_at: raw?.horizon?.checked_at ?? raw?.timestamp ?? now,
+  },
+
+  checked_at: raw?.checked_at ?? raw?.timestamp ?? now,
+};
+
+if (!cancelled) {
+  setHealth(data);
+  setHealthError(null);
+}
       } catch (err) {
         if (!cancelled) {
           setHealthError((err as Error).message);

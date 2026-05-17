@@ -26,15 +26,38 @@ function WalletPage() {
     return <Navigate to="/login" />;
   }
 
+  const publicKey =
+    operator?.wallet?.publicKey ||
+    operator?.settlementAddress ||
+    "";
+
+  if (!publicKey) {
+    return (
+      <div className="mx-auto max-w-3xl space-y-4">
+        <div className="rounded-md border border-warning/40 bg-warning/10 p-4">
+          <p className="font-mono text-[11px] uppercase tracking-widest text-warning">
+            Wallet unavailable
+          </p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            This operator session does not include a valid Stellar settlement address.
+            Please sign out and provision a new settlement identity.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <WalletBalancesPanel
-        publicKey={operator.wallet.publicKey}
+        publicKey={publicKey}
         organization={operator.organization}
         funded={operator.funded}
       />
-      <TokenAllocationPanel publicKey={operator.wallet.publicKey} />
-      <BlockchainActivityFeed publicKey={operator.wallet.publicKey} />
+
+      <TokenAllocationPanel publicKey={publicKey} />
+
+      <BlockchainActivityFeed publicKey={publicKey} />
     </div>
   );
 }
