@@ -50,7 +50,7 @@ function WalletPage() {
       <WalletBalancesPanel
         publicKey={publicKey}
         organization={operator.organization}
-        funded={operator.funded}
+        funded={operator.funded || operator.wallet?.funded}
       />
 
       <div className="rounded-md border border-border bg-card p-4">

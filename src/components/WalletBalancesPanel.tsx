@@ -144,7 +144,11 @@ export function WalletBalancesPanel({ publicKey, organization, funded }: Props) 
             </div>
           </div>
           <div className="grid grid-cols-3 gap-2 md:gap-4">
-            <Indicator label="Funded" value={funded ? "YES" : "—"} tone={funded ? "ok" : "muted"} />
+            <Indicator
+              label="Funded"
+              value={data?.account_funded || funded ? "YES" : "—"}
+              tone={data?.account_funded || funded ? "ok" : "muted"}
+            />
             <Indicator
               label="Trustline"
               value={trustline ? "EPRW" : "PENDING"}
