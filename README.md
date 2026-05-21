@@ -122,7 +122,7 @@ The current implementation supports settlement execution with:
 
 - Stellar SDK;
 - Horizon Testnet;
-- backend-side transaction signing;
+- temporary server-side signing architecture for MVP validation on Stellar Testnet;
 - transaction submission;
 - txHash return;
 - ledger confirmation;
