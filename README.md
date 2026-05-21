@@ -451,7 +451,7 @@ Current status:
 - x402-compatible API flow implemented;
 - institutional frontend deployed on Vercel;
 - audit-oriented workflow in place;
-- 5 market validation interviews completed with energy sector stakeholders;
+- stakeholder validation initiated with energy market participants;
 - Instawards SOW and pilot documentation in progress.
 
 ---
