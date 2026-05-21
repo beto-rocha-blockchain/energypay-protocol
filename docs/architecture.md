@@ -5,7 +5,7 @@ EnergyPay is split into two runnable surfaces:
 - Frontend and edge gateway: TanStack Start, React, TanStack Router, React Query and Zustand under `src/`.
 - Settlement backend: Express, Supabase and Stellar SDK under `backend/`.
 
-The frontend renders the institutional operating system. The backend owns account provisioning, JWT issuance, Stellar custody signing and transaction submission.
+The frontend renders the institutional operating system. The backend owns account provisioning, JWT issuance, controlled Stellar Testnet signing and transaction submission.
 
 ## Runtime Layers
 
@@ -41,7 +41,7 @@ The gateway does not hold Stellar secret keys. It validates, normalizes and prox
 - `/api/p2p/transfer` for authenticated P2P settlement.
 - `/api/settlement/execute` for legacy settlement execution.
 
-The backend verifies JWTs with `JWT_SECRET`, signs Stellar transactions server-side, submits them to Horizon Testnet and writes best-effort audit rows to Supabase.
+The backend verifies JWTs with `JWT_SECRET`, signs Stellar Testnet transactions in a controlled MVP environment, submits them to Horizon Testnet and writes best-effort audit rows to Supabase.
 
 ### 4. Stellar Testnet
 
@@ -81,7 +81,6 @@ Optional variables:
 - `PORT`
 - `STELLAR_DESTINATION`
 - `EPWR_ISSUER_PUBLIC_KEY`
-- `EPRW_ISSUER_PUBLIC_KEY`
 
 Frontend build-time variables:
 
@@ -104,3 +103,5 @@ The in-memory gateway store is intentionally replaceable. For production, replac
 - P2P backend routes verify JWT signatures before signing transactions.
 - The backend overwrites `sender_user_id` from the verified token instead of trusting the client body.
 - Testnet custody accounts must be treated as disposable until key management is moved to a proper vault or HSM.
+  
+This architecture is intended for Stellar Testnet MVP validation and is not a production custody or regulated settlement architecture.
