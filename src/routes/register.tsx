@@ -230,7 +230,7 @@ useEffect(() => {
                 <Activity className="mt-0.5 h-3.5 w-3.5 text-success" />
                 <span>
                   <span className="font-mono text-foreground">Role provisioning</span> · Generator ·
-                  Seller · Investor · User
+                  Seller · Investor · Consumer
                 </span>
               </li>
             </ul>

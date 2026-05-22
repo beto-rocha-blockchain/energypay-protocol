@@ -26,9 +26,9 @@ export const ROLE_META: Record<
     capabilities: ["Portfolio exposure", "Settlement analytics", "Financial reconciliation"],
   },
   USER: {
-    label: "User",
-    tagline: "Consumption · billing visibility",
-    capabilities: ["Energy consumption", "Billing visibility", "Settlement history"],
+    label: "Consumer",
+    tagline: "Energy consumption · settlement visibility",
+    capabilities: ["Energy consumption", "Billing visibility", "Direct settlement"],
   },
 };
 
