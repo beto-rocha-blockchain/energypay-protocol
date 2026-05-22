@@ -12,7 +12,7 @@ import {
 import { supabase } from "../lib/supabase.js";
 
 const server = new Horizon.Server("https://horizon-testnet.stellar.org");
-const SUPPORTED_ASSETS = new Set(["XLM", "EPWR", "EPRW"]);
+const SUPPORTED_ASSETS = new Set(["XLM", "EPWR"]);
 
 class SettlementInputError extends Error {
   constructor(message, status = 400, code = "INVALID_SETTLEMENT_PAYLOAD") {
@@ -83,9 +83,7 @@ const keypairFromEnv = (name) => {
 };
 
 const resolveIssuerPublicKey = () => {
-  const explicit =
-    readString(process.env.EPWR_ISSUER_PUBLIC_KEY) ||
-    readString(process.env.EPRW_ISSUER_PUBLIC_KEY);
+  const explicit = readString(process.env.EPWR_ISSUER_PUBLIC_KEY);
 
   if (explicit) {
     if (!StrKey.isValidEd25519PublicKey(explicit)) {
