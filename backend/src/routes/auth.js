@@ -6,6 +6,7 @@ import jwt from "jsonwebtoken";
 import { Keypair } from "@stellar/stellar-sdk";
 
 import { supabase } from "../lib/supabase.js";
+import { createTrustlineForSecret } from "../services/tokenService.js";
 
 const router = express.Router();
 
@@ -108,6 +109,31 @@ router.post("/register", async (req, res) => {
       });
     }
 
+        // =================================================
+        // create EPWR trustline for the new user wallet
+        // Best-effort only: registration must not fail if EPWR setup fails.
+        // Existing users can also enable EPWR later through /api/token/trustline/me.
+        // =================================================
+
+        let epwrTrustlineResult = null;
+
+        try {
+          epwrTrustlineResult = await createTrustlineForSecret(
+            secretKey,
+            "user-epwr-trustline-created",
+          );
+
+          if (!epwrTrustlineResult.success) {
+            console.warn("EPWR Trustline Warning:", epwrTrustlineResult.error);
+          }
+        } catch (trustlineError) {
+          console.warn("EPWR Trustline Warning:", trustlineError.message);
+          epwrTrustlineResult = {
+            success: false,
+            error: trustlineError.message,
+          };
+        }
+
     // =================================================
     // encrypt password
     // =================================================
@@ -196,6 +222,7 @@ router.post("/register", async (req, res) => {
         stellar_funded: true,
         settlement_ready: true,
         roles_assigned: true,
+        epwr_trustline_ready: Boolean(epwrTrustlineResult?.success),
       },
     });
   } catch (err) {

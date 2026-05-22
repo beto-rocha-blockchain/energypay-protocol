@@ -169,7 +169,10 @@ export async function createTrustline() {
 // Testnet-only utility.
 // Creates EPWR trustline for any test account when its secret is provided.
 // Do not use this pattern in production.
-export async function createTrustlineForAccount(accountSecret) {
+export async function createTrustlineForSecret(
+  accountSecret,
+  type = "account-trustline-created",
+) {
   try {
     const accountKeypair = keypairFromSecret(accountSecret, "account secret");
     const account = await server.loadAccount(accountKeypair.publicKey());
@@ -192,7 +195,7 @@ export async function createTrustlineForAccount(accountSecret) {
 
     return {
       success: true,
-      type: "account-trustline-created",
+      type,
       account: accountKeypair.publicKey(),
       asset: getEPWRAssetInfo(),
       hash: result.hash,
@@ -200,9 +203,13 @@ export async function createTrustlineForAccount(accountSecret) {
       explorer_url: explorerLink(result.hash),
     };
   } catch (error) {
-    console.error("EPWR account trustline error:", error);
+    console.error("EPWR trustline by secret error:", error);
     return serializeError(error);
   }
+}
+
+export async function createTrustlineForAccount(accountSecret) {
+  return createTrustlineForSecret(accountSecret, "account-trustline-created");
 }
 
 // Issuer mints EPWR to Distribution.
