@@ -50,6 +50,8 @@ type Item = {
 // --------------------------------------------------
 
 const canAccessItem = (item: Item, roles: Role[]) => {
+  if (roles.length === 0) return false;
+
   return item.roles.some((role) => roles.includes(role));
 };
 
@@ -311,12 +313,16 @@ export function AppSidebar() {
         <div className="flex flex-col gap-1 px-2 py-2 font-mono text-[9.5px] uppercase tracking-[0.18em] text-muted-foreground">
           <div className="flex items-center justify-between">
             <span>Operator</span>
-            <span className="text-foreground/85">OP-7741</span>
+            <span className="text-foreground/85">
+              {operator?.operatorId ?? "No session"}
+            </span>
           </div>
 
           <div className="flex items-center justify-between">
-            <span>Session</span>
-            <span className="text-foreground/70">sess · {buildHash}</span>
+            <span>Role</span>
+            <span className="text-foreground/70">
+              {roles.length > 0 ? roles.join(" · ") : "UNASSIGNED"}
+            </span>
           </div>
 
           <div className="flex items-center justify-between">
@@ -326,7 +332,7 @@ export function AppSidebar() {
               <span>Stellar Testnet</span>
             </div>
 
-            <span className="text-foreground/70">v0.5</span>
+            <span className="text-foreground/70">v0.5 · {buildHash}</span>
           </div>
         </div>
       </SidebarFooter>
