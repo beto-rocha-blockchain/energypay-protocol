@@ -1,52 +1,147 @@
 import {
+  Asset,
+  BASE_FEE,
+  Horizon,
   Keypair,
   Networks,
   Operation,
+  StrKey,
   TransactionBuilder,
-  Asset,
-  Horizon,
 } from "@stellar/stellar-sdk";
-
-import dotenv from "dotenv";
-
-dotenv.config();
-
-// ========================================
-// Stellar Horizon Server
-// ========================================
 
 const server = new Horizon.Server("https://horizon-testnet.stellar.org");
 
-// ========================================
-// Accounts
-// ========================================
+const EPWR_CODE = "EPWR";
 
-const issuerKeypair = Keypair.fromSecret(process.env.ISSUER_SECRET);
+class TokenServiceError extends Error {
+  constructor(message, status = 400, code = "TOKEN_SERVICE_ERROR") {
+    super(message);
+    this.name = "TokenServiceError";
+    this.status = status;
+    this.code = code;
+  }
+}
 
-const distributionKeypair = Keypair.fromSecret(process.env.DISTRIBUTION_SECRET);
+const readString = (value) => (typeof value === "string" ? value.trim() : "");
 
-// ========================================
-// EPWR Asset
-// ========================================
+const keypairFromEnv = (name) => {
+  const secret = readString(process.env[name]);
 
-export const EPWR_ASSET = new Asset("EPWR", issuerKeypair.publicKey());
+  if (!secret) {
+    throw new TokenServiceError(
+      `Missing ${name} environment variable.`,
+      500,
+      "MISSING_ENV",
+    );
+  }
 
-// ========================================
-// Create Trustline
-// Distribution accepts EPWR
-// ========================================
+  try {
+    return Keypair.fromSecret(secret);
+  } catch {
+    throw new TokenServiceError(
+      `${name} is not a valid Stellar secret seed.`,
+      500,
+      "BAD_ENV",
+    );
+  }
+};
 
+const keypairFromSecret = (secret, label = "account secret") => {
+  const cleanSecret = readString(secret);
+
+  if (!cleanSecret) {
+    throw new TokenServiceError(`Missing ${label}.`, 422, "MISSING_SECRET");
+  }
+
+  try {
+    return Keypair.fromSecret(cleanSecret);
+  } catch {
+    throw new TokenServiceError(
+      `${label} is not a valid Stellar secret seed.`,
+      422,
+      "BAD_SECRET",
+    );
+  }
+};
+
+const getIssuerKeypair = () => keypairFromEnv("ISSUER_SECRET");
+
+const getDistributionKeypair = () => keypairFromEnv("DISTRIBUTION_SECRET");
+
+const getIssuerPublicKey = () => {
+  const explicitIssuer = readString(process.env.EPWR_ISSUER_PUBLIC_KEY);
+
+  if (explicitIssuer) {
+    if (!StrKey.isValidEd25519PublicKey(explicitIssuer)) {
+      throw new TokenServiceError(
+        "EPWR_ISSUER_PUBLIC_KEY is not a valid Stellar public key.",
+        500,
+        "BAD_ENV",
+      );
+    }
+
+    return explicitIssuer;
+  }
+
+  return getIssuerKeypair().publicKey();
+};
+
+const getEPWRAsset = () => new Asset(EPWR_CODE, getIssuerPublicKey());
+
+const normalizeAmount = (value, fallback = "1000") => {
+  const amount = Number(value ?? fallback);
+
+  if (!Number.isFinite(amount) || amount <= 0) {
+    throw new TokenServiceError(
+      "Amount must be a positive number.",
+      422,
+      "INVALID_AMOUNT",
+    );
+  }
+
+  return amount.toFixed(7).replace(/\.?0+$/, "");
+};
+
+const explorerLink = (hash) =>
+  `https://stellar.expert/explorer/testnet/tx/${hash}`;
+
+const serializeError = (error) => ({
+  success: false,
+  error: error.message || "Token service failed.",
+  code: error.code || "TOKEN_SERVICE_ERROR",
+});
+
+export function getIssuerAddress() {
+  return getIssuerPublicKey();
+}
+
+export function getDistributionAddress() {
+  return getDistributionKeypair().publicKey();
+}
+
+export function getEPWRAssetInfo() {
+  const issuer = getIssuerPublicKey();
+
+  return {
+    code: EPWR_CODE,
+    issuer,
+    asset_id: `${EPWR_CODE}:${issuer}`,
+  };
+}
+
+// Distribution accepts EPWR from issuer.
 export async function createTrustline() {
   try {
+    const distributionKeypair = getDistributionKeypair();
     const account = await server.loadAccount(distributionKeypair.publicKey());
 
     const transaction = new TransactionBuilder(account, {
-      fee: "100",
+      fee: BASE_FEE,
       networkPassphrase: Networks.TESTNET,
     })
       .addOperation(
         Operation.changeTrust({
-          asset: EPWR_ASSET,
+          asset: getEPWRAsset(),
         }),
       )
       .setTimeout(30)
@@ -59,37 +154,75 @@ export async function createTrustline() {
     return {
       success: true,
       type: "trustline-created",
+      account: distributionKeypair.publicKey(),
+      asset: getEPWRAssetInfo(),
       hash: result.hash,
       ledger: result.ledger,
+      explorer_url: explorerLink(result.hash),
     };
   } catch (error) {
-    console.error("Trustline Error:", error);
-
-    return {
-      success: false,
-      error: error.message,
-    };
+    console.error("EPWR trustline error:", error);
+    return serializeError(error);
   }
 }
 
-// ========================================
-// Mint EPWR Tokens
-// Issuer sends tokens to Distribution
-// ========================================
+// Testnet-only utility.
+// Creates EPWR trustline for any test account when its secret is provided.
+// Do not use this pattern in production.
+export async function createTrustlineForAccount(accountSecret) {
+  try {
+    const accountKeypair = keypairFromSecret(accountSecret, "account secret");
+    const account = await server.loadAccount(accountKeypair.publicKey());
 
+    const transaction = new TransactionBuilder(account, {
+      fee: BASE_FEE,
+      networkPassphrase: Networks.TESTNET,
+    })
+      .addOperation(
+        Operation.changeTrust({
+          asset: getEPWRAsset(),
+        }),
+      )
+      .setTimeout(30)
+      .build();
+
+    transaction.sign(accountKeypair);
+
+    const result = await server.submitTransaction(transaction);
+
+    return {
+      success: true,
+      type: "account-trustline-created",
+      account: accountKeypair.publicKey(),
+      asset: getEPWRAssetInfo(),
+      hash: result.hash,
+      ledger: result.ledger,
+      explorer_url: explorerLink(result.hash),
+    };
+  } catch (error) {
+    console.error("EPWR account trustline error:", error);
+    return serializeError(error);
+  }
+}
+
+// Issuer mints EPWR to Distribution.
 export async function mintEPWR(amount = "1000") {
   try {
+    const issuerKeypair = getIssuerKeypair();
+    const distributionKeypair = getDistributionKeypair();
+    const normalizedAmount = normalizeAmount(amount);
+
     const issuerAccount = await server.loadAccount(issuerKeypair.publicKey());
 
     const transaction = new TransactionBuilder(issuerAccount, {
-      fee: "100",
+      fee: BASE_FEE,
       networkPassphrase: Networks.TESTNET,
     })
       .addOperation(
         Operation.payment({
           destination: distributionKeypair.publicKey(),
-          asset: EPWR_ASSET,
-          amount: amount.toString(),
+          asset: getEPWRAsset(),
+          amount: normalizedAmount,
         }),
       )
       .setTimeout(30)
@@ -102,37 +235,47 @@ export async function mintEPWR(amount = "1000") {
     return {
       success: true,
       type: "epwr-minted",
-      amount,
+      asset: getEPWRAssetInfo(),
+      amount: normalizedAmount,
+      destination: distributionKeypair.publicKey(),
       hash: result.hash,
       ledger: result.ledger,
+      explorer_url: explorerLink(result.hash),
     };
   } catch (error) {
-    console.error("Mint Error:", error);
-
-    return {
-      success: false,
-      error: error.message,
-    };
+    console.error("EPWR mint error:", error);
+    return serializeError(error);
   }
 }
 
-// ========================================
-// Send EPWR to User
-// ========================================
-
+// Distribution sends EPWR to a destination account.
+// Destination must already have an EPWR trustline.
 export async function sendEPWR(destination, amount = "10") {
   try {
-    const distributionAccount = await server.loadAccount(distributionKeypair.publicKey());
+    const distributionKeypair = getDistributionKeypair();
+    const normalizedAmount = normalizeAmount(amount, "10");
+
+    if (!StrKey.isValidEd25519PublicKey(readString(destination))) {
+      throw new TokenServiceError(
+        "Invalid Stellar destination public key.",
+        422,
+        "INVALID_DESTINATION",
+      );
+    }
+
+    const distributionAccount = await server.loadAccount(
+      distributionKeypair.publicKey(),
+    );
 
     const transaction = new TransactionBuilder(distributionAccount, {
-      fee: "100",
+      fee: BASE_FEE,
       networkPassphrase: Networks.TESTNET,
     })
       .addOperation(
         Operation.payment({
           destination,
-          asset: EPWR_ASSET,
-          amount: amount.toString(),
+          asset: getEPWRAsset(),
+          amount: normalizedAmount,
         }),
       )
       .setTimeout(30)
@@ -145,56 +288,33 @@ export async function sendEPWR(destination, amount = "10") {
     return {
       success: true,
       type: "epwr-transfer",
-      amount,
+      asset: getEPWRAssetInfo(),
+      amount: normalizedAmount,
+      source: distributionKeypair.publicKey(),
       destination,
       hash: result.hash,
       ledger: result.ledger,
+      explorer_url: explorerLink(result.hash),
     };
   } catch (error) {
-    console.error("Transfer Error:", error);
-
-    return {
-      success: false,
-      error: error.message,
-    };
+    console.error("EPWR transfer error:", error);
+    return serializeError(error);
   }
 }
 
-// ========================================
-// Get Distribution Balances
-// ========================================
-
 export async function getDistributionBalances() {
   try {
+    const distributionKeypair = getDistributionKeypair();
     const account = await server.loadAccount(distributionKeypair.publicKey());
 
     return {
       success: true,
       account: distributionKeypair.publicKey(),
+      asset: getEPWRAssetInfo(),
       balances: account.balances,
     };
   } catch (error) {
-    console.error("Balance Error:", error);
-
-    return {
-      success: false,
-      error: error.message,
-    };
+    console.error("EPWR balance error:", error);
+    return serializeError(error);
   }
-}
-
-// ========================================
-// Get Issuer Public Address
-// ========================================
-
-export function getIssuerAddress() {
-  return issuerKeypair.publicKey();
-}
-
-// ========================================
-// Get Distribution Public Address
-// ========================================
-
-export function getDistributionAddress() {
-  return distributionKeypair.publicKey();
 }
