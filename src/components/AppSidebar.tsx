@@ -33,11 +33,28 @@ import {
   SidebarFooter,
 } from "@/components/ui/sidebar";
 
+import { useOperator } from "@/store/operator";
+
+type Role = "GENERATOR" | "SELLER" | "INVESTOR" | "USER";
+
 type Item = {
   title: string;
   url: string;
   icon: React.ComponentType<{ className?: string }>;
   code: string;
+  roles: Role[];
+};
+
+// --------------------------------------------------
+// ACCESS HELPERS
+// --------------------------------------------------
+
+const canAccessItem = (item: Item, roles: Role[]) => {
+  return item.roles.some((role) => roles.includes(role));
+};
+
+const filterItemsByRole = (items: Item[], roles: Role[]) => {
+  return items.filter((item) => canAccessItem(item, roles));
 };
 
 // --------------------------------------------------
@@ -50,6 +67,7 @@ const MARKET_OPS: Item[] = [
     url: "/",
     icon: LayoutDashboard,
     code: "EXE-00",
+    roles: ["GENERATOR", "SELLER", "INVESTOR", "USER"],
   },
 
   {
@@ -57,6 +75,7 @@ const MARKET_OPS: Item[] = [
     url: "/ops",
     icon: Gauge,
     code: "OPS-01",
+    roles: ["GENERATOR", "SELLER", "INVESTOR"],
   },
 
   {
@@ -64,6 +83,7 @@ const MARKET_OPS: Item[] = [
     url: "/clearing",
     icon: GitBranch,
     code: "CLR-01",
+    roles: ["SELLER", "INVESTOR"],
   },
 
   {
@@ -71,6 +91,7 @@ const MARKET_OPS: Item[] = [
     url: "/topology",
     icon: Network,
     code: "NET-01",
+    roles: ["GENERATOR", "SELLER"],
   },
 ];
 
@@ -84,6 +105,7 @@ const RISK_DATA: Item[] = [
     url: "/risk",
     icon: ShieldCheck,
     code: "RSK-01",
+    roles: ["SELLER", "INVESTOR"],
   },
 
   {
@@ -91,6 +113,7 @@ const RISK_DATA: Item[] = [
     url: "/reconciliation",
     icon: Database,
     code: "RSK-02",
+    roles: ["SELLER", "INVESTOR"],
   },
 
   {
@@ -98,6 +121,7 @@ const RISK_DATA: Item[] = [
     url: "/oracle",
     icon: Radio,
     code: "RSK-03",
+    roles: ["GENERATOR", "SELLER", "INVESTOR", "USER"],
   },
 
   {
@@ -105,6 +129,7 @@ const RISK_DATA: Item[] = [
     url: "/audit",
     icon: BookLock,
     code: "RSK-04",
+    roles: ["SELLER", "INVESTOR"],
   },
 ];
 
@@ -118,6 +143,7 @@ const SETTLEMENT: Item[] = [
     url: "/treasury",
     icon: Banknote,
     code: "STL-01",
+    roles: ["SELLER", "INVESTOR"],
   },
 
   {
@@ -125,6 +151,7 @@ const SETTLEMENT: Item[] = [
     url: "/settlement",
     icon: Calculator,
     code: "STL-02",
+    roles: ["GENERATOR", "SELLER", "INVESTOR"],
   },
 
   {
@@ -132,12 +159,15 @@ const SETTLEMENT: Item[] = [
     url: "/p2p",
     icon: Send,
     code: "STL-03",
+    roles: ["GENERATOR", "SELLER", "INVESTOR", "USER"],
   },
+
   {
     title: "x402 API Access",
     url: "/x402",
     icon: PlugZap,
     code: "STL-05",
+    roles: ["INVESTOR", "USER"],
   },
 
   {
@@ -145,6 +175,7 @@ const SETTLEMENT: Item[] = [
     url: "/wallet",
     icon: Wallet,
     code: "STL-04",
+    roles: ["GENERATOR", "SELLER", "INVESTOR", "USER"],
   },
 ];
 
@@ -158,6 +189,7 @@ const TERMINALS: Item[] = [
     url: "/generator",
     icon: Factory,
     code: "TRM-01",
+    roles: ["GENERATOR"],
   },
 
   {
@@ -165,6 +197,7 @@ const TERMINALS: Item[] = [
     url: "/contracts",
     icon: ListChecks,
     code: "TRM-02",
+    roles: ["GENERATOR", "SELLER", "INVESTOR", "USER"],
   },
 
   {
@@ -172,6 +205,7 @@ const TERMINALS: Item[] = [
     url: "/contracts/new",
     icon: FilePlus2,
     code: "TRM-03",
+    roles: ["GENERATOR", "SELLER"],
   },
 
   {
@@ -179,10 +213,13 @@ const TERMINALS: Item[] = [
     url: "/grid",
     icon: Radio,
     code: "TRM-04",
+    roles: ["GENERATOR"],
   },
 ];
 
 function Group({ label, items, path }: { label: string; items: Item[]; path: string }) {
+  if (items.length === 0) return null;
+
   return (
     <SidebarGroup className="py-1">
       <SidebarGroupLabel className="px-2 font-mono text-[9.5px] font-medium tracking-[0.22em] text-muted-foreground/75">
@@ -232,6 +269,14 @@ export function AppSidebar() {
     select: (s) => s.location.pathname,
   });
 
+  const operator = useOperator((s) => s.operator);
+  const roles = (operator?.roles ?? []) as Role[];
+
+  const marketOps = filterItemsByRole(MARKET_OPS, roles);
+  const riskData = filterItemsByRole(RISK_DATA, roles);
+  const settlement = filterItemsByRole(SETTLEMENT, roles);
+  const terminals = filterItemsByRole(TERMINALS, roles);
+
   const buildHash = "b9f4c2e";
 
   return (
@@ -253,13 +298,13 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent className="gap-0">
-        <Group label="Executive Layer" items={MARKET_OPS} path={path} />
+        <Group label="Executive Layer" items={marketOps} path={path} />
 
-        <Group label="Risk & Clearing" items={RISK_DATA} path={path} />
+        <Group label="Risk & Clearing" items={riskData} path={path} />
 
-        <Group label="Settlement Infrastructure" items={SETTLEMENT} path={path} />
+        <Group label="Settlement Infrastructure" items={settlement} path={path} />
 
-        <Group label="Market Infrastructure" items={TERMINALS} path={path} />
+        <Group label="Market Infrastructure" items={terminals} path={path} />
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border">
