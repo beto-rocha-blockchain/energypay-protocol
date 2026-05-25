@@ -310,32 +310,48 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border">
-        <div className="flex flex-col gap-1 px-2 py-2 font-mono text-[9.5px] uppercase tracking-[0.18em] text-muted-foreground">
-          <div className="flex items-center justify-between">
-            <span>Operator</span>
-            <span className="text-foreground/85">
-              {operator?.operatorId ?? "No session"}
-            </span>
-          </div>
+  <div className="flex flex-col gap-1.5 px-3 py-2 font-mono text-[9.5px] uppercase tracking-[0.16em] text-muted-foreground">
+    <div className="grid grid-cols-[64px_1fr] items-center gap-2">
+      <span>Operator</span>
 
-          <div className="flex items-center justify-between">
-            <span>Role</span>
-            <span className="text-foreground/70">
-              {roles.length > 0 ? roles.join(" · ") : "UNASSIGNED"}
-            </span>
-          </div>
+      <span
+        className="min-w-0 truncate text-right text-foreground/85"
+        title={operator?.operatorId ?? "No session"}
+      >
+        {operator?.operatorId ?? "No session"}
+      </span>
+    </div>
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <Activity className="h-3 w-3 text-success animate-status-dot" />
+    <div className="grid grid-cols-[64px_1fr] items-center gap-2">
+      <span>Roles</span>
 
-              <span>Stellar Testnet</span>
-            </div>
+      <span
+        className="min-w-0 truncate text-right text-foreground/70"
+        title={roles.length > 0 ? roles.join(" · ") : "UNASSIGNED"}
+      >
+        {roles.length > 0 ? roles.join(" · ") : "UNASSIGNED"}
+      </span>
+    </div>
 
-            <span className="text-foreground/70">v0.5 · {buildHash}</span>
-          </div>
-        </div>
-      </SidebarFooter>
+    <div className="grid grid-cols-[64px_1fr] items-center gap-2">
+      <span>Network</span>
+
+      <div className="flex min-w-0 items-center justify-end gap-1.5">
+        <Activity className="h-3 w-3 shrink-0 text-success animate-status-dot" />
+
+        <span className="truncate text-foreground/70">Stellar Testnet</span>
+      </div>
+    </div>
+
+    <div className="grid grid-cols-[64px_1fr] items-center gap-2">
+      <span>Version</span>
+
+      <span className="min-w-0 truncate text-right text-foreground/70">
+        v0.5 · {buildHash}
+      </span>
+    </div>
+  </div>
+</SidebarFooter>
     </Sidebar>
   );
 }
