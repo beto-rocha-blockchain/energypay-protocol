@@ -169,7 +169,10 @@ export async function createTrustline() {
 // Testnet-only utility.
 // Creates EPWR trustline for any test account when its secret is provided.
 // Do not use this pattern in production.
-export async function createTrustlineForAccount(accountSecret) {
+export async function createTrustlineForSecret(
+  accountSecret,
+  type = "account-trustline-created",
+) {
   try {
     const accountKeypair = keypairFromSecret(accountSecret, "account secret");
     const account = await server.loadAccount(accountKeypair.publicKey());
@@ -192,7 +195,7 @@ export async function createTrustlineForAccount(accountSecret) {
 
     return {
       success: true,
-      type: "account-trustline-created",
+      type,
       account: accountKeypair.publicKey(),
       asset: getEPWRAssetInfo(),
       hash: result.hash,
@@ -200,11 +203,14 @@ export async function createTrustlineForAccount(accountSecret) {
       explorer_url: explorerLink(result.hash),
     };
   } catch (error) {
-    console.error("EPWR account trustline error:", error);
+    console.error("EPWR trustline by secret error:", error);
     return serializeError(error);
   }
 }
 
+export async function createTrustlineForAccount(accountSecret) {
+  return createTrustlineForSecret(accountSecret, "account-trustline-created");
+}
 // Issuer mints EPWR to Distribution.
 export async function mintEPWR(amount = "1000") {
   try {
@@ -302,6 +308,82 @@ export async function sendEPWR(destination, amount = "10") {
   }
 }
 
+export async function buyEPWRWithXLMForUser(userSecret, epwrAmount = "10") {
+  try {
+    const buyerKeypair = keypairFromSecret(userSecret, "buyer account secret");
+    const distributionKeypair = getDistributionKeypair();
+
+    const normalizedEPWRAmount = normalizeAmount(epwrAmount, "10");
+
+    // MVP pricing: 1 EPWR = 1 XLM.
+    // Can be changed through EPWR_PRICE_XLM.
+    const priceXLM = Number(readString(process.env.EPWR_PRICE_XLM) || "1");
+
+    if (!Number.isFinite(priceXLM) || priceXLM <= 0) {
+      throw new TokenServiceError(
+        "EPWR_PRICE_XLM must be a positive number.",
+        500,
+        "INVALID_EPWR_PRICE",
+      );
+    }
+
+    const xlmToPay = normalizeAmount(
+      Number(normalizedEPWRAmount) * priceXLM,
+      "10",
+    );
+
+    const buyerPublicKey = buyerKeypair.publicKey();
+    const distributionPublicKey = distributionKeypair.publicKey();
+
+    const buyerAccount = await server.loadAccount(buyerPublicKey);
+
+    const transaction = new TransactionBuilder(buyerAccount, {
+      fee: BASE_FEE,
+      networkPassphrase: Networks.TESTNET,
+    })
+      .addOperation(
+        Operation.payment({
+          source: buyerPublicKey,
+          destination: distributionPublicKey,
+          asset: Asset.native(),
+          amount: xlmToPay,
+        }),
+      )
+      .addOperation(
+        Operation.payment({
+          source: distributionPublicKey,
+          destination: buyerPublicKey,
+          asset: getEPWRAsset(),
+          amount: normalizedEPWRAmount,
+        }),
+      )
+      .setTimeout(30)
+      .build();
+
+    transaction.sign(buyerKeypair);
+    transaction.sign(distributionKeypair);
+
+    const result = await server.submitTransaction(transaction);
+
+    return {
+      success: true,
+      type: "epwr-purchase",
+      buyer: buyerPublicKey,
+      seller: distributionPublicKey,
+      asset: getEPWRAssetInfo(),
+      epwr_amount: normalizedEPWRAmount,
+      xlm_paid: xlmToPay,
+      price_xlm_per_epwr: priceXLM.toString(),
+      hash: result.hash,
+      ledger: result.ledger,
+      explorer_url: explorerLink(result.hash),
+    };
+  } catch (error) {
+    console.error("EPWR purchase error:", error);
+    return serializeError(error);
+  }
+}
+
 export async function getDistributionBalances() {
   try {
     const distributionKeypair = getDistributionKeypair();
@@ -318,3 +400,4 @@ export async function getDistributionBalances() {
     return serializeError(error);
   }
 }
+
