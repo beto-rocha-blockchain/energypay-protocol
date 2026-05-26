@@ -76,25 +76,31 @@ router.post("/register", async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const { data, error } = await supabase
-      .from("users")
-      .insert([
-        {
-          email,
-          password: hashedPassword,
-          full_name,
-          phone: phone || null,
-          organization,
-          roles,
-          stellar_public_key: publicKey,
-          stellar_secret_encrypted: secretKey, // HACKATHON ONLY
-          country,
-          city,
-          address,
-          has_solar_generation,
-        },
-      ])
-      .select();
+    const baseInsert = {
+      email,
+      password: hashedPassword,
+      full_name,
+      organization,
+      roles,
+      stellar_public_key: publicKey,
+      stellar_secret_encrypted: secretKey, // HACKATHON ONLY
+      country,
+      city,
+      address,
+      has_solar_generation,
+    };
+
+    // Try with phone first; fall back gracefully if the column doesn't exist yet.
+    let data, error;
+    if (phone) {
+      ({ data, error } = await supabase.from("users").insert([{ ...baseInsert, phone }]).select());
+      if (error && (error.message?.includes("phone") || error.code === "PGRST204" || error.code === "42703")) {
+        console.warn("[Auth] phone column not found in users table — retrying without it.");
+        ({ data, error } = await supabase.from("users").insert([baseInsert]).select());
+      }
+    } else {
+      ({ data, error } = await supabase.from("users").insert([baseInsert]).select());
+    }
 
     if (error) {
       console.error(error);
@@ -106,7 +112,7 @@ router.post("/register", async (req, res) => {
         sub: data[0].id,
         email: data[0].email,
         roles: data[0].roles,
-        phone: data[0].phone || null,
+        phone: data[0].phone ?? phone ?? null,
       },
       process.env.JWT_SECRET,
       { expiresIn: "24h" },
@@ -127,7 +133,7 @@ router.post("/register", async (req, res) => {
         id: data[0].id,
         email: data[0].email,
         full_name: data[0].full_name,
-        phone: data[0].phone || null,
+        phone: data[0].phone ?? phone ?? null,
         organization: data[0].organization,
         roles: data[0].roles,
         stellar_public_key: publicKey,
