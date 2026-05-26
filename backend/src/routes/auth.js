@@ -67,11 +67,14 @@ router.post("/register", async (req, res) => {
     const publicKey = pair.publicKey();
     const secretKey = pair.secret();
 
+    let stellarFunded = false;
     try {
-      await axios.get(`https://friendbot.stellar.org/?addr=${publicKey}`);
+      await axios.get(`https://friendbot.stellar.org/?addr=${publicKey}`, { timeout: 15000 });
+      stellarFunded = true;
     } catch (friendbotError) {
-      console.error("Friendbot Error:", friendbotError.message);
-      return res.status(500).json({ success: false, error: "failed to fund stellar wallet" });
+      // Non-blocking: registration continues even if Friendbot is unavailable.
+      // The wallet can be funded manually on testnet later.
+      console.warn("Friendbot unavailable (non-fatal):", friendbotError.message);
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
