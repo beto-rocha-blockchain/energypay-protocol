@@ -41,7 +41,7 @@ export type WalletBalancesState = {
   refresh: () => void;
 };
 
-const POLL_INTERVAL_MS = 10_000;
+const POLL_INTERVAL_MS = 5_000;
 
 export function useWalletBalances(publicKey: string | null | undefined): WalletBalancesState {
   const [data, setData] = useState<WalletBalances | null>(null);

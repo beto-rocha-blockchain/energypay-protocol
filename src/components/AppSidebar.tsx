@@ -88,13 +88,6 @@ const MARKET_OPS: Item[] = [
     roles: ["SELLER", "INVESTOR"],
   },
 
-  {
-    title: "Network Topology",
-    url: "/topology",
-    icon: Network,
-    code: "NET-01",
-    roles: ["GENERATOR", "SELLER"],
-  },
 ];
 
 // --------------------------------------------------

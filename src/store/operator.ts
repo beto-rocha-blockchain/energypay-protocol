@@ -77,6 +77,7 @@ type OperatorState = {
     email: string;
     password: string;
     fullName: string;
+    phone?: string;
     organization: string;
     country: string;
     city: string;
@@ -178,6 +179,7 @@ export const useOperator = create<OperatorState>()((set, get) => ({
     email,
     password,
     fullName,
+    phone,
     organization,
     country,
     city,
@@ -190,6 +192,7 @@ export const useOperator = create<OperatorState>()((set, get) => ({
       email,
       password,
       full_name: fullName,
+      phone: phone || undefined,
       organization,
       country,
       city,

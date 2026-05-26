@@ -139,7 +139,11 @@ function RootComponent() {
     // The operational ticker is visual-only and should not block routing/rendering.
   }, []);
 
-  const isPublicRoute = pathname === "/login" || pathname === "/register";
+  const isPublicRoute =
+    pathname === "/login" ||
+    pathname === "/register" ||
+    pathname === "/forgot-password" ||
+    pathname === "/reset-password";
 
   // institutional access gate — redirect to /login when no operator session
   useEffect(() => {

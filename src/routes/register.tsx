@@ -22,6 +22,7 @@ import {
   KeyRound,
   Eye,
   EyeOff,
+  Phone,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -67,6 +68,7 @@ function RegisterPage() {
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [organization, setOrganization] = useState("");
@@ -126,6 +128,7 @@ useEffect(() => {
         email,
         password,
         fullName,
+        phone: phone.trim() || undefined,
         organization,
         country,
         city,
@@ -319,6 +322,15 @@ useEffect(() => {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="operator@clearing-desk.com"
+                      className="h-9 pl-8 font-mono text-xs"
+                    />
+                  </Field>
+                  <Field label="Phone (optional)" icon={<Phone className="h-3.5 w-3.5" />}>
+                    <Input
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="+55 11 9 0000-0000"
                       className="h-9 pl-8 font-mono text-xs"
                     />
                   </Field>

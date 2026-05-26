@@ -225,7 +225,9 @@ function LoginPage() {
             </Link>
 
             <div className="flex items-center justify-between border-t border-border pt-3 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-              <span>Stellar Testnet · Settlement Network</span>
+              <Link to="/forgot-password" className="text-muted-foreground hover:text-primary">
+                Forgot password →
+              </Link>
               <span className="flex items-center gap-1.5 text-success">
                 <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-success" /> Online
               </span>

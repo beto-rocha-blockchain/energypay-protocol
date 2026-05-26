@@ -9,7 +9,7 @@ export const Route = createFileRoute("/wallet")({
       {
         name: "description",
         content:
-          "Live institutional wallet balances on the Stellar settlement rail — XLM, EPRW and operational telemetry.",
+          "Live institutional wallet balances on the Stellar settlement rail — XLM, EPWR and operational telemetry.",
       },
     ],
   }),

@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { format, differenceInCalendarDays } from "date-fns";
-import { ArrowRight, CalendarIcon, FileSignature } from "lucide-react";
+import { ArrowRight, CalendarIcon, FileSignature, Hash, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -32,17 +32,21 @@ function NewContract() {
   const navigate = useNavigate();
   const registerContract = useOps((s) => s.registerContract);
   const [form, setForm] = useState<{
+    contractNumber: string;
     buyer: string;
     seller: string;
     volume: string;
     price: string;
     startDate?: Date;
     endDate?: Date;
+    atomicExecution: boolean;
   }>({
+    contractNumber: "",
     buyer: "",
     seller: "",
     volume: "",
     price: "",
+    atomicExecution: true,
   });
   const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
@@ -85,7 +89,7 @@ function NewContract() {
       endDate,
     });
     toast.success(`Contract ${c.id} registered`, {
-      description: `${c.buyer} ↔ ${c.seller} · ${c.volumeMWh} MWh @ R$ ${c.priceBRL.toFixed(2)} · ${startDate} → ${endDate}`,
+      description: `${form.contractNumber ? `[${form.contractNumber}] ` : ""}${c.buyer} ↔ ${c.seller} · ${c.volumeMWh} MWh @ R$ ${c.priceBRL.toFixed(2)}${form.atomicExecution ? " · Atomic execution enabled" : ""}`,
     });
     setTimeout(() => navigate({ to: "/contracts" }), 600);
   };
@@ -115,6 +119,24 @@ function NewContract() {
             </div>
 
             <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+              {/* Contract Number — physical world identifier */}
+              <Field label="Contract Number" id="contractNumber" className="md:col-span-2">
+                <div className="relative">
+                  <Hash className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="contractNumber"
+                    value={form.contractNumber}
+                    onChange={(e) => set("contractNumber", e.target.value)}
+                    placeholder="e.g. CCEE-2026-00412 · physical contract reference"
+                    className="bg-input pl-8 font-mono"
+                  />
+                </div>
+                <p className="mt-1 font-mono text-[10px] text-muted-foreground">
+                  Physical contract number from the real-world energy market (CCEE, ANEEL, bilateral
+                  agreement, etc.)
+                </p>
+              </Field>
+
               <Field label="Buyer" id="buyer">
                 <Input
                   id="buyer"
@@ -202,17 +224,71 @@ function NewContract() {
                 </div>
               </Field>
             </div>
+
+            {/* Atomic Transactions section */}
+            <div className="mt-6 rounded-md border border-primary/20 bg-primary/5 p-4">
+              <div className="mb-3 flex items-center gap-2">
+                <Zap className="h-4 w-4 text-primary" />
+                <p className="font-mono text-[11px] uppercase tracking-widest text-primary">
+                  Atomic Transactions
+                </p>
+              </div>
+              <p className="mb-4 text-[12px] text-muted-foreground">
+                When enabled, contract tokenization is executed as a single atomic Stellar
+                transaction — all operations (token issuance, trustline setup, settlement
+                authorization) succeed or all fail together, eliminating partial-execution risk.
+              </p>
+              <label className="flex cursor-pointer items-start gap-3 rounded-md border border-border bg-background/40 p-3">
+                <input
+                  type="checkbox"
+                  checked={form.atomicExecution}
+                  onChange={(e) => set("atomicExecution", e.target.checked)}
+                  className="mt-0.5 h-4 w-4 accent-[var(--primary)]"
+                />
+                <span>
+                  <span className="block font-mono text-[11px] uppercase tracking-widest text-foreground">
+                    Enable Atomic Execution on Stellar
+                  </span>
+                  <span className="block text-[11px] text-muted-foreground">
+                    Bundles contract tokenization + EPWR settlement authorization into one
+                    indivisible Stellar transaction. Recommended for institutional contracts.
+                  </span>
+                </span>
+              </label>
+              {form.atomicExecution && (
+                <div className="mt-3 grid grid-cols-2 gap-2 font-mono text-[10px] sm:grid-cols-4">
+                  {[
+                    "Token issuance",
+                    "Trustline auth",
+                    "Settlement lock",
+                    "Ledger anchor",
+                  ].map((op) => (
+                    <div
+                      key={op}
+                      className="flex items-center gap-1.5 rounded border border-success/30 bg-success/5 px-2 py-1.5 text-success"
+                    >
+                      <span className="h-1.5 w-1.5 rounded-full bg-success" />
+                      {op}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </Card>
 
           <Card className="border-border bg-[image:var(--gradient-card)] p-6">
             <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Summary</p>
             <p className="mt-1 font-display text-base font-semibold">Notional Exposure</p>
             <div className="mt-6 space-y-4 text-sm">
+              {form.contractNumber && (
+                <Row k="Contract #" v={form.contractNumber} />
+              )}
               <Row k="Volume" v={`${form.volume || "—"} MWh`} />
               <Row k="Price" v={`R$ ${form.price || "—"}`} />
               <Row k="Start" v={form.startDate ? format(form.startDate, "yyyy-MM-dd") : "—"} />
               <Row k="End" v={form.endDate ? format(form.endDate, "yyyy-MM-dd") : "—"} />
               <Row k="Duration" v={durationDays ? `${durationDays} d` : "—"} />
+              <Row k="Atomic" v={form.atomicExecution ? "ENABLED" : "DISABLED"} />
               <div className="border-t border-border pt-4">
                 <p className="text-[11px] uppercase tracking-widest text-muted-foreground">
                   Notional
@@ -298,9 +374,19 @@ function PeriodBadge({ status }: { status: "UPCOMING" | "ACTIVE" | "EXPIRED" }) 
   );
 }
 
-function Field({ label, id, children }: { label: string; id: string; children: React.ReactNode }) {
+function Field({
+  label,
+  id,
+  children,
+  className,
+}: {
+  label: string;
+  id: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
-    <div className="space-y-1.5">
+    <div className={cn("space-y-1.5", className)}>
       <Label htmlFor={id} className="text-[11px] uppercase tracking-widest text-muted-foreground">
         {label}
       </Label>

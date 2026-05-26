@@ -128,28 +128,7 @@ const nextPhase = (p: QueuePhase): QueuePhase | "DONE" => {
 /*  Store                                                              */
 /* ------------------------------------------------------------------ */
 
-const seedLogs = (): ExecutionLog[] => {
-  const sample = mockContracts.slice(0, 3);
-  const out: ExecutionLog[] = [];
-  sample.forEach((c, ci) => {
-    const base = [
-      "contract registered in clearing pool",
-      "counterparty validated · KYC + collateral OK",
-      "PLD ingested from GridRef oracle",
-    ];
-    base.forEach((m, i) => {
-      out.push({
-        id: `LOG-${1000 + ci * 10 + i}`,
-        contractId: c.id,
-        ts: `09:${pad(12 + ci * 4 + i)}:0${i}`,
-        state: SETTLEMENT_STATE_FLOW[Math.min(i, 1)],
-        level: "info",
-        message: m,
-      });
-    });
-  });
-  return out;
-};
+const seedLogs = (): ExecutionLog[] => [];
 
 export const useOps = create<OpsState>()(
   persist(
@@ -159,8 +138,8 @@ export const useOps = create<OpsState>()(
       alerts: operationalAlerts,
       queue: settlementQueue,
       feed: recentSettlementFeed,
-      logs: seedLogs(),
-      counters: { stl: 90220, epc: 2042, ledger: 58921500, alert: 123 },
+      logs: [],
+      counters: { stl: 0, epc: 0, ledger: 0, alert: 0 },
       lastTick: 0,
 
       getContract: (id) => get().contracts.find((c) => c.id === id),
@@ -412,7 +391,7 @@ export const useOps = create<OpsState>()(
         }),
     }),
     {
-      name: "energypay.ops.v1",
+      name: "energypay.ops.v2",
       storage: createJSONStorage(() =>
         typeof window !== "undefined" ? window.localStorage : (undefined as unknown as Storage),
       ),

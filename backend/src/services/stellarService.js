@@ -2,7 +2,7 @@ import StellarSdk from "@stellar/stellar-sdk";
 
 const server = new StellarSdk.Horizon.Server("https://horizon-testnet.stellar.org");
 
-const EPRW = "EPRW";
+const EPRW = "EPWR";
 
 // 🔐 Criar wallet
 export function createWallet() {

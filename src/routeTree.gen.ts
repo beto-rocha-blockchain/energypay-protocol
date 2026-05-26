@@ -15,6 +15,7 @@ import { Route as TreasuryRouteImport } from './routes/treasury'
 import { Route as TopologyRouteImport } from './routes/topology'
 import { Route as SettlementRouteImport } from './routes/settlement'
 import { Route as RiskRouteImport } from './routes/risk'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as ReconciliationRouteImport } from './routes/reconciliation'
 import { Route as P2pRouteImport } from './routes/p2p'
@@ -23,6 +24,7 @@ import { Route as OpsRouteImport } from './routes/ops'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as GridRouteImport } from './routes/grid'
 import { Route as GeneratorRouteImport } from './routes/generator'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as ClearingRouteImport } from './routes/clearing'
 import { Route as AuditRouteImport } from './routes/audit'
 import { Route as IndexRouteImport } from './routes/index'
@@ -64,6 +66,11 @@ const RiskRoute = RiskRouteImport.update({
   path: '/risk',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
   path: '/register',
@@ -102,6 +109,11 @@ const GridRoute = GridRouteImport.update({
 const GeneratorRoute = GeneratorRouteImport.update({
   id: '/generator',
   path: '/generator',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ClearingRoute = ClearingRouteImport.update({
@@ -161,6 +173,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/audit': typeof AuditRoute
   '/clearing': typeof ClearingRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/generator': typeof GeneratorRoute
   '/grid': typeof GridRoute
   '/login': typeof LoginRoute
@@ -169,6 +182,7 @@ export interface FileRoutesByFullPath {
   '/p2p': typeof P2pRoute
   '/reconciliation': typeof ReconciliationRoute
   '/register': typeof RegisterRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/risk': typeof RiskRoute
   '/settlement': typeof SettlementRoute
   '/topology': typeof TopologyRoute
@@ -187,6 +201,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/audit': typeof AuditRoute
   '/clearing': typeof ClearingRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/generator': typeof GeneratorRoute
   '/grid': typeof GridRoute
   '/login': typeof LoginRoute
@@ -195,6 +210,7 @@ export interface FileRoutesByTo {
   '/p2p': typeof P2pRoute
   '/reconciliation': typeof ReconciliationRoute
   '/register': typeof RegisterRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/risk': typeof RiskRoute
   '/settlement': typeof SettlementRoute
   '/topology': typeof TopologyRoute
@@ -214,6 +230,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/audit': typeof AuditRoute
   '/clearing': typeof ClearingRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/generator': typeof GeneratorRoute
   '/grid': typeof GridRoute
   '/login': typeof LoginRoute
@@ -222,6 +239,7 @@ export interface FileRoutesById {
   '/p2p': typeof P2pRoute
   '/reconciliation': typeof ReconciliationRoute
   '/register': typeof RegisterRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/risk': typeof RiskRoute
   '/settlement': typeof SettlementRoute
   '/topology': typeof TopologyRoute
@@ -242,6 +260,7 @@ export interface FileRouteTypes {
     | '/'
     | '/audit'
     | '/clearing'
+    | '/forgot-password'
     | '/generator'
     | '/grid'
     | '/login'
@@ -250,6 +269,7 @@ export interface FileRouteTypes {
     | '/p2p'
     | '/reconciliation'
     | '/register'
+    | '/reset-password'
     | '/risk'
     | '/settlement'
     | '/topology'
@@ -268,6 +288,7 @@ export interface FileRouteTypes {
     | '/'
     | '/audit'
     | '/clearing'
+    | '/forgot-password'
     | '/generator'
     | '/grid'
     | '/login'
@@ -276,6 +297,7 @@ export interface FileRouteTypes {
     | '/p2p'
     | '/reconciliation'
     | '/register'
+    | '/reset-password'
     | '/risk'
     | '/settlement'
     | '/topology'
@@ -294,6 +316,7 @@ export interface FileRouteTypes {
     | '/'
     | '/audit'
     | '/clearing'
+    | '/forgot-password'
     | '/generator'
     | '/grid'
     | '/login'
@@ -302,6 +325,7 @@ export interface FileRouteTypes {
     | '/p2p'
     | '/reconciliation'
     | '/register'
+    | '/reset-password'
     | '/risk'
     | '/settlement'
     | '/topology'
@@ -321,6 +345,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuditRoute: typeof AuditRoute
   ClearingRoute: typeof ClearingRoute
+  ForgotPasswordRoute: typeof ForgotPasswordRoute
   GeneratorRoute: typeof GeneratorRoute
   GridRoute: typeof GridRoute
   LoginRoute: typeof LoginRoute
@@ -329,6 +354,7 @@ export interface RootRouteChildren {
   P2pRoute: typeof P2pRoute
   ReconciliationRoute: typeof ReconciliationRoute
   RegisterRoute: typeof RegisterRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   RiskRoute: typeof RiskRoute
   SettlementRoute: typeof SettlementRoute
   TopologyRoute: typeof TopologyRoute
@@ -388,6 +414,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RiskRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/register': {
       id: '/register'
       path: '/register'
@@ -442,6 +475,13 @@ declare module '@tanstack/react-router' {
       path: '/generator'
       fullPath: '/generator'
       preLoaderRoute: typeof GeneratorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/clearing': {
@@ -521,6 +561,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuditRoute: AuditRoute,
   ClearingRoute: ClearingRoute,
+  ForgotPasswordRoute: ForgotPasswordRoute,
   GeneratorRoute: GeneratorRoute,
   GridRoute: GridRoute,
   LoginRoute: LoginRoute,
@@ -529,6 +570,7 @@ const rootRouteChildren: RootRouteChildren = {
   P2pRoute: P2pRoute,
   ReconciliationRoute: ReconciliationRoute,
   RegisterRoute: RegisterRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   RiskRoute: RiskRoute,
   SettlementRoute: SettlementRoute,
   TopologyRoute: TopologyRoute,

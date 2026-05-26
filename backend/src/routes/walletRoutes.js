@@ -154,7 +154,7 @@ router.get("/:publicKey/balances", async (req, res) => {
       summary: {
         xlm: xlmBalance,
         eprw: eprwBalance,
-        eprw_code: "EPRW",
+        eprw_code: "EPWR",
         eprw_issuer: eprwIssuer,
         eprw_limit: eprwLimit,
         eprw_trustline: eprwTrustline,
@@ -188,7 +188,7 @@ router.get("/:publicKey/balances", async (req, res) => {
       summary: {
         xlm: "0",
         eprw: "0",
-        eprw_code: "EPRW",
+        eprw_code: "EPWR",
         eprw_issuer: null,
         eprw_limit: null,
         eprw_trustline: false,

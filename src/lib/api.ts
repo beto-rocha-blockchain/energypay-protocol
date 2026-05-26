@@ -122,6 +122,7 @@ export type RegisterPayload = {
   email: string;
   password: string;
   full_name: string;
+  phone?: string;
   organization: string;
   country: string;
   city: string;

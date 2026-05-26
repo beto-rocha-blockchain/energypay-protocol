@@ -151,7 +151,7 @@ export function WalletBalancesPanel({ publicKey, organization, funded }: Props) 
             />
             <Indicator
               label="Trustline"
-              value={trustline ? "EPRW" : "PENDING"}
+              value={trustline ? "EPWR" : "PENDING"}
               tone={trustline ? "ok" : "warn"}
             />
             <Indicator
@@ -192,7 +192,7 @@ export function WalletBalancesPanel({ publicKey, organization, funded }: Props) 
           amount={fmtAmount(xlm, 4)}
         />
         <BalanceGlowCard
-          symbol="EPRW"
+          symbol="EPWR"
           label="EnergyPay Receivable"
           tagline="Tokenized energy settlement asset"
           icon={<Coins className="h-5 w-5 text-primary-foreground" strokeWidth={2.5} />}
@@ -270,7 +270,7 @@ export function WalletBalancesPanel({ publicKey, organization, funded }: Props) 
             />
             <ActivityLine
               ok={trustline}
-              text={trustline ? "Trustline EPRW established" : "EPRW trustline not yet detected"}
+              text={trustline ? "Trustline EPWR established" : "EPWR trustline not yet detected"}
             />
             <ActivityLine
               ok={funded ?? false}
