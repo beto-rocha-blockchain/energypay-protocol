@@ -2,7 +2,6 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { STELLAR_NETWORK_LABEL } from "@/lib/stellar";
 import { useEffect, useState } from "react";
 import {
-  Zap,
   KeyRound,
   Building2,
   Mail,
@@ -14,6 +13,7 @@ import {
   Sun,
   Moon,
 } from "lucide-react";
+import { BrandBadge, BrandName } from "@/components/BrandLogo";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -76,13 +76,11 @@ function LoginPage() {
         <Card className="hidden flex-col justify-between overflow-hidden border-border bg-card/60 p-6 lg:flex">
           <div>
             <div className="flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-md bg-[image:var(--gradient-primary)] shadow-[var(--shadow-glow)]">
-                <Zap className="h-5 w-5 text-primary-foreground" strokeWidth={2.5} />
-              </div>
-              <div className="leading-tight">
-                <div className="text-sm font-semibold">EnergyPay</div>
+              <BrandBadge size="md" />
+              <div className="leading-tight" style={{ gap: 3, display: "flex", flexDirection: "column" }}>
+                <BrandName size="md" />
                 <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                  Clearing & Settlement Infrastructure
+                  Clearing &amp; Settlement Infrastructure
                 </div>
               </div>
             </div>

@@ -41,6 +41,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useOperator, maskAddress, ROLE_META, ROLE_COLORS, type ParticipantRole } from "@/store/operator";
+import { BrandBadge, BrandName } from "@/components/BrandLogo";
 import { useUiStore, type Theme } from "@/store/ui";
 import { toast } from "sonner";
 import { safeErrorMessage } from "@/lib/safe-error";
@@ -240,13 +241,11 @@ useEffect(() => {
         <Card className="hidden flex-col justify-between overflow-hidden border-border bg-card/60 p-6 lg:flex">
           <div>
             <div className="flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-md bg-[image:var(--gradient-primary)] shadow-[var(--shadow-glow)]">
-                <Zap className="h-5 w-5 text-primary-foreground" strokeWidth={2.5} />
-              </div>
-              <div className="leading-tight">
-                <div className="text-sm font-semibold">EnergyPay</div>
+              <BrandBadge size="md" />
+              <div className="leading-tight" style={{ gap: 3, display: "flex", flexDirection: "column" }}>
+                <BrandName size="md" />
                 <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                  Clearing & Settlement Infrastructure
+                  Clearing &amp; Settlement Infrastructure
                 </div>
               </div>
             </div>

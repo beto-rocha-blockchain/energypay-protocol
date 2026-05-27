@@ -2,7 +2,6 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { API_BASE_URL } from "@/lib/api";
 import {
-  Zap,
   Lock,
   ArrowRight,
   Loader2,
@@ -12,6 +11,7 @@ import {
   Phone,
   ShieldCheck,
 } from "lucide-react";
+import { BrandBadge, BrandName } from "@/components/BrandLogo";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -152,11 +152,9 @@ function ResetPasswordPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="mb-6 flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-md bg-[image:var(--gradient-primary)] shadow-[var(--shadow-glow)]">
-            <Zap className="h-5 w-5 text-primary-foreground" strokeWidth={2.5} />
-          </div>
-          <div className="leading-tight">
-            <div className="text-sm font-semibold">EnergyPay</div>
+          <BrandBadge size="md" />
+          <div className="leading-tight" style={{ gap: 3, display: "flex", flexDirection: "column" }}>
+            <BrandName size="md" />
             <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
               Set New Password
             </div>

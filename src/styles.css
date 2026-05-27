@@ -333,16 +333,18 @@
   @keyframes ep-logo-pulse {
     0%,
     100% {
-      filter: drop-shadow(0 0 10px color-mix(in oklab, var(--primary) 55%, transparent))
-        drop-shadow(0 0 36px color-mix(in oklab, var(--accent) 22%, transparent));
+      filter:
+        drop-shadow(0 0 10px rgba(0, 200, 238, 0.55))
+        drop-shadow(0 0 36px rgba(102, 230, 25, 0.22));
     }
     50% {
-      filter: drop-shadow(0 0 22px color-mix(in oklab, var(--primary) 88%, transparent))
-        drop-shadow(0 0 72px color-mix(in oklab, var(--accent) 44%, transparent));
+      filter:
+        drop-shadow(0 0 24px rgba(0, 200, 238, 0.85))
+        drop-shadow(0 0 72px rgba(102, 230, 25, 0.40));
     }
   }
 
-  /* Applied to the <img> or fallback div inside SplashScreen */
+  /* Applied to the badge circle inside SplashScreen */
   .ep-splash-logo {
     animation: ep-logo-pulse 1.8s ease-in-out infinite;
   }
@@ -350,7 +352,7 @@
   @media (prefers-reduced-motion: reduce) {
     .ep-splash-logo {
       animation: none;
-      filter: drop-shadow(0 0 10px color-mix(in oklab, var(--primary) 55%, transparent));
+      filter: drop-shadow(0 0 10px rgba(0, 200, 238, 0.55));
     }
   }
 }
