@@ -36,7 +36,7 @@ import {
   type P2PTransfer,
   type P2PTransferState,
 } from "@/store/p2p";
-import { stellarExpertTx } from "@/lib/stellar";
+import { stellarExpertTx, STELLAR_NETWORK } from "@/lib/stellar";
 import { apiValidatedP2PTransfer, type P2PValidationError } from "@/lib/api";
 import { validateP2PTransfer } from "@/lib/p2p-validation";
 import {
@@ -76,8 +76,12 @@ const ROLE_CONTEXT: Record<string, string> = {
 
 function P2PPage() {
   const operator = useOperator((s) => s.operator);
-  const { transfers, counterparties, recordTransfer } = useP2P();
+  const { transfers, counterparties, fetchCounterparties, recordTransfer } = useP2P();
   const { railState, isOffline, isExecutable } = useSettlementRail();
+
+  useEffect(() => {
+    fetchCounterparties();
+  }, [fetchCounterparties]);
 
   const [destinationOrg, setDestinationOrg] = useState("");
   const [destinationAddress, setDestinationAddress] = useState("");
@@ -157,11 +161,11 @@ function P2PPage() {
       const cached = sessionStorage.getItem(draftKey);
       if (cached) transferId = cached;
       else {
-        transferId = `P2P-${Math.floor(100000 + Math.random() * 899999)}`;
+        transferId = `P2P-${(crypto.randomUUID?.() ?? Date.now().toString(36)).slice(0, 8).toUpperCase()}`;
         sessionStorage.setItem(draftKey, transferId);
       }
     } catch {
-      transferId = `P2P-${Math.floor(100000 + Math.random() * 899999)}`;
+      transferId = `P2P-${(crypto.randomUUID?.() ?? Date.now().toString(36)).slice(0, 8).toUpperCase()}`;
     }
     const signer = maskAddress(operator.wallet.publicKey);
     const recipient = maskAddress(authorization.destinationPublicKey);
@@ -373,7 +377,7 @@ function P2PPage() {
             <Radio className="h-3 w-3 text-success" /> DIRECT RAIL · ACTIVE
           </span>
           <span className="flex items-center gap-1.5 rounded-md border border-border bg-card px-2 py-1 font-mono text-success">
-            <Activity className="h-3 w-3 animate-pulse" /> STELLAR TESTNET
+            <Activity className="h-3 w-3 animate-pulse" /> {STELLAR_NETWORK}
           </span>
         </div>
       </div>
@@ -574,7 +578,7 @@ function P2PPage() {
               value={`${operator.operatorId} · ${operator.organization}`}
             />
             <SignerCell label="Signer address" value={operator.wallet.publicKey} mono truncate />
-            <SignerCell label="Active network" value="Stellar Testnet · horizon.stellar.org" />
+            <SignerCell label="Active network" value={`${STELLAR_NETWORK} · horizon.stellar.org`} />
             <SignerCell
               label="Authorization state"
               value={running ? "BINDING SIGNER" : result ? "FINALIZED" : "READY"}
@@ -595,7 +599,7 @@ function P2PPage() {
                 <li key={r} className="flex items-start gap-2 text-[11px]">
                   <CheckCircle2 className="mt-0.5 h-3 w-3 shrink-0 text-success" />
                   <div>
-                    <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                    <span className={`font-mono text-[10px] uppercase tracking-widest ${ROLE_META[r].color.text}`}>
                       {ROLE_META[r].label}
                     </span>
                     <p className="text-foreground/85">{ROLE_CONTEXT[r]}</p>
@@ -690,7 +694,7 @@ function P2PPage() {
                 </div>
               </div>
               <a
-                href={`https://stellar.expert/explorer/testnet/tx/${result.txHash}`}
+                href={stellarExpertTx(result.txHash)}
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex items-center gap-1.5 text-xs text-accent hover:underline"

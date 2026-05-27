@@ -1,40 +1,78 @@
 import { create } from "zustand";
 import { apiLogin, apiRegister, type ApiUser, type RegisterPayload } from "@/lib/api";
 import { getSession, setSession, clearSession, type AuthSession } from "@/lib/session";
+import { STELLAR_NETWORK } from "@/lib/stellar";
 
 export type AccessLevel = "OPERATOR" | "SUPERVISOR" | "CLEARING_ADMIN";
 
-export type ParticipantRole = "GENERATOR" | "SELLER" | "INVESTOR" | "USER";
+export type ParticipantRole = "GENERATOR" | "SELLER" | "INVESTOR" | "USER" | "UTILITY";
+
+/**
+ * Role color system — single source of truth for the entire platform.
+ *   GENERATOR → red     (#f87171 / red-400)
+ *   SELLER    → blue    (#38bdf8 / sky-400)
+ *   INVESTOR  → yellow  (#facc15 / yellow-400)
+ *   USER      → green   (#4ade80 / green-400)
+ *   UTILITY   → orange  (#fb923c / orange-400)
+ */
+export type RoleColor = {
+  /** Tailwind border class fragment */
+  border: string;
+  /** Tailwind bg class fragment */
+  bg: string;
+  /** Tailwind text class fragment */
+  text: string;
+  /** Raw hex for SVG / inline styles */
+  hex: string;
+};
+
+export const ROLE_COLORS: Record<ParticipantRole, RoleColor> = {
+  GENERATOR: { border: "border-red-400/50",    bg: "bg-red-400/10",    text: "text-red-400",    hex: "#f87171" },
+  SELLER:    { border: "border-sky-400/50",    bg: "bg-sky-400/10",    text: "text-sky-400",    hex: "#38bdf8" },
+  INVESTOR:  { border: "border-yellow-400/50", bg: "bg-yellow-400/10", text: "text-yellow-400", hex: "#facc15" },
+  USER:      { border: "border-green-400/50",  bg: "bg-green-400/10",  text: "text-green-400",  hex: "#4ade80" },
+  UTILITY:   { border: "border-orange-400/50", bg: "bg-orange-400/10", text: "text-orange-400", hex: "#fb923c" },
+};
 
 export const ROLE_META: Record<
   ParticipantRole,
-  { label: string; tagline: string; capabilities: string[] }
+  { label: string; tagline: string; capabilities: string[]; color: RoleColor }
 > = {
   GENERATOR: {
     label: "Generator",
-    tagline: "Energy issuance · tokenized production",
-    capabilities: ["Generation assets", "Energy issuance", "Tokenized production"],
+    tagline: "Produces energy · sell-side only",
+    capabilities: ["Issue energy certificates", "Create sell contracts", "Receive EPWR settlements"],
+    color: ROLE_COLORS.GENERATOR,
   },
   SELLER: {
     label: "Seller",
-    tagline: "Commercialization · contract settlement",
-    capabilities: ["Energy commercialization", "Contract settlement", "Market operations"],
+    tagline: "Buys from generators · resells at market rate",
+    capabilities: ["Buy from generators", "Resell to consumers", "Manage buy/sell spread"],
+    color: ROLE_COLORS.SELLER,
   },
   INVESTOR: {
     label: "Investor",
-    tagline: "Portfolio exposure · financial reconciliation",
-    capabilities: ["Portfolio exposure", "Settlement analytics", "Financial reconciliation"],
+    tagline: "Passive EPWR exposure · appreciates over time",
+    capabilities: ["Track EPWR portfolio", "Monitor PLD price", "Yield & analytics"],
+    color: ROLE_COLORS.INVESTOR,
   },
   USER: {
     label: "Consumer",
-    tagline: "Energy consumption · settlement visibility",
-    capabilities: ["Energy consumption", "Billing visibility", "Direct settlement"],
+    tagline: "Purchases energy · pays per kWh consumed",
+    capabilities: ["Buy energy contracts", "Track kWh consumption", "Direct payment"],
+    color: ROLE_COLORS.USER,
+  },
+  UTILITY: {
+    label: "Utility",
+    tagline: "Concessionária · distribution & grid operations",
+    capabilities: ["Manage UC registry", "Collect TUSD settlements", "Grid connection certificates"],
+    color: ROLE_COLORS.UTILITY,
   },
 };
 
 export type StellarKeypair = {
   publicKey: string;
-  network: "STELLAR_TESTNET" | string;
+  network: string;
   funded: boolean;
   status: string;
 };
@@ -59,6 +97,9 @@ export type OperatorIdentity = {
   funded: boolean;
   provisionedAt: string;
   token: string;
+  emailVerified: boolean;
+  phoneVerified: boolean;
+  phone: string | null;
   provisioningTxHash?: string | null;
   provisioningLedger?: number | null;
   settlementStatus?: string | null;
@@ -84,9 +125,16 @@ type OperatorState = {
     roles: ParticipantRole[];
     coords?: OperatorCoords;
     fund?: boolean;
+    energyType?: "SOLAR" | "HYDRO" | "SMALL_HYDRO" | "WIND" | "BIOMASS" | "NATURAL_GAS" | "NUCLEAR" | "THERMAL" | "COGENERATION";
+    walletMode?: "generate" | "link";
+    existingPublicKey?: string;
+    existingSecretKey?: string;
   }) => Promise<OperatorIdentity>;
   setRoles: (roles: ParticipantRole[]) => void;
   setCoords: (coords: OperatorCoords | undefined) => void;
+  setEmailVerified: (v: boolean) => void;
+  setPhoneVerified: (v: boolean) => void;
+  setPhone: (phone: string) => void;
   logout: () => void;
 };
 
@@ -95,6 +143,7 @@ const ROLE_PERMISSIONS: Record<ParticipantRole, string[]> = {
   SELLER: ["settlements.execute", "contracts.write"],
   INVESTOR: ["portfolio.read", "analytics.read"],
   USER: ["billing.read", "consumption.read"],
+  UTILITY: ["grid.manage", "tusd.collect", "uc.registry"],
 };
 
 const buildPermissions = (roles: ParticipantRole[]) => {
@@ -103,12 +152,21 @@ const buildPermissions = (roles: ParticipantRole[]) => {
   return Array.from(new Set([...base, ...rolePerms]));
 };
 
+/** Canonical display order for participant roles — single source of truth. */
+const ROLE_ORDER: ParticipantRole[] = [
+  "GENERATOR",
+  "SELLER",
+  "INVESTOR",
+  "UTILITY",
+  "USER",
+];
+
 const normalizeRoles = (roles: string[] | undefined): ParticipantRole[] => {
-  const valid: ParticipantRole[] = ["GENERATOR", "SELLER", "INVESTOR", "USER"];
   if (!roles?.length) return ["SELLER"];
   return roles
     .map((r) => r.toUpperCase() as ParticipantRole)
-    .filter((r): r is ParticipantRole => valid.includes(r));
+    .filter((r): r is ParticipantRole => ROLE_ORDER.includes(r))
+    .sort((a, b) => ROLE_ORDER.indexOf(a) - ROLE_ORDER.indexOf(b));
 };
 
 const identityFromSession = (session: AuthSession): OperatorIdentity => {
@@ -116,7 +174,7 @@ const identityFromSession = (session: AuthSession): OperatorIdentity => {
   const roles = normalizeRoles(u.roles);
   const wallet: StellarKeypair = {
     publicKey: u.stellar_public_key,
-    network: u.network ?? "STELLAR_TESTNET",
+    network: u.network ?? STELLAR_NETWORK,
     funded: !!u.funded,
     status: u.wallet_status ?? (u.funded ? "FUNDED" : "PROVISIONED"),
   };
@@ -135,9 +193,12 @@ const identityFromSession = (session: AuthSession): OperatorIdentity => {
     roles,
     accessLevel: "OPERATOR",
     permissions: buildPermissions(roles),
-    network: u.network ?? "STELLAR_TESTNET",
+    network: u.network ?? STELLAR_NETWORK,
     networkStatus: "ACTIVE",
     funded: !!u.funded,
+    emailVerified: !!u.email_verified,
+    phoneVerified: !!u.phone_verified,
+    phone: u.phone ?? null,
     provisionedAt: session.createdAt,
     token: session.token,
     provisioningTxHash: u.provisioning_tx_hash ?? null,
@@ -186,6 +247,10 @@ export const useOperator = create<OperatorState>()((set, get) => ({
     roles,
     coords,
     fund,
+    energyType,
+    walletMode,
+    existingPublicKey,
+    existingSecretKey,
   }) => {
     if (!roles.length) throw new Error("Select at least one market participant role.");
     const payload: RegisterPayload = {
@@ -199,6 +264,10 @@ export const useOperator = create<OperatorState>()((set, get) => ({
       roles,
       coords,
       fund: fund ?? true,
+      energy_type: energyType,
+      wallet_mode: walletMode,
+      existing_public_key: walletMode === "link" ? existingPublicKey : undefined,
+      existing_secret: walletMode === "link" ? existingSecretKey : undefined,
     };
     const res = await apiRegister(payload);
     const session: AuthSession = {
@@ -225,6 +294,24 @@ export const useOperator = create<OperatorState>()((set, get) => ({
     const op = get().operator;
     if (!op) return;
     set({ operator: { ...op, coords } });
+  },
+
+  setEmailVerified: (v) => {
+    const op = get().operator;
+    if (!op) return;
+    set({ operator: { ...op, emailVerified: v } });
+  },
+
+  setPhoneVerified: (v) => {
+    const op = get().operator;
+    if (!op) return;
+    set({ operator: { ...op, phoneVerified: v } });
+  },
+
+  setPhone: (phone) => {
+    const op = get().operator;
+    if (!op) return;
+    set({ operator: { ...op, phone, phoneVerified: false } });
   },
 
   logout: () => {

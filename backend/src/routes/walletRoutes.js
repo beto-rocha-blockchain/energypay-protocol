@@ -1,4 +1,5 @@
 import express from "express";
+import { NETWORK_LABEL, NETWORK_NAME, HORIZON_URL } from "../lib/stellar-network.js";
 
 import {
   createWallet,
@@ -31,7 +32,7 @@ router.post("/create", async (req, res) => {
         publicKey: wallet.publicKey,
         secretKey: wallet.secretKey,
 
-        network: "STELLAR_TESTNET",
+        network: NETWORK_LABEL,
         funded: true,
       },
     });
@@ -46,20 +47,141 @@ router.post("/create", async (req, res) => {
 });
 
 // =====================================================
-// GET WALLET ACTIVITY FEED - DEMO SAFE
+// GET WALLET ACTIVITY FEED — real Horizon operations
 // =====================================================
+
+const classifyHorizonOp = (op, account) => {
+  const successful = op.transaction_successful !== false;
+  let kind = "OTHER";
+  let title = (op.type || "").replace(/_/g, " ").toUpperCase();
+  let detail = "";
+  let asset = null;
+  let amount = null;
+  let counterparty = null;
+  const severity = successful ? "ok" : "critical";
+
+  switch (op.type) {
+    case "create_account":
+      kind = "FUNDING";
+      title = "Account Funded";
+      amount = op.starting_balance ?? null;
+      asset = "XLM";
+      counterparty = op.funder ?? null;
+      detail = `${amount ?? "—"} XLM seeded into settlement account.`;
+      break;
+    case "payment": {
+      const code = op.asset_type === "native" ? "XLM" : (op.asset_code ?? "—");
+      const incoming = op.to === account;
+      asset = code;
+      amount = op.amount ?? null;
+      counterparty = incoming ? (op.from ?? null) : (op.to ?? null);
+      const isIssuance = code === "EPWR" && op.asset_issuer && op.from === op.asset_issuer && op.to === account;
+      if (isIssuance) {
+        kind = "ISSUANCE";
+        title = "EPWR Issued";
+        detail = `${amount ?? "—"} EPWR minted from issuer.`;
+      } else {
+        kind = "SETTLEMENT";
+        title = incoming ? `Settlement Received · ${code}` : `Settlement Sent · ${code}`;
+        detail = incoming
+          ? `${amount ?? "—"} ${code} received.`
+          : `${amount ?? "—"} ${code} dispatched.`;
+      }
+      break;
+    }
+    case "change_trust":
+      kind = "TRUSTLINE";
+      asset = op.asset_code ?? "—";
+      title = op.limit === "0" || op.limit === "0.0000000"
+        ? `Trustline Removed · ${asset}`
+        : `Trustline Established · ${asset}`;
+      detail = `Operator updated ${asset} trustline.`;
+      break;
+    case "manage_sell_offer":
+    case "manage_buy_offer":
+    case "create_passive_sell_offer":
+      kind = "OFFER";
+      asset = `${op.selling_asset_code ?? "XLM"}/${op.buying_asset_code ?? "XLM"}`;
+      title = `DEX Offer · ${asset}`;
+      detail = `Order book activity at price ${op.price ?? "—"}.`;
+      break;
+    default:
+      detail = `Stellar operation of type ${op.type}.`;
+  }
+
+  return {
+    id: op.id,
+    tx_hash: op.transaction_hash,
+    ledger: 0,
+    created_at: op.created_at,
+    kind,
+    severity,
+    title,
+    detail,
+    asset,
+    amount,
+    counterparty,
+    successful,
+  };
+};
 
 router.get("/:publicKey/activity", async (req, res) => {
   const startedAt = Date.now();
+  const { publicKey } = req.params;
+  const limit = Math.min(Math.max(Number(req.query.limit) || 20, 1), 50);
 
-  return res.json({
-    success: true,
-    wallet: req.params.publicKey,
-    events: [],
-    latency_ms: Date.now() - startedAt,
-    checked_at: new Date().toISOString(),
-    note: "No recent wallet activity available in demo feed.",
-  });
+  try {
+    const url = `${HORIZON_URL}/accounts/${publicKey}/operations?order=desc&limit=${limit}&include_failed=true`;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8_000);
+    let horizonRes;
+    try {
+      horizonRes = await fetch(url, {
+        headers: { Accept: "application/json" },
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timer);
+    }
+
+    if (horizonRes.status === 404) {
+      return res.json({
+        success: true,
+        wallet: publicKey,
+        events: [],
+        latency_ms: Date.now() - startedAt,
+        checked_at: new Date().toISOString(),
+        note: "Account not yet on ledger.",
+      });
+    }
+
+    if (!horizonRes.ok) {
+      return res.status(502).json({
+        success: false,
+        error: `Horizon HTTP ${horizonRes.status}`,
+        latency_ms: Date.now() - startedAt,
+      });
+    }
+
+    const body = await horizonRes.json();
+    const records = body?._embedded?.records ?? [];
+    const events = records.map((op) => classifyHorizonOp(op, publicKey));
+
+    return res.json({
+      success: true,
+      wallet: publicKey,
+      events,
+      latency_ms: Date.now() - startedAt,
+      checked_at: new Date().toISOString(),
+    });
+  } catch (err) {
+    return res.status(504).json({
+      success: false,
+      error: "HORIZON_UNREACHABLE",
+      message: err.message,
+      latency_ms: Date.now() - startedAt,
+    });
+  }
 });
 
 // =====================================================
@@ -147,7 +269,7 @@ router.get("/:publicKey/balances", async (req, res) => {
     return res.json({
       success: true,
       wallet: req.params.publicKey,
-      network: "stellar-testnet",
+      network: NETWORK_NAME,
       account_funded: Number(xlmBalance) > 0,
       subentry_count: data.subentry_count || assets.length,
       assets,
@@ -172,7 +294,7 @@ router.get("/:publicKey/balances", async (req, res) => {
     return res.status(200).json({
       success: true,
       wallet: req.params.publicKey,
-      network: "stellar-testnet",
+      network: NETWORK_NAME,
       account_funded: false,
       subentry_count: 0,
       assets: [

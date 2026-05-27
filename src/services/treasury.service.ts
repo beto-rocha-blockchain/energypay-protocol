@@ -1,67 +1,91 @@
+/**
+ * Treasury service — real data from /api/dashboard/horizon.
+ *
+ * Replaces the previous hardcoded fake balances (Settlement Pool 184 220 XLM,
+ * Clearing Treasury 92 410 XLM, etc.).  Now queries the actual Stellar Horizon
+ * balances for the operator account and the EPWR distribution account.
+ */
+
 import type { TreasuryBalance } from "@/types/domain";
 import { pollSubscription, type ReadService, nowIso } from "./_base";
 import type { ListResult } from "@/types/domain";
+import { API_BASE_URL } from "@/lib/api";
 
-function generate(): TreasuryBalance[] {
-  const asOf = new Date().toISOString();
-  return [
-    {
-      accountId: "settlement-pool",
-      label: "Settlement Guarantee Pool",
-      assetCode: "XLM",
-      balance: 184_220.42,
-      reservedBalance: 12_000,
-      asOf,
-    },
-    {
-      accountId: "settlement-pool",
-      label: "Settlement Guarantee Pool",
-      assetCode: "EPWR",
-      assetIssuer: "GA...",
-      balance: 1_482_900,
-      reservedBalance: 220_000,
-      trustlineLimit: 5_000_000,
-      asOf,
-    },
-    {
-      accountId: "clearing-treasury",
-      label: "Clearing Treasury",
-      assetCode: "XLM",
-      balance: 92_410.18,
-      asOf,
-    },
-    {
-      accountId: "clearing-treasury",
-      label: "Clearing Treasury",
-      assetCode: "EPWR",
-      assetIssuer: "GA...",
-      balance: 612_440,
-      asOf,
-    },
-    {
-      accountId: "fee-collection",
-      label: "Fee Collection",
-      assetCode: "XLM",
-      balance: 18_402.71,
-      asOf,
-    },
-  ];
+async function fetchLive(): Promise<TreasuryBalance[]> {
+  const res = await fetch(`${API_BASE_URL}/api/dashboard/horizon`, {
+    headers: { Accept: "application/json" },
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (!res.ok) throw new Error(`Horizon API ${res.status}`);
+  const json = await res.json();
+  const asOf = json.checked_at ?? nowIso();
+
+  const items: TreasuryBalance[] = [];
+
+  // Operator settlement account
+  if (json.operator_balance) {
+    const ob = json.operator_balance as { xlm?: string; epwr?: string };
+    if (ob.xlm !== undefined) {
+      items.push({
+        accountId: "operator-settlement",
+        label: "Operator Settlement Account",
+        assetCode: "XLM",
+        balance: parseFloat(ob.xlm),
+        asOf,
+      });
+    }
+    if (ob.epwr !== undefined) {
+      items.push({
+        accountId: "operator-settlement",
+        label: "Operator Settlement Account",
+        assetCode: "EPWR",
+        balance: parseFloat(ob.epwr),
+        asOf,
+      });
+    }
+  }
+
+  // Distribution / issuance account
+  if (json.distribution_balance) {
+    const db = json.distribution_balance as { xlm?: string; epwr?: string };
+    if (db.xlm !== undefined) {
+      items.push({
+        accountId: "epwr-distribution",
+        label: "EPWR Distribution Account",
+        assetCode: "XLM",
+        balance: parseFloat(db.xlm),
+        asOf,
+      });
+    }
+    if (db.epwr !== undefined) {
+      items.push({
+        accountId: "epwr-distribution",
+        label: "EPWR Distribution Account",
+        assetCode: "EPWR",
+        balance: parseFloat(db.epwr),
+        asOf,
+      });
+    }
+  }
+
+  return items;
 }
 
 export const treasuryService: ReadService<TreasuryBalance, void> = {
   async list() {
-    const items = generate();
+    const items = await fetchLive();
     return {
       items,
       total: items.length,
       asOf: nowIso(),
-      source: "MOCK",
+      source: "LIVE",
     } as ListResult<TreasuryBalance>;
   },
   async get(id) {
-    return generate().find((b) => b.accountId === id) ?? null;
+    const items = await fetchLive();
+    return items.find((b) => b.accountId === id) ?? null;
   },
-  subscribe(onUpdate, _f, intervalMs = 15_000) {
+  subscribe(onUpdate, _f, intervalMs = 30_000) {
     return pollSubscription(this.list.bind(this), onUpdate, undefined, intervalMs);
   },
 };

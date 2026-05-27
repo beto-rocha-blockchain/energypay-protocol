@@ -3,34 +3,15 @@ import { useMemo } from "react";
 import {
   Activity,
   Zap,
-  Sun,
-  Wind,
-  Gauge,
-  Factory,
-  Coins,
-  TrendingUp,
   Radio,
-  ArrowUpRight,
-  Sparkles,
+  ArrowRight,
   Wallet,
   ShieldCheck,
   CheckCircle2,
   AlertTriangle,
-  Cpu,
   ExternalLink,
-  ArrowRight,
+  RefreshCw,
 } from "lucide-react";
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-  Bar,
-  BarChart,
-} from "recharts";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -38,14 +19,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useOperator, maskAddress } from "@/store/operator";
 import { useWalletBalances } from "@/hooks/useWalletBalances";
 import { useWalletActivity } from "@/hooks/useWalletActivity";
-import { useGeneratorTelemetry } from "@/hooks/useGeneratorTelemetry";
+import { useDashboard } from "@/hooks/useDashboard";
 import { useSettlementRail } from "@/hooks/useSettlementRail";
-import { stellarExpertAccount, stellarExpertTx } from "@/lib/stellar";
-import { BilateralContractsPanel } from "@/components/generator/BilateralContractsPanel";
+import { stellarExpertAccount, stellarExpertTx, STELLAR_NETWORK_LABEL } from "@/lib/stellar";
 import { BrazilGridMap } from "@/components/generator/BrazilGridMap";
-import { AIForecastPanel } from "@/components/generator/AIForecastPanel";
 import { StellarRailMonitor } from "@/components/generator/StellarRailMonitor";
-import { LiveSettlementFeed } from "@/components/generator/LiveSettlementFeed";
 
 export const Route = createFileRoute("/generator")({
   head: () => ({
@@ -63,6 +41,12 @@ export const Route = createFileRoute("/generator")({
 
 const fmtN = (n: number, max = 2) => n.toLocaleString("en-US", { maximumFractionDigits: max });
 
+const fmtBRL = (n: number) =>
+  n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+
+const shortHash = (h: string) =>
+  h && h.length > 12 ? `${h.slice(0, 6)}…${h.slice(-6)}` : h || "—";
+
 function GeneratorPage() {
   const operator = useOperator((s) => s.operator);
   const isAuthenticated = useOperator((s) => s.isAuthenticated);
@@ -75,7 +59,8 @@ function GeneratorPage() {
     loading: actLoading,
     fetchedAt: actFetchedAt,
   } = useWalletActivity(publicKey);
-  const { railState, isOffline } = useSettlementRail();
+  const { stats, horizon, loading, refresh } = useDashboard();
+  const { health } = useSettlementRail();
 
   const eprwBalance = useMemo(() => {
     const v = Number(balances?.summary?.eprw ?? balances?.balances?.eprw ?? 0);
@@ -83,261 +68,115 @@ function GeneratorPage() {
   }, [balances]);
 
   const xlmBalance = Number(balances?.summary?.xlm ?? balances?.balances?.xlm ?? 0);
-  const telemetry = useGeneratorTelemetry({ eprwBalance });
 
   if (!isAuthenticated || !operator || !publicKey) {
     return <Navigate to="/login" />;
   }
 
-  const recentSettlements = events
-    .filter((e) => e.kind === "SETTLEMENT" || e.kind === "ISSUANCE")
-    .slice(0, 6);
+  const settled = stats?.settled_count ?? 0;
+  const failed = stats?.failed_count ?? 0;
+  const totalBrl = stats?.total_value_brl ?? 0;
+  const horizonLatency = horizon?.latency_ms ?? 0;
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6">
+    <div className="mx-auto max-w-7xl space-y-4">
       {/* Header */}
-      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
             Generator Operations · SCADA + Settlement Command Center
           </p>
-          <h1 className="mt-1 font-display text-3xl font-semibold tracking-tight">
-            Generator Operations Command Center
+          <h1 className="font-display text-2xl font-semibold tracking-tight">
+            Generator Operations Terminal
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Programmable settlement rail for energy producers — live generation telemetry, EPWR
-            issuance, on-chain settlement.
-          </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <RailIndicator state={railState} />
+          <Badge
+            variant="outline"
+            className={`font-mono text-[10px] uppercase tracking-widest ${
+              health?.status === "ok"
+                ? "border-success/40 text-success"
+                : "border-destructive/40 text-destructive"
+            }`}
+          >
+            {health?.status === "ok" ? (
+              <CheckCircle2 className="mr-1.5 h-3 w-3" />
+            ) : (
+              <AlertTriangle className="mr-1.5 h-3 w-3" />
+            )}
+            Rail · {health?.status === "ok" ? "CONNECTED" : "OFFLINE"}
+          </Badge>
           <Badge variant="outline" className="font-mono text-[10px] uppercase tracking-widest">
             <Radio className="mr-1.5 h-3 w-3 text-success" />
-            Stellar Testnet
+            {STELLAR_NETWORK_LABEL}
           </Badge>
-          <Badge variant="outline" className="font-mono text-[10px] uppercase tracking-widest">
-            <Activity className="mr-1.5 h-3 w-3 animate-pulse text-success" />
-            LIVE · 5s tick
-          </Badge>
+          <Button size="sm" variant="outline" onClick={refresh} disabled={loading}>
+            <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
         </div>
       </div>
 
-      {/* Top KPI strip */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+      {/* KPI Strip */}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
         <KpiCard
-          label="Live Output"
-          value={`${fmtN(telemetry.currentOutputKwh, 0)}`}
-          unit="kWh"
-          icon={<Zap className="h-4 w-4" />}
-          tone="primary"
-          sub={`${fmtN(telemetry.gridInjectionMw, 2)} MW grid injection`}
+          label="Operator XLM"
+          value={Number(xlmBalance).toFixed(4)}
+          sub={publicKey ? `${publicKey.slice(0, 6)}…${publicKey.slice(-4)}` : "no operator"}
+          loading={balances === null && !balErr}
         />
         <KpiCard
-          label="Total Generated"
-          value={fmtN(telemetry.totalGeneratedMwh, 2)}
-          unit="MWh / 24h"
-          icon={<Factory className="h-4 w-4" />}
-          tone="success"
-          sub={`Capacity ${fmtN(telemetry.capacityKwh, 0)} kWh`}
+          label="EPWR Inventory"
+          value={fmtN(eprwBalance)}
+          sub="EPWR on-chain"
+          loading={balances === null && !balErr}
         />
         <KpiCard
-          label="Operational Efficiency"
-          value={`${fmtN(telemetry.efficiencyPct, 1)}%`}
-          unit=""
-          icon={<Gauge className="h-4 w-4" />}
-          tone={telemetry.efficiencyPct > 70 ? "success" : "warn"}
-          sub={`${telemetry.solarPct}% solar · ${telemetry.windPct}% wind`}
+          label="Settled Volume"
+          value={fmtBRL(totalBrl)}
+          sub={`${settled} confirmed`}
+          loading={loading && !stats}
+          tone="ok"
         />
         <KpiCard
-          label="Active Contracts"
-          value={`${telemetry.activeContracts}`}
-          unit="bilateral"
-          icon={<ShieldCheck className="h-4 w-4" />}
-          tone="primary"
-          sub={`${fmtN(telemetry.eprwSettlementVolume, 0)} EPWR settled`}
-        />
-      </div>
-
-      {/* Production chart + sources */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <Card className="border-border bg-card p-4 lg:col-span-2">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-                Production · 24h hourly trend
-              </p>
-              <h2 className="mt-0.5 font-display text-base font-semibold">Live Generation Curve</h2>
-            </div>
-            <div className="flex items-center gap-2">
-              <LegendDot color="primary" label="SOLAR" />
-              <LegendDot color="success" label="WIND" />
-            </div>
-          </div>
-
-          <div className="mt-3 h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart
-                data={telemetry.hourlySeries}
-                margin={{ top: 10, right: 8, left: -16, bottom: 0 }}
-              >
-                <defs>
-                  <linearGradient id="solar" x1="0" x2="0" y1="0" y2="1">
-                    <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.55} />
-                    <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="wind" x1="0" x2="0" y1="0" y2="1">
-                    <stop
-                      offset="0%"
-                      stopColor="hsl(var(--success, 142 70% 45%))"
-                      stopOpacity={0.45}
-                    />
-                    <stop
-                      offset="100%"
-                      stopColor="hsl(var(--success, 142 70% 45%))"
-                      stopOpacity={0}
-                    />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} />
-                <XAxis
-                  dataKey="hour"
-                  tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
-                  stroke="hsl(var(--border))"
-                />
-                <YAxis
-                  tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
-                  stroke="hsl(var(--border))"
-                />
-                <Tooltip
-                  contentStyle={{
-                    background: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    fontSize: 11,
-                    fontFamily: "var(--font-mono, ui-monospace)",
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="solar"
-                  stroke="hsl(var(--primary))"
-                  fill="url(#solar)"
-                  strokeWidth={1.5}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="wind"
-                  stroke="hsl(var(--success, 142 70% 45%))"
-                  fill="url(#wind)"
-                  strokeWidth={1.5}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-
-        <Card className="border-border bg-card p-4">
-          <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-            Source Mix · Live
-          </p>
-
-          <div className="mt-3 space-y-3">
-            <SourceRow
-              icon={<Sun className="h-4 w-4" />}
-              label="Solar Array"
-              pct={telemetry.solarPct}
-              tone="primary"
-            />
-            <SourceRow
-              icon={<Wind className="h-4 w-4" />}
-              label="Wind Farm"
-              pct={telemetry.windPct}
-              tone="success"
-            />
-          </div>
-
-          <div className="mt-4 space-y-1.5 border-t border-border pt-3">
-            <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-              Regional operational status
-            </p>
-            {telemetry.regions.map((r) => (
-              <div
-                key={r.name}
-                className="flex items-center justify-between rounded-md border border-border bg-background/40 px-2.5 py-1.5"
-              >
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`inline-block h-1.5 w-1.5 rounded-full ${
-                      r.status === "ONLINE"
-                        ? "bg-success animate-pulse"
-                        : r.status === "DEGRADED"
-                          ? "bg-amber-500"
-                          : "bg-destructive"
-                    }`}
-                  />
-                  <span className="text-[11px]">{r.name}</span>
-                </div>
-                <span className="font-mono text-[10px] text-muted-foreground">
-                  {fmtN(r.outputKwh, 0)} kWh
-                </span>
-              </div>
-            ))}
-          </div>
-        </Card>
-      </div>
-
-      {/* EPWR + Inventory */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <KpiCard
-          label="EPWR Generated"
-          value={fmtN(telemetry.eprwGenerated, 0)}
-          unit="EPWR / 24h"
-          icon={<Sparkles className="h-4 w-4" />}
-          tone="primary"
-          sub="Tokenized issuance"
+          label="Failed"
+          value={String(failed)}
+          sub={failed > 0 ? "requires review" : "no failures"}
+          loading={loading && !stats}
+          tone={failed > 0 ? "warn" : "ok"}
         />
         <KpiCard
-          label="EPWR Sold"
-          value={fmtN(telemetry.eprwSold, 0)}
-          unit="EPWR"
-          icon={<ArrowUpRight className="h-4 w-4" />}
-          tone="success"
-          sub={`${Math.round((telemetry.eprwSold / Math.max(1, telemetry.eprwGenerated)) * 100)}% of issuance`}
+          label="Contracts"
+          value={String(stats?.active_contracts ?? 0)}
+          sub={`of ${stats?.total_contracts ?? 0} total`}
+          loading={loading && !stats}
         />
         <KpiCard
-          label="Settlement Volume"
-          value={fmtN(telemetry.eprwSettlementVolume, 0)}
-          unit="EPWR cleared"
-          icon={<Coins className="h-4 w-4" />}
-          tone="primary"
-          sub="Stellar settlement rail"
-        />
-        <KpiCard
-          label="Inventory Available"
-          value={fmtN(telemetry.inventoryMwh, 2)}
-          unit="MWh"
-          icon={<Factory className="h-4 w-4" />}
-          tone="success"
-          sub={`${fmtN(eprwBalance, 0)} EPWR on-chain`}
+          label="Rail Status"
+          value={health?.status === "ok" ? "CONNECTED" : "OFFLINE"}
+          sub={`Horizon ${horizonLatency} ms`}
+          loading={loading && !health}
+          tone={health?.status === "ok" ? "ok" : "warn"}
+          led
         />
       </div>
 
-      {/* SECTION 4 — Regional Energy Generation Map */}
+      {/* Regional Energy Map */}
       <BrazilGridMap />
 
-      {/* SECTION 3 — Active Bilateral Contracts */}
-      <BilateralContractsPanel />
-
-      {/* SECTION 6 — Stellar Settlement Rails */}
+      {/* Stellar Settlement Rails */}
       <StellarRailMonitor />
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <Card className="border-border bg-card p-4 lg:col-span-2">
+      {/* On-Chain Treasury + Ledger Activity */}
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+        {/* Treasury */}
+        <Card className="border-border bg-card p-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
                 Settlement Wallet · Stellar Custody
               </p>
-              <h2 className="mt-0.5 font-display text-base font-semibold">On-Chain Treasury</h2>
+              <p className="mt-0.5 font-display text-base font-semibold">On-Chain Treasury</p>
             </div>
             <Link
               to="/wallet"
@@ -348,34 +187,16 @@ function GeneratorPage() {
             </Link>
           </div>
 
-          <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
-            <BalanceTile
-              symbol="XLM"
-              label="Network Reserve"
-              value={balances ? fmtN(xlmBalance, 4) : null}
-              error={balErr}
-            />
-            <BalanceTile
-              symbol="EPWR"
-              label="Tokenized Energy"
-              value={balances ? fmtN(eprwBalance, 2) : null}
-              error={balErr}
-            />
+          <div className="mt-3 space-y-2">
+            <BalanceTile symbol="XLM" label="Network Reserve" value={balances ? fmtN(xlmBalance, 4) : null} error={balErr} />
+            <BalanceTile symbol="EPWR" label="Tokenized Energy" value={balances ? fmtN(eprwBalance, 2) : null} error={balErr} />
           </div>
 
-          <div className="mt-4 grid grid-cols-2 gap-2 md:grid-cols-4">
-            <Telem label="Wallet" value={maskAddress(publicKey)} />
-            <Telem
-              label="Network"
-              value={isOffline ? "OFFLINE" : "CONNECTED"}
-              tone={isOffline ? "warn" : "ok"}
-            />
-            <Telem
-              label="Sync"
-              value={balances ? `${balances.latency_ms} ms` : "—"}
-              tone={balances && balances.latency_ms < 800 ? "ok" : "warn"}
-            />
-            <Telem label="Subentries" value={balances ? String(balances.subentry_count) : "—"} />
+          <div className="mt-3 space-y-1.5">
+            <TelRow label="Wallet" value={maskAddress(publicKey)} />
+            <TelRow label="Network" value={health?.status === "ok" ? "CONNECTED" : "OFFLINE"} tone={health?.status === "ok" ? "ok" : "warn"} />
+            <TelRow label="Horizon latency" value={`${horizonLatency} ms`} tone={horizonLatency < 1000 ? "ok" : "warn"} />
+            <TelRow label="Subentries" value={balances ? String(balances.subentry_count) : "—"} />
           </div>
 
           <a
@@ -389,263 +210,150 @@ function GeneratorPage() {
           </a>
         </Card>
 
-        <Card className="relative overflow-hidden border-border bg-card p-4">
-          <div
-            className="pointer-events-none absolute -right-12 -top-12 h-32 w-32 rounded-full opacity-25 blur-3xl"
-            style={{ background: "var(--gradient-primary)" }}
-          />
-          <div className="relative">
-            <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-              AI · Forecast & Market Signal
-            </p>
-            <h2 className="mt-0.5 font-display text-base font-semibold">Projected Operations</h2>
-
-            <div className="mt-3 space-y-2.5">
-              <ForecastRow
-                icon={<TrendingUp className="h-3.5 w-3.5" />}
-                label="Generation forecast · next 24h"
-                value={`${fmtN(telemetry.forecastNext24Mwh, 2)} MWh`}
-              />
-              <ForecastRow
-                icon={<Sparkles className="h-3.5 w-3.5" />}
-                label="Estimated EPWR production"
-                value={`${fmtN(telemetry.forecastEprw, 0)} EPWR`}
-              />
-              <DemandBar
-                label="Market demand index"
-                value={telemetry.marketDemandIndex}
-                tone="primary"
-              />
-              <DemandBar
-                label="Liquidity availability"
-                value={telemetry.liquidityIndex}
-                tone="success"
-              />
-            </div>
-
-            <div className="mt-3 flex items-center gap-2 rounded-md border border-dashed border-border bg-background/40 px-2.5 py-2 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-              <Cpu className="h-3 w-3" />
-              Inferred from rolling 24h telemetry
-            </div>
-          </div>
-        </Card>
-      </div>
-
-      {/* Settlement feed + EPWR transactions */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <Card className="border-border bg-card p-4 lg:col-span-2">
-          <div className="flex items-center justify-between">
+        {/* Recent Ledger Activity */}
+        <Card className="border-border bg-card p-4 xl:col-span-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-                Settlement Rail · Recent activity
+                Stellar Horizon · Real-time Ledger Activity
               </p>
-              <h2 className="mt-0.5 font-display text-base font-semibold">
-                Latest Energy Settlements
-              </h2>
+              <p className="mt-0.5 font-display text-base font-semibold">
+                Recent Ledger Operations
+              </p>
             </div>
-            <Link
-              to="/wallet"
-              className="font-mono text-[10px] uppercase tracking-widest text-primary hover:underline"
-            >
-              Full feed
-              <ArrowRight className="ml-1 inline h-3 w-3" />
-            </Link>
+            <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest">
+              {actFetchedAt && (
+                <Badge variant="outline" className="border-success/40 text-success">
+                  <Activity className="mr-1.5 h-3 w-3 animate-pulse" />
+                  STREAMING
+                </Badge>
+              )}
+              {actFetchedAt && (
+                <span className="text-muted-foreground">
+                  sync {new Date(actFetchedAt).toUTCString().slice(17, 25)}
+                </span>
+              )}
+            </div>
           </div>
 
-          <div className="mt-3">
-            {actErr && (
-              <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-3">
-                <AlertTriangle className="mt-0.5 h-4 w-4 text-destructive" />
-                <p className="text-xs text-muted-foreground">{actErr}</p>
-              </div>
-            )}
-            {!actErr && recentSettlements.length === 0 && (
+          <div className="mt-3 overflow-x-auto">
+            {actLoading && events.length === 0 ? (
               <div className="space-y-2">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <Skeleton key={i} className="h-12 w-full" />
+                {[1, 2, 3].map((i) => (
+                  <Skeleton key={i} className="h-10 w-full" />
                 ))}
               </div>
+            ) : events.length === 0 ? (
+              <div className="py-10 text-center">
+                <Activity className="mx-auto mb-3 h-8 w-8 text-muted-foreground/40" />
+                <p className="font-mono text-sm text-muted-foreground">
+                  No ledger activity in current window.
+                </p>
+              </div>
+            ) : (
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="px-2 py-2 font-mono text-[9px] uppercase tracking-widest text-muted-foreground">Tx Hash</th>
+                    <th className="px-2 py-2 font-mono text-[9px] uppercase tracking-widest text-muted-foreground">Kind</th>
+                    <th className="px-2 py-2 text-right font-mono text-[9px] uppercase tracking-widest text-muted-foreground">Amount</th>
+                    <th className="px-2 py-2 font-mono text-[9px] uppercase tracking-widest text-muted-foreground">Asset</th>
+                    <th className="px-2 py-2 font-mono text-[9px] uppercase tracking-widest text-muted-foreground">Result</th>
+                    <th className="px-2 py-2" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {events.slice(0, 10).map((ev) => (
+                    <tr key={ev.id} className="border-b border-border/50 hover:bg-primary/[0.03]">
+                      <td className="px-2 py-2 font-mono text-[11px] text-primary">
+                        {shortHash(ev.tx_hash)}
+                      </td>
+                      <td className="px-2 py-2 font-mono text-[10px] uppercase text-muted-foreground">
+                        {ev.kind}
+                      </td>
+                      <td className="px-2 py-2 text-right font-mono text-[11px]">
+                        {ev.amount ?? "—"}
+                      </td>
+                      <td className="px-2 py-2 font-mono text-[11px]">{ev.asset ?? "—"}</td>
+                      <td className="px-2 py-2">
+                        <Badge
+                          variant="outline"
+                          className={`font-mono text-[9px] ${
+                            ev.successful
+                              ? "border-success/40 bg-success/10 text-success"
+                              : "border-destructive/40 bg-destructive/10 text-destructive"
+                          }`}
+                        >
+                          {ev.successful ? "FINALIZED" : "FAILED"}
+                        </Badge>
+                      </td>
+                      <td className="px-2 py-2 text-right">
+                        <a
+                          href={stellarExpertTx(ev.tx_hash)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 font-mono text-[10px] text-muted-foreground hover:text-primary"
+                        >
+                          View on Stellar Expert <ExternalLink className="h-2.5 w-2.5" />
+                        </a>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             )}
-            <div className="space-y-2">
-              {recentSettlements.map((ev) => (
-                <a
-                  key={ev.id}
-                  href={stellarExpertTx(ev.tx_hash)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group flex items-center justify-between rounded-md border border-border bg-background/40 px-3 py-2 transition-colors hover:border-primary/40 hover:bg-background/60"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <span
-                      className={`inline-block h-2 w-2 rounded-full ${
-                        ev.successful ? "bg-success animate-pulse" : "bg-destructive"
-                      }`}
-                    />
-                    <div className="min-w-0">
-                      <p className="font-display text-sm font-semibold truncate">{ev.title}</p>
-                      <p className="font-mono text-[10px] text-muted-foreground truncate">
-                        {ev.detail}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    {ev.amount && ev.asset && (
-                      <p className="font-mono text-xs">
-                        {fmtN(Number(ev.amount), 2)} {ev.asset}
-                      </p>
-                    )}
-                    <p className="font-mono text-[10px] text-muted-foreground">
-                      tx {ev.tx_hash.slice(0, 6)}…{ev.tx_hash.slice(-4)}
-                    </p>
-                  </div>
-                </a>
-              ))}
-            </div>
           </div>
         </Card>
-
-        <Card className="border-border bg-card p-4">
-          <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-            EPWR Issuance · Hourly
-          </p>
-          <div className="mt-3 h-40">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={telemetry.hourlySeries}
-                margin={{ top: 10, right: 0, left: -22, bottom: 0 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} />
-                <XAxis dataKey="hour" hide />
-                <YAxis
-                  tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }}
-                  stroke="hsl(var(--border))"
-                />
-                <Tooltip
-                  contentStyle={{
-                    background: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    fontSize: 11,
-                  }}
-                />
-                <Bar dataKey="total" fill="hsl(var(--primary))" radius={[2, 2, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="mt-3 grid grid-cols-2 gap-2 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-            <Telem label="Avg / hr" value={`${fmtN(telemetry.eprwGenerated / 24, 0)} EPWR`} />
-            <Telem label="Sync" value={new Date(telemetry.syncedAt).toUTCString().slice(17, 25)} />
-          </div>
-        </Card>
-      </div>
-
-      {/* SECTION 5 — AI Forecasting + SECTION 2 — Live Settlement Feed */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <AIForecastPanel
-            hourlySeries={telemetry.hourlySeries}
-            forecastNext24Mwh={telemetry.forecastNext24Mwh}
-            forecastEprw={telemetry.forecastEprw}
-            marketDemandIndex={telemetry.marketDemandIndex}
-            liquidityIndex={telemetry.liquidityIndex}
-          />
-        </div>
-        <LiveSettlementFeed
-          events={events}
-          loading={actLoading}
-          error={actErr}
-          fetchedAt={actFetchedAt}
-        />
       </div>
     </div>
   );
 }
 
-/* --------------------------------- bits --------------------------------- */
+/* ── Sub-components ── */
 
 function KpiCard({
   label,
   value,
-  unit,
-  icon,
-  tone,
   sub,
+  loading,
+  tone = "ok",
+  led = false,
 }: {
   label: string;
   value: string;
-  unit: string;
-  icon: React.ReactNode;
-  tone: "primary" | "success" | "warn";
   sub?: string;
+  loading?: boolean;
+  tone?: "ok" | "warn" | "muted";
+  led?: boolean;
 }) {
-  const toneCls =
-    tone === "success" ? "text-success" : tone === "warn" ? "text-amber-500" : "text-primary";
+  const valueColor = led
+    ? tone === "ok" ? "text-success" : tone === "warn" ? "text-destructive" : ""
+    : "";
+  const ledColor = tone === "ok" ? "bg-success" : tone === "warn" ? "bg-destructive" : "bg-muted-foreground";
+  const fontSize = value.length > 16 ? "text-sm" : value.length > 12 ? "text-base" : "text-xl";
+
   return (
-    <Card className="relative overflow-hidden border-border bg-card p-4">
-      <div
-        className="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full opacity-20 blur-3xl"
-        style={{ background: "var(--gradient-primary)" }}
-      />
-      <div className="relative flex items-start justify-between">
-        <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-          {label}
+    <Card className="border-border bg-card p-3">
+      <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">{label}</p>
+      {loading ? (
+        <Skeleton className="mt-1 h-7 w-20" />
+      ) : (
+        <p className={`mt-1 font-mono font-semibold tracking-tight ${fontSize} ${valueColor} flex items-center gap-2`}>
+          {led && (
+            <span className="relative flex h-2.5 w-2.5 shrink-0">
+              <span className={`absolute inline-flex h-full w-full animate-ping rounded-full opacity-60 ${ledColor}`} />
+              <span className={`relative inline-flex h-2.5 w-2.5 rounded-full ${ledColor}`} />
+            </span>
+          )}
+          {value}
         </p>
-        <span
-          className={`flex h-6 w-6 items-center justify-center rounded-md border border-border ${toneCls}`}
-        >
-          {icon}
-        </span>
-      </div>
-      <div className="relative mt-2 flex items-baseline gap-1.5">
-        <span className="font-display text-2xl font-semibold tracking-tight">{value}</span>
-        {unit && (
-          <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-            {unit}
-          </span>
-        )}
-      </div>
-      {sub && <p className="relative mt-1 font-mono text-[10px] text-muted-foreground">{sub}</p>}
+      )}
+      {sub && (
+        <p className="mt-0.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+          {sub}
+        </p>
+      )}
     </Card>
-  );
-}
-
-function SourceRow({
-  icon,
-  label,
-  pct,
-  tone,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  pct: number;
-  tone: "primary" | "success";
-}) {
-  const bar = tone === "success" ? "bg-success" : "bg-primary";
-  return (
-    <div>
-      <div className="flex items-center justify-between">
-        <span className="flex items-center gap-2 text-xs">
-          {icon}
-          {label}
-        </span>
-        <span className="font-mono text-[11px]">{pct}%</span>
-      </div>
-      <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-        <div className={`h-full ${bar}`} style={{ width: `${pct}%` }} />
-      </div>
-    </div>
-  );
-}
-
-function LegendDot({ color, label }: { color: "primary" | "success"; label: string }) {
-  return (
-    <span className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-      <span
-        className={`inline-block h-1.5 w-1.5 rounded-full ${
-          color === "success" ? "bg-success" : "bg-primary"
-        }`}
-      />
-      {label}
-    </span>
   );
 }
 
@@ -684,82 +392,20 @@ function BalanceTile({
   );
 }
 
-function Telem({ label, value, tone }: { label: string; value: string; tone?: "ok" | "warn" }) {
-  const cls =
-    tone === "ok" ? "text-success" : tone === "warn" ? "text-amber-500" : "text-foreground";
-  return (
-    <div className="rounded-md border border-border bg-background/40 px-2.5 py-1.5">
-      <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
-        {label}
-      </p>
-      <p className={`mt-0.5 truncate font-mono text-[11px] ${cls}`}>{value}</p>
-    </div>
-  );
-}
-
-function ForecastRow({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="flex items-center justify-between rounded-md border border-border bg-background/40 px-2.5 py-1.5">
-      <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-        {icon}
-        {label}
-      </span>
-      <span className="font-mono text-[11px] text-foreground">{value}</span>
-    </div>
-  );
-}
-
-function DemandBar({
+function TelRow({
   label,
   value,
   tone,
 }: {
   label: string;
-  value: number;
-  tone: "primary" | "success";
+  value: string;
+  tone?: "ok" | "warn";
 }) {
-  const bar = tone === "success" ? "bg-success" : "bg-primary";
+  const color = tone === "ok" ? "text-success" : tone === "warn" ? "text-destructive" : "text-foreground";
   return (
-    <div>
-      <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-        <span>{label}</span>
-        <span className="text-foreground">{value}/100</span>
-      </div>
-      <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-        <div className={`h-full ${bar}`} style={{ width: `${value}%` }} />
-      </div>
+    <div className="flex items-center justify-between rounded-md border border-border bg-background/40 px-2.5 py-1.5">
+      <span className="text-[11px] text-muted-foreground">{label}</span>
+      <span className={`font-mono text-[11px] ${color}`}>{value}</span>
     </div>
-  );
-}
-
-function RailIndicator({ state }: { state: string }) {
-  const ok = state === "CONNECTED";
-  const warn = state === "DEGRADED";
-  return (
-    <Badge
-      variant="outline"
-      className={`font-mono text-[10px] uppercase tracking-widest ${
-        ok
-          ? "border-success/40 text-success"
-          : warn
-            ? "border-amber-500/40 text-amber-500"
-            : "border-destructive/40 text-destructive"
-      }`}
-    >
-      {ok ? (
-        <CheckCircle2 className="mr-1.5 h-3 w-3" />
-      ) : (
-        <AlertTriangle className="mr-1.5 h-3 w-3" />
-      )}
-      Rail · {state}
-    </Badge>
   );
 }

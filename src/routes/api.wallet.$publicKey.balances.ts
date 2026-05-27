@@ -13,8 +13,9 @@
 
 import { createFileRoute } from "@tanstack/react-router";
 import { StrKey } from "@stellar/stellar-sdk";
+import { STELLAR_NETWORK, HORIZON_URL } from "@/lib/stellar";
 
-const HORIZON_URL = "https://horizon-testnet.stellar.org";
+// HORIZON_URL imported from @/lib/stellar
 
 const buildCors = (request: Request): Record<string, string> => {
   const origin = request.headers.get("origin");
@@ -107,7 +108,7 @@ export const Route = createFileRoute("/api/wallet/$publicKey/balances")({
               {
                 success: true,
                 wallet: publicKey,
-                network: "STELLAR_TESTNET",
+                network: STELLAR_NETWORK,
                 account_funded: false,
                 subentry_count: 0,
                 assets: [],
@@ -150,7 +151,7 @@ export const Route = createFileRoute("/api/wallet/$publicKey/balances")({
             {
               success: true,
               wallet: publicKey,
-              network: "STELLAR_TESTNET",
+              network: STELLAR_NETWORK,
               account_funded: true,
               subentry_count: acc.subentry_count ?? 0,
               assets,

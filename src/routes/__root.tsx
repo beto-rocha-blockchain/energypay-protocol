@@ -14,8 +14,11 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { OperatorBadge } from "@/components/OperatorBadge";
 import { StatusRail } from "@/components/ops/StatusRail";
+import { NotificationBell } from "@/components/NotificationBell";
 import { Toaster } from "@/components/ui/sonner";
 import { useOperator } from "@/store/operator";
+import { useUiStore } from "@/store/ui";
+import { SplashScreen } from "@/components/SplashScreen";
 
 import appCss from "../styles.css?url";
 
@@ -127,6 +130,17 @@ function RootShell({ children }: { children: React.ReactNode }) {
   );
 }
 
+/** Syncs the Zustand theme to the <html> className on mount and changes. */
+function ThemeSync() {
+  const theme = useUiStore((s) => s.theme);
+  useEffect(() => {
+    const html = document.documentElement;
+    html.classList.remove("dark", "light");
+    html.classList.add(theme);
+  }, [theme]);
+  return null;
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const isAuthenticated = useOperator((s) => s.isAuthenticated);
@@ -155,41 +169,42 @@ function RootComponent() {
   // public auth routes render without the chrome
   if (isPublicRoute) {
     return (
-      <QueryClientProvider client={queryClient}>
-        <div className="min-h-screen w-full bg-background">
-          <Outlet />
-        </div>
-        <Toaster />
-      </QueryClientProvider>
+      <SplashScreen>
+        <QueryClientProvider client={queryClient}>
+          <ThemeSync />
+          <div className="min-h-screen w-full bg-background">
+            <Outlet />
+          </div>
+          <Toaster />
+        </QueryClientProvider>
+      </SplashScreen>
     );
   }
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <SidebarProvider>
-        <div className="flex min-h-screen w-full bg-background">
-          <AppSidebar />
-          <div className="flex flex-1 flex-col">
-            <header className="sticky top-0 z-30 flex h-12 items-center justify-between border-b border-border bg-background/90 px-4 backdrop-blur">
-              <div className="flex items-center gap-3">
-                <SidebarTrigger />
-                <span className="hidden font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground md:inline">
-                  {operator ? operator.organization : "Clearing Desk · BRL"}
-                </span>
-                <span className="hidden h-3 w-px bg-border md:inline" />
-                {/* <StatusRail /> */}
-              </div>
-              <div className="flex items-center gap-2 text-xs">
-                <OperatorBadge />
-              </div>
-            </header>
-            <main className="flex-1 space-y-4 p-4 md:p-6 lg:p-8">
-              <Outlet />
-            </main>
+    <SplashScreen>
+      <QueryClientProvider client={queryClient}>
+        <ThemeSync />
+        <SidebarProvider>
+          <div className="flex min-h-screen w-full bg-background">
+            <AppSidebar />
+            <div className="flex flex-1 flex-col">
+              <header className="sticky top-0 z-30 flex h-12 items-center justify-between border-b border-border bg-background/90 backdrop-blur">
+                {/* Collapse trigger — sits flush at the left edge of the main content, aligned with the sidebar scroll track */}
+                <SidebarTrigger className="h-12 w-12 shrink-0 rounded-none border-r border-border text-muted-foreground hover:bg-accent hover:text-foreground" />
+                <div className="flex items-center gap-2 px-3 text-xs">
+                  <NotificationBell />
+                  <OperatorBadge />
+                </div>
+              </header>
+              <main className="flex-1 space-y-4 p-4 md:p-6 lg:p-8">
+                <Outlet />
+              </main>
+            </div>
           </div>
-        </div>
-        <Toaster />
-      </SidebarProvider>
-    </QueryClientProvider>
+          <Toaster />
+        </SidebarProvider>
+      </QueryClientProvider>
+    </SplashScreen>
   );
 }

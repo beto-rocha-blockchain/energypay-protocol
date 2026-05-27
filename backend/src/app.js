@@ -15,8 +15,15 @@ import x402Routes from "./routes/x402.js";
 import walletRoutes from "./routes/walletRoutes.js";
 import authRoutes from "./routes/auth.js";
 import tokenRoutes from "./routes/tokenRoutes.js";
+import dashboardRoutes from "./routes/dashboard.js";
+import adminRoutes from "./routes/admin.js";
+import oracleRoutes from "./routes/oracle.js";
+import contractRoutes from "./routes/contracts.js";
+import notificationRoutes from "./routes/notifications.js";
 
 import { executeSettlement } from "./services/stellarSettlementService.js";
+import { NETWORK_NAME, IS_MAINNET } from "./lib/stellar-network.js";
+import { supabase } from "./lib/supabase.js";
 
 const app = express();
 
@@ -36,6 +43,11 @@ app.use("/api/auth", authRoutes);
 app.use("/api/token", tokenRoutes);
 app.use("/api/p2p", p2pRoutes);
 app.use("/api/x402", x402Routes);
+app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/oracle", oracleRoutes);
+app.use("/api/contracts", contractRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 // ========================================
 // Health Check
@@ -44,7 +56,7 @@ app.use("/api/x402", x402Routes);
 app.get("/api/health", (req, res) => {
   res.json({
     status: "online",
-    network: "stellar-testnet",
+    network: NETWORK_NAME,
     settlementEngine: "active",
     api: "EnergyPay Backend",
     timestamp: new Date().toISOString(),
@@ -52,39 +64,75 @@ app.get("/api/health", (req, res) => {
 });
 
 // ========================================
-// Settlement Telemetry - Production Safe Mock
+// Settlement Telemetry — real Supabase data
 // ========================================
 
-app.get("/api/settlements/telemetry", (req, res) => {
-  res.json({
-    success: true,
-    counters: {
-      total_settlements: 24,
-      pending_settlements: 3,
-      completed_settlements: 21,
-      failed_settlements: 0,
-      latency_ms: 128,
-    },
-    recent_receipts: [
-      {
-        id: "EP-DEMO-001",
-        status: "CONFIRMED",
-        amount: "1250.00",
-        asset: "XLM",
-        latency_ms: 128,
-        created_at: new Date().toISOString(),
+app.get("/api/settlements/telemetry", async (req, res) => {
+  try {
+    const { data: rows, count } = await supabase
+      .from("settlements")
+      .select("*", { count: "exact" })
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    const settlements = rows || [];
+    const total = count || 0;
+    const completed = settlements.filter(
+      (s) => s.status === "SETTLED" || s.status === "CONFIRMED",
+    ).length;
+    const failed = settlements.filter((s) => s.status === "FAILED").length;
+    const pending = settlements.filter(
+      (s) => s.status === "PENDING" || s.status === "BROADCASTING",
+    ).length;
+
+    const latencyValues = settlements
+      .map((s) => Number(s.finality_ms || s.latency_ms || 0))
+      .filter((v) => v > 0);
+    const avgLatency =
+      latencyValues.length > 0
+        ? Math.round(latencyValues.reduce((a, b) => a + b, 0) / latencyValues.length)
+        : 0;
+
+    const recent_receipts = settlements.slice(0, 5).map((s) => ({
+      id: s.settlement_id || s.id,
+      status: s.status,
+      amount: s.amount_brl ? String(Number(s.amount_brl).toFixed(2)) : "0.00",
+      asset: "EPWR",
+      tx_hash: s.tx_hash || null,
+      latency_ms: Number(s.finality_ms || s.latency_ms || 0),
+      created_at: s.created_at,
+    }));
+
+    res.json({
+      success: true,
+      counters: {
+        total_settlements: total,
+        pending_settlements: pending,
+        completed_settlements: completed,
+        failed_settlements: failed,
+        latency_ms: avgLatency,
       },
-    ],
-    recent_logs: [
-      {
-        id: "LOG-001",
-        level: "info",
-        message: "Settlement telemetry online",
-        latency_ms: 128,
-        created_at: new Date().toISOString(),
+      recent_receipts,
+      recent_logs: [],
+      checked_at: new Date().toISOString(),
+    });
+  } catch (err) {
+    // settlements table may not exist yet — return zeros
+    res.json({
+      success: true,
+      counters: {
+        total_settlements: 0,
+        pending_settlements: 0,
+        completed_settlements: 0,
+        failed_settlements: 0,
+        latency_ms: 0,
       },
-    ],
-  });
+      recent_receipts: [],
+      recent_logs: [],
+      checked_at: new Date().toISOString(),
+      note: err.message,
+    });
+  }
 });
 
 // ========================================

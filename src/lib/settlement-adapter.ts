@@ -29,7 +29,8 @@ import { isTerminal, type SettlementState } from "@/lib/settlement-state-machine
 import { recordFailed, recordFinalized } from "@/lib/settlement-telemetry";
 import { opsLog } from "@/lib/settlement-ops-log";
 
-const STELLAR_EXPERT_TX = (hash: string) => `https://stellar.expert/explorer/testnet/tx/${hash}`;
+import { stellarExpertTx } from "@/lib/stellar";
+const STELLAR_EXPERT_TX = (hash: string) => stellarExpertTx(hash);
 
 /* ------------------------------------------------------------------ */
 /*  Adapter result shape                                              */

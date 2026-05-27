@@ -14,7 +14,7 @@ import { type SettlementState, type Contract, type Settlement } from "@/lib/mock
 import { useOps } from "@/store/operations";
 import { useOperator, maskAddress, canExecuteSettlement, ROLE_META } from "@/store/operator";
 import { apiExecuteSettlement, type SettlementResult } from "@/lib/api";
-import { stellarExpertTx, stellarExpertAccount } from "@/lib/stellar";
+import { stellarExpertTx, stellarExpertAccount, STELLAR_NETWORK_LABEL } from "@/lib/stellar";
 import { toast } from "sonner";
 
 type LogLine = { ts: string; text: string; level?: "info" | "ok" | "warn" };
@@ -86,7 +86,7 @@ export function ExecutionConsole({
     setRunning(true);
     startRef.current = Date.now();
 
-    const settlementId = `STL-${90220 + Math.floor(Math.random() * 80)}`;
+    const settlementId = `STL-${(crypto.randomUUID?.() ?? Date.now().toString(36)).slice(0, 8).toUpperCase()}`;
     const signer = maskAddress(operator.wallet.publicKey);
     const roleLabel = operator.roles.map((r) => ROLE_META[r].label).join(", ") || "operator";
 
@@ -246,7 +246,7 @@ export function ExecutionConsole({
               </Badge>
             </div>
             <SheetDescription className="font-mono text-[11px] uppercase tracking-widest">
-              {contract.id} · {contract.buyer} ↔ {contract.seller} · Stellar Testnet
+              {contract.id} · {contract.buyer} ↔ {contract.seller} · {STELLAR_NETWORK_LABEL}
             </SheetDescription>
           </SheetHeader>
         </div>

@@ -7,6 +7,7 @@
 
 import { useEffect, useState } from "react";
 import { getSession } from "@/lib/session";
+import { API_BASE_URL } from "@/lib/api";
 
 export type RailState = "CONNECTED" | "DEGRADED" | "OFFLINE" | "UNKNOWN";
 
@@ -56,7 +57,7 @@ export function useSettlementRail() {
     let cancelled = false;
     const tick = async () => {
       try {
-        const res = await fetch("/api/health", { headers: { Accept: "application/json" } });
+        const res = await fetch(`${API_BASE_URL}/api/health`, { headers: { Accept: "application/json" } });
         if (!res.ok) throw new Error(`health HTTP ${res.status}`);
         const raw = await res.json();
 
@@ -136,7 +137,7 @@ if (!cancelled) {
       try {
         const token = getSession()?.token;
         if (!token) return;
-        const res = await fetch("/api/settlements/telemetry", {
+        const res = await fetch(`${API_BASE_URL}/api/settlements/telemetry`, {
           headers: {
             Accept: "application/json",
             Authorization: `Bearer ${token}`,

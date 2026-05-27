@@ -1,6 +1,5 @@
-import { Horizon, StrKey } from "@stellar/stellar-sdk";
-
-const server = new Horizon.Server("https://horizon-testnet.stellar.org");
+import { StrKey } from "@stellar/stellar-sdk";
+import { horizon as server, NETWORK_NAME, explorerTxUrl } from "../lib/stellar-network.js";
 
 const readString = (value) => (typeof value === "string" ? value.trim() : "");
 
@@ -20,8 +19,8 @@ export function getX402PaymentRequirement() {
   }
 
   return {
-    scheme: "stellar-testnet",
-    network: "stellar-testnet",
+    scheme: NETWORK_NAME,
+    network: NETWORK_NAME,
     asset: "XLM",
     amount,
     destination,
@@ -36,9 +35,10 @@ function normalizePaymentSignature(headerValue) {
 
   if (!raw) return "";
 
-  return raw.startsWith("stellar-testnet:")
-    ? raw.replace("stellar-testnet:", "").trim()
-    : raw;
+  // Strip any network prefix (stellar-mainnet: or stellar-testnet:) to get the raw hash
+  return raw
+    .replace(/^stellar-(mainnet|testnet|public|testnet-public):/i, "")
+    .trim();
 }
 
 export async function verifyX402Payment(paymentSignature) {
@@ -105,14 +105,14 @@ export async function verifyX402Payment(paymentSignature) {
       asset: "XLM",
       amount: payment.amount,
       memo: tx.memo,
-      explorer_url: `https://stellar.expert/explorer/testnet/tx/${txHash}`,
+      explorer_url: explorerTxUrl(txHash),
     };
   } catch (error) {
     return {
       ok: false,
       status: 402,
       code: "PAYMENT_VERIFICATION_FAILED",
-      message: error.message || "Unable to verify payment on Stellar Testnet.",
+      message: error.message || "Unable to verify payment on Stellar network.",
     };
   }
 }

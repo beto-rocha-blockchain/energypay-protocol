@@ -107,6 +107,50 @@
   color-scheme: dark;
 }
 
+.light {
+  color-scheme: light;
+  --background: oklch(0.94 0.006 250);
+  --foreground: oklch(0.16 0.02 250);
+  --card: oklch(0.98 0.003 250);
+  --card-foreground: oklch(0.16 0.02 250);
+  --popover: oklch(0.98 0.003 250);
+  --popover-foreground: oklch(0.16 0.02 250);
+  --primary: oklch(0.45 0.16 215);
+  --primary-foreground: oklch(0.98 0 0);
+  --secondary: oklch(0.90 0.010 250);
+  --secondary-foreground: oklch(0.20 0.02 250);
+  --muted: oklch(0.91 0.008 250);
+  --muted-foreground: oklch(0.40 0.02 250);
+  --accent: oklch(0.45 0.12 195);
+  --accent-foreground: oklch(0.98 0 0);
+  --destructive: oklch(0.50 0.22 25);
+  --destructive-foreground: oklch(0.98 0 0);
+  --success: oklch(0.45 0.12 175);
+  --success-foreground: oklch(0.98 0 0);
+  --warning: oklch(0.58 0.18 75);
+  --warning-foreground: oklch(0.14 0.02 250);
+  --border: oklch(0.82 0.012 250);
+  --input: oklch(0.88 0.008 250);
+  --ring: oklch(0.45 0.16 215);
+  --chart-1: oklch(0.45 0.16 215);
+  --chart-2: oklch(0.45 0.12 195);
+  --chart-3: oklch(0.58 0.18 75);
+  --chart-4: oklch(0.50 0.22 25);
+  --chart-5: oklch(0.50 0.15 290);
+  --sidebar: oklch(0.92 0.008 250);
+  --sidebar-foreground: oklch(0.20 0.018 250);
+  --sidebar-primary: oklch(0.45 0.16 215);
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-accent: oklch(0.90 0.010 250);
+  --sidebar-accent-foreground: oklch(0.16 0.02 250);
+  --sidebar-border: oklch(0.82 0.012 250);
+  --sidebar-ring: oklch(0.45 0.16 215);
+  --gradient-primary: linear-gradient(135deg, oklch(0.45 0.16 215), oklch(0.45 0.12 195));
+  --gradient-card: linear-gradient(180deg, oklch(0.98 0.003 250), oklch(0.94 0.006 250));
+  --shadow-elegant: 0 10px 40px -10px oklch(0.4 0.02 250 / 0.18);
+  --shadow-glow: 0 0 12px oklch(0.45 0.16 215 / 0.18);
+}
+
 @layer base {
   * {
     border-color: var(--color-border);
@@ -283,4 +327,74 @@
       );
     background-size: 24px 24px;
   }
+
+  /* ── Splash screen ──────────────────────────────────────────────────── */
+
+  @keyframes ep-logo-pulse {
+    0%,
+    100% {
+      filter: drop-shadow(0 0 10px color-mix(in oklab, var(--primary) 55%, transparent))
+        drop-shadow(0 0 36px color-mix(in oklab, var(--accent) 22%, transparent));
+    }
+    50% {
+      filter: drop-shadow(0 0 22px color-mix(in oklab, var(--primary) 88%, transparent))
+        drop-shadow(0 0 72px color-mix(in oklab, var(--accent) 44%, transparent));
+    }
+  }
+
+  /* Applied to the <img> or fallback div inside SplashScreen */
+  .ep-splash-logo {
+    animation: ep-logo-pulse 1.8s ease-in-out infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ep-splash-logo {
+      animation: none;
+      filter: drop-shadow(0 0 10px color-mix(in oklab, var(--primary) 55%, transparent));
+    }
+  }
+}
+
+/* ─── Leaflet dark-theme overrides ────────────────────────────────────────── */
+.leaflet-container {
+  background: #0d1117;
+  font-family: var(--font-mono), monospace;
+}
+.leaflet-tooltip {
+  background: rgba(13, 17, 23, 0.96) !important;
+  border: 1px solid rgba(51, 65, 85, 0.9) !important;
+  border-radius: 4px !important;
+  color: #e2e8f0 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6) !important;
+  padding: 5px 9px !important;
+}
+.leaflet-tooltip::before {
+  display: none !important;
+}
+.leaflet-tooltip-top::before,
+.leaflet-tooltip-bottom::before,
+.leaflet-tooltip-left::before,
+.leaflet-tooltip-right::before {
+  display: none !important;
+}
+.leaflet-control-zoom a {
+  background: rgba(22, 27, 38, 0.95) !important;
+  color: #94a3b8 !important;
+  border-color: rgba(51, 65, 85, 0.8) !important;
+}
+.leaflet-control-zoom a:hover {
+  background: rgba(30, 37, 54, 0.98) !important;
+  color: #e2e8f0 !important;
+}
+.leaflet-control-zoom {
+  border: 1px solid rgba(51, 65, 85, 0.8) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4) !important;
+}
+.leaflet-control-attribution {
+  background: rgba(13, 17, 23, 0.85) !important;
+  color: #475569 !important;
+  font-size: 9px !important;
+}
+.leaflet-control-attribution a {
+  color: #64748b !important;
 }

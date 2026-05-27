@@ -22,7 +22,7 @@ const CORS_HEADERS: Record<string, string> = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
-const HORIZON_URL = "https://horizon-testnet.stellar.org";
+import { HORIZON_URL } from "@/lib/stellar";
 const HORIZON_TTL_MS = 30_000;
 
 type ProbeStatus = "ok" | "degraded" | "offline";

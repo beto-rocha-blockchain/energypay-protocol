@@ -34,18 +34,17 @@ const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   INVESTOR: Wallet,
 };
 
+/** Role-aligned colors: Generator=red, Seller/Trader=blue, Investor=yellow, Consumer=green */
 const typeColor = (t: string) =>
   t === "GENERATOR"
-    ? "oklch(0.76 0.16 150)"
-    : t === "DISTRIBUTOR"
-      ? "oklch(0.78 0.13 215)"
-      : t === "TRADER"
-        ? "oklch(0.82 0.16 75)"
-        : t === "RETAILER"
-          ? "oklch(0.72 0.15 290)"
-          : t === "CONSUMER"
-            ? "oklch(0.86 0.04 240)"
-            : "oklch(0.66 0.22 25)";
+    ? "#f87171"      // red-400
+    : t === "DISTRIBUTOR" || t === "TRADER" || t === "RETAILER"
+      ? "#38bdf8"    // sky-400 (seller family)
+      : t === "CONSUMER"
+        ? "#4ade80"  // green-400
+        : t === "INVESTOR"
+          ? "#facc15" // yellow-400
+          : "#38bdf8";
 
 function TopologyPage() {
   const [sel, setSel] = useState<TopoNode>(TOPO_NODES[4]);

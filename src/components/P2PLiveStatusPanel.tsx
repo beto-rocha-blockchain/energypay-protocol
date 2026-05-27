@@ -1,7 +1,7 @@
 import { CheckCircle2, Loader2, AlertTriangle, ExternalLink, Radio } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { stellarExpertTx } from "@/lib/stellar";
+import { stellarExpertTx, STELLAR_NETWORK_LABEL } from "@/lib/stellar";
 import type { P2PTransferState } from "@/store/p2p";
 
 export type LiveStatusPhase = "SUBMITTED" | "CONFIRMED" | "SETTLED";
@@ -26,7 +26,7 @@ const PHASE_LABEL: Record<LiveStatusPhase, string> = {
 };
 
 const PHASE_HINT: Record<LiveStatusPhase, string> = {
-  SUBMITTED: "Backend signing in custody · broadcasting to Stellar Testnet",
+  SUBMITTED: `Backend signing in custody · broadcasting to ${STELLAR_NETWORK_LABEL}`,
   CONFIRMED: "Tx accepted into ledger · awaiting finality",
   SETTLED: "Direct settlement rail closed · receipt issued",
 };

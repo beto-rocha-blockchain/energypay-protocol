@@ -29,6 +29,11 @@ import { Route as ClearingRouteImport } from './routes/clearing'
 import { Route as AuditRouteImport } from './routes/audit'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ContractsIndexRouteImport } from './routes/contracts.index'
+import { Route as UtilityUcRouteImport } from './routes/utility.uc'
+import { Route as UtilityTusdRouteImport } from './routes/utility.tusd'
+import { Route as UtilityConnectionsRouteImport } from './routes/utility.connections'
+import { Route as UtilityCertificatesRouteImport } from './routes/utility.certificates'
+import { Route as UtilityAreaRouteImport } from './routes/utility.area'
 import { Route as ContractsNewRouteImport } from './routes/contracts.new'
 import { Route as ApiHealthRouteImport } from './routes/api.health'
 import { Route as ApiSettlementsTelemetryRouteImport } from './routes/api.settlements.telemetry'
@@ -136,6 +141,31 @@ const ContractsIndexRoute = ContractsIndexRouteImport.update({
   path: '/contracts/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const UtilityUcRoute = UtilityUcRouteImport.update({
+  id: '/utility/uc',
+  path: '/utility/uc',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UtilityTusdRoute = UtilityTusdRouteImport.update({
+  id: '/utility/tusd',
+  path: '/utility/tusd',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UtilityConnectionsRoute = UtilityConnectionsRouteImport.update({
+  id: '/utility/connections',
+  path: '/utility/connections',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UtilityCertificatesRoute = UtilityCertificatesRouteImport.update({
+  id: '/utility/certificates',
+  path: '/utility/certificates',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UtilityAreaRoute = UtilityAreaRouteImport.update({
+  id: '/utility/area',
+  path: '/utility/area',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ContractsNewRoute = ContractsNewRouteImport.update({
   id: '/contracts/new',
   path: '/contracts/new',
@@ -191,6 +221,11 @@ export interface FileRoutesByFullPath {
   '/x402': typeof X402Route
   '/api/health': typeof ApiHealthRoute
   '/contracts/new': typeof ContractsNewRoute
+  '/utility/area': typeof UtilityAreaRoute
+  '/utility/certificates': typeof UtilityCertificatesRoute
+  '/utility/connections': typeof UtilityConnectionsRoute
+  '/utility/tusd': typeof UtilityTusdRoute
+  '/utility/uc': typeof UtilityUcRoute
   '/contracts/': typeof ContractsIndexRoute
   '/api/p2p/validate': typeof ApiP2pValidateRoute
   '/api/settlements/telemetry': typeof ApiSettlementsTelemetryRoute
@@ -219,6 +254,11 @@ export interface FileRoutesByTo {
   '/x402': typeof X402Route
   '/api/health': typeof ApiHealthRoute
   '/contracts/new': typeof ContractsNewRoute
+  '/utility/area': typeof UtilityAreaRoute
+  '/utility/certificates': typeof UtilityCertificatesRoute
+  '/utility/connections': typeof UtilityConnectionsRoute
+  '/utility/tusd': typeof UtilityTusdRoute
+  '/utility/uc': typeof UtilityUcRoute
   '/contracts': typeof ContractsIndexRoute
   '/api/p2p/validate': typeof ApiP2pValidateRoute
   '/api/settlements/telemetry': typeof ApiSettlementsTelemetryRoute
@@ -248,6 +288,11 @@ export interface FileRoutesById {
   '/x402': typeof X402Route
   '/api/health': typeof ApiHealthRoute
   '/contracts/new': typeof ContractsNewRoute
+  '/utility/area': typeof UtilityAreaRoute
+  '/utility/certificates': typeof UtilityCertificatesRoute
+  '/utility/connections': typeof UtilityConnectionsRoute
+  '/utility/tusd': typeof UtilityTusdRoute
+  '/utility/uc': typeof UtilityUcRoute
   '/contracts/': typeof ContractsIndexRoute
   '/api/p2p/validate': typeof ApiP2pValidateRoute
   '/api/settlements/telemetry': typeof ApiSettlementsTelemetryRoute
@@ -278,6 +323,11 @@ export interface FileRouteTypes {
     | '/x402'
     | '/api/health'
     | '/contracts/new'
+    | '/utility/area'
+    | '/utility/certificates'
+    | '/utility/connections'
+    | '/utility/tusd'
+    | '/utility/uc'
     | '/contracts/'
     | '/api/p2p/validate'
     | '/api/settlements/telemetry'
@@ -306,6 +356,11 @@ export interface FileRouteTypes {
     | '/x402'
     | '/api/health'
     | '/contracts/new'
+    | '/utility/area'
+    | '/utility/certificates'
+    | '/utility/connections'
+    | '/utility/tusd'
+    | '/utility/uc'
     | '/contracts'
     | '/api/p2p/validate'
     | '/api/settlements/telemetry'
@@ -334,6 +389,11 @@ export interface FileRouteTypes {
     | '/x402'
     | '/api/health'
     | '/contracts/new'
+    | '/utility/area'
+    | '/utility/certificates'
+    | '/utility/connections'
+    | '/utility/tusd'
+    | '/utility/uc'
     | '/contracts/'
     | '/api/p2p/validate'
     | '/api/settlements/telemetry'
@@ -363,6 +423,11 @@ export interface RootRouteChildren {
   X402Route: typeof X402Route
   ApiHealthRoute: typeof ApiHealthRoute
   ContractsNewRoute: typeof ContractsNewRoute
+  UtilityAreaRoute: typeof UtilityAreaRoute
+  UtilityCertificatesRoute: typeof UtilityCertificatesRoute
+  UtilityConnectionsRoute: typeof UtilityConnectionsRoute
+  UtilityTusdRoute: typeof UtilityTusdRoute
+  UtilityUcRoute: typeof UtilityUcRoute
   ContractsIndexRoute: typeof ContractsIndexRoute
   ApiP2pValidateRoute: typeof ApiP2pValidateRoute
   ApiSettlementsTelemetryRoute: typeof ApiSettlementsTelemetryRoute
@@ -512,6 +577,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ContractsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/utility/uc': {
+      id: '/utility/uc'
+      path: '/utility/uc'
+      fullPath: '/utility/uc'
+      preLoaderRoute: typeof UtilityUcRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/utility/tusd': {
+      id: '/utility/tusd'
+      path: '/utility/tusd'
+      fullPath: '/utility/tusd'
+      preLoaderRoute: typeof UtilityTusdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/utility/connections': {
+      id: '/utility/connections'
+      path: '/utility/connections'
+      fullPath: '/utility/connections'
+      preLoaderRoute: typeof UtilityConnectionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/utility/certificates': {
+      id: '/utility/certificates'
+      path: '/utility/certificates'
+      fullPath: '/utility/certificates'
+      preLoaderRoute: typeof UtilityCertificatesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/utility/area': {
+      id: '/utility/area'
+      path: '/utility/area'
+      fullPath: '/utility/area'
+      preLoaderRoute: typeof UtilityAreaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/contracts/new': {
       id: '/contracts/new'
       path: '/contracts/new'
@@ -579,6 +679,11 @@ const rootRouteChildren: RootRouteChildren = {
   X402Route: X402Route,
   ApiHealthRoute: ApiHealthRoute,
   ContractsNewRoute: ContractsNewRoute,
+  UtilityAreaRoute: UtilityAreaRoute,
+  UtilityCertificatesRoute: UtilityCertificatesRoute,
+  UtilityConnectionsRoute: UtilityConnectionsRoute,
+  UtilityTusdRoute: UtilityTusdRoute,
+  UtilityUcRoute: UtilityUcRoute,
   ContractsIndexRoute: ContractsIndexRoute,
   ApiP2pValidateRoute: ApiP2pValidateRoute,
   ApiSettlementsTelemetryRoute: ApiSettlementsTelemetryRoute,

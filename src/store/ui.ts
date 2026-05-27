@@ -7,18 +7,39 @@ import { create } from "zustand";
 import type { TelemetryChannel } from "@/lib/terminology";
 
 type Density = "compact" | "default";
+export type Theme = "dark" | "light";
+
+function getStoredTheme(): Theme {
+  if (typeof window === "undefined") return "dark";
+  return (localStorage.getItem("ep-theme") as Theme) || "dark";
+}
+
+function applyTheme(theme: Theme) {
+  if (typeof document === "undefined") return;
+  const html = document.documentElement;
+  html.classList.remove("dark", "light");
+  html.classList.add(theme);
+}
 
 interface UiState {
   density: Density;
   sidebarPinned: boolean;
+  theme: Theme;
   setDensity: (d: Density) => void;
   toggleSidebar: () => void;
+  setTheme: (t: Theme) => void;
 }
 export const useUiStore = create<UiState>((set) => ({
   density: "default",
   sidebarPinned: true,
+  theme: getStoredTheme(),
   setDensity: (density) => set({ density }),
   toggleSidebar: () => set((s) => ({ sidebarPinned: !s.sidebarPinned })),
+  setTheme: (theme) => {
+    localStorage.setItem("ep-theme", theme);
+    applyTheme(theme);
+    set({ theme });
+  },
 }));
 
 interface SelectionState {

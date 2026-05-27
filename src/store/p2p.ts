@@ -1,7 +1,9 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type { OperatorIdentity, ParticipantRole } from "@/store/operator";
-import { isValidPublicKey } from "@/lib/stellar";
+import { isValidPublicKey, STELLAR_NETWORK } from "@/lib/stellar";
+import { API_BASE_URL } from "@/lib/api";
+import { getSession } from "@/lib/session";
 
 export type P2PAsset = "EPWR" | "XLM";
 
@@ -51,71 +53,64 @@ export type P2PAuthorization = {
   memo: string;
   operatorId: string;
   roles: ParticipantRole[];
-  network: "STELLAR_TESTNET";
+  network: string;
   preparedAt: string;
 };
-
-// Static valid Stellar Testnet ed25519 public keys for the demo counterparty
-// registry. The frontend never generates or stores secret keys — these are
-// placeholders surfaced until the backend exposes /api/counterparties.
-const COUNTERPARTY_KEYS = [
-  "GA5757OJNNAYHQTY2Y2T5QGMLRMDWZA4GGDXSYWZUT7SVJOW433TUUFV",
-  "GBVSRXQLLLNHMXHTBUU23INIGCFLEEGLEIM4RKMH75526L5ONPYDPBY5",
-  "GBZOUX5YKE2YW7UUUKJ2762AGDD6O3MTPUIG6NAGWCVHDZ763MXK4YFB",
-  "GBT32LXQZNV2USNKVZU5EYH26BTH32QRIAZ7JV2F4NHRMLXP56CSRF2E",
-  "GCTIYQERAOME4BMJXJKFTA6Q5YZGBHTLCW5YFBEBE23E7DDEW47TQKUQ",
-];
-
-const seedCounterparties: P2PCounterparty[] = [
-  {
-    organization: "Aurora Grid Energy",
-    role: "GENERATOR",
-    jurisdiction: "BR-PR",
-    settlementAddress: COUNTERPARTY_KEYS[0],
-  },
-  {
-    organization: "Nexa Commercial Energy",
-    role: "SELLER",
-    jurisdiction: "BR-RJ",
-    settlementAddress: COUNTERPARTY_KEYS[1],
-  },
-  {
-    organization: "Atlas Energy Holdings",
-    role: "INVESTOR",
-    jurisdiction: "BR-SP",
-    settlementAddress: COUNTERPARTY_KEYS[2],
-  },
-  {
-    organization: "Metro Distribution Group",
-    role: "USER",
-    jurisdiction: "BR-MG",
-    settlementAddress: COUNTERPARTY_KEYS[3],
-  },
-  {
-    organization: "Horizon Power Exchange",
-    role: "SELLER",
-    jurisdiction: "BR-DF",
-    settlementAddress: COUNTERPARTY_KEYS[4],
-  },
-];
 
 type P2PState = {
   transfers: P2PTransfer[];
   counterparties: P2PCounterparty[];
+  loadingCp: boolean;
+  fetchCounterparties: () => Promise<void>;
   recordTransfer: (t: P2PTransfer) => void;
   reset: () => void;
 };
 
 export const useP2P = create<P2PState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       transfers: [],
-      counterparties: seedCounterparties,
+      counterparties: [],
+      loadingCp: false,
+
+      fetchCounterparties: async () => {
+        if (get().loadingCp) return;
+        set({ loadingCp: true });
+        try {
+          const session = getSession();
+          const headers: Record<string, string> = { Accept: "application/json" };
+          if (session?.token) headers.Authorization = `Bearer ${session.token}`;
+
+          const res = await fetch(`${API_BASE_URL}/api/auth/counterparties`, { headers });
+          const data = await res.json();
+          if (data.success && data.counterparties) {
+            const mapped: P2PCounterparty[] = data.counterparties.map((c: {
+              organization?: string;
+              full_name?: string;
+              roles?: string[];
+              country?: string;
+              city?: string;
+              stellar_public_key: string;
+            }) => ({
+              organization: c.organization || c.full_name || "—",
+              role: (c.roles?.[0] as P2PCounterparty["role"]) || "USER",
+              jurisdiction: `${c.city || "—"} · ${c.country || "—"}`,
+              settlementAddress: c.stellar_public_key,
+            }));
+            set({ counterparties: mapped });
+          }
+        } catch {
+          // silent — manual key entry still works
+        } finally {
+          set({ loadingCp: false });
+        }
+      },
+
       recordTransfer: (t) => set((s) => ({ transfers: [t, ...s.transfers].slice(0, 50) })),
-      reset: () => set({ transfers: [], counterparties: seedCounterparties }),
+      reset: () => set({ transfers: [], counterparties: [] }),
     }),
     {
-      name: "energypay.p2p.v2",
+      name: "energypay.p2p.v3",
       storage: createJSONStorage(() =>
         typeof window !== "undefined" ? window.localStorage : (undefined as unknown as Storage),
       ),
@@ -134,7 +129,7 @@ export const buildP2PAuthorization = (
   memo: input.memo,
   operatorId: operator.operatorId,
   roles: operator.roles,
-  network: "STELLAR_TESTNET",
+  network: STELLAR_NETWORK,
   preparedAt: new Date().toISOString(),
 });
 

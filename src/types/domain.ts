@@ -220,7 +220,7 @@ export type ListResult<T> = {
   items: T[];
   total: number;
   asOf: string;
-  source: "MOCK" | "LIVE";
+  source: "MOCK" | "LIVE" | "ONS" | "EMPTY";
   /** True when data is older than its freshness budget */
   degraded?: boolean;
 };

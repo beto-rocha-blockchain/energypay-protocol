@@ -108,6 +108,9 @@ export type ApiUser = {
   funded?: boolean;
   network?: string;
   coords?: { lat: number; lng: number; source?: "GPS" | "MANUAL" } | null;
+  email_verified?: boolean;
+  phone_verified?: boolean;
+  phone?: string | null;
   provisioning_tx_hash?: string | null;
   provisioning_ledger?: number | null;
   settlement_status?: string | null;
@@ -129,6 +132,11 @@ export type RegisterPayload = {
   roles: string[];
   coords?: { lat: number; lng: number; source: "GPS" | "MANUAL" };
   fund?: boolean;
+  wallet_mode?: "generate" | "link";
+  existing_public_key?: string;
+  existing_secret?: string;
+  /** Energy generation source — required when roles includes GENERATOR */
+  energy_type?: "SOLAR" | "HYDRO" | "SMALL_HYDRO" | "WIND" | "BIOMASS" | "NATURAL_GAS" | "NUCLEAR" | "THERMAL" | "COGENERATION";
 };
 
 export type LoginPayload = {
@@ -267,7 +275,7 @@ export async function apiValidatedP2PTransfer(
   };
   if (session?.token) headers.Authorization = `Bearer ${session.token}`;
 
-  const res = await fetch("/api/p2p/transfer", {
+  const res = await fetch(`${API_BASE_URL}/api/p2p/transfer`, {
     method: "POST",
     headers,
     body: JSON.stringify(payload),
@@ -297,3 +305,245 @@ export type CounterpartyDTO = {
 
 export const apiListCounterparties = () =>
   apiRequest<CounterpartyDTO[]>("/api/counterparties", { method: "GET" });
+
+/* ------------------------------------------------------------------ */
+/*  Email verification                                                */
+/* ------------------------------------------------------------------ */
+
+export const apiResendVerification = () =>
+  apiRequest<{ success: boolean; message: string; already_verified?: boolean; dev_verify_url?: string }>(
+    "/api/auth/resend-verification",
+    { method: "POST" },
+  );
+
+export const apiUpdatePhone = (phone: string) =>
+  apiRequest<{ success: boolean; phone: string }>(
+    "/api/auth/update-phone",
+    { method: "POST", body: { phone } },
+  );
+
+export const apiSendPhoneCode = () =>
+  apiRequest<{ success: boolean; message: string; already_verified?: boolean; dev_code?: string }>(
+    "/api/auth/send-phone-code",
+    { method: "POST" },
+  );
+
+export const apiVerifyPhoneCode = (code: string) =>
+  apiRequest<{ success: boolean; message: string }>(
+    "/api/auth/verify-phone-code",
+    { method: "POST", body: { code } },
+  );
+
+/* ------------------------------------------------------------------ */
+/*  Grid participants (verified users with coords)                    */
+/* ------------------------------------------------------------------ */
+
+export type GridParticipantDTO = {
+  id: string;
+  organization: string;
+  role: "GENERATOR" | "SELLER" | "INVESTOR" | "USER";
+  energyType: string;
+  settlementAddress: string;
+  region: string;
+  jurisdiction: string;
+  coords: { lat: number; lng: number; source?: string };
+  email_verified: boolean;
+  /** true when coordinates are city-level approximations, not GPS */
+  approximate_location?: boolean;
+};
+
+export const apiGridParticipants = () =>
+  apiRequest<{ success: boolean; participants: GridParticipantDTO[] }>(
+    "/api/auth/grid-participants",
+    { method: "GET" },
+  );
+
+/* ------------------------------------------------------------------ */
+/*  Contracts                                                          */
+/* ------------------------------------------------------------------ */
+
+export type DbContract = {
+  id: string;
+  contract_number: string | null;
+  buyer_id: string | null;
+  seller_id: string | null;
+  buyer_public_key: string;
+  seller_public_key: string | null;
+  buyer_label: string | null;
+  seller_label: string | null;
+  volume_mwh: number;
+  price_brl: number;
+  pld_brl: number | null;
+  start_date: string | null;
+  end_date: string | null;
+  settlement_date: string | null;
+  status: "DRAFT" | "ACTIVE" | "PENDING" | "SETTLED" | "FAILED";
+  state: "CREATED" | "VALIDATED" | "PENDING_SIGNATURE" | "BROADCASTING" | "CONFIRMED" | "SETTLED" | "FAILED";
+  tx_hash: string | null;
+  ledger: number | null;
+  finality_ms: number | null;
+  settlement_window: string;
+  memo: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ContractMovement = {
+  id: string;
+  contract_id: string;
+  from_state: string | null;
+  to_state: string;
+  actor_user_id: string | null;
+  notes: string | null;
+  tx_hash: string | null;
+  ledger: number | null;
+  created_at: string;
+};
+
+export type ContractReconciliation = {
+  contract_id: string;
+  internal_tx_hash: string | null;
+  internal_ledger: number | null;
+  internal_status: string;
+  horizon_verified: boolean;
+  horizon_ledger: number | null;
+  horizon_created_at: string | null;
+  horizon_successful: boolean | null;
+  discrepancy: string | null;
+  checked_at: string;
+};
+
+export const apiListContracts = () =>
+  apiRequest<{ success: boolean; contracts: DbContract[] }>("/api/contracts", { method: "GET" });
+
+export const apiGetContract = (id: string) =>
+  apiRequest<{ success: boolean; contract: DbContract & { movements: ContractMovement[] } }>(
+    `/api/contracts/${id}`,
+    { method: "GET" },
+  );
+
+export const apiCreateContract = (payload: {
+  contract_number?: string;
+  buyer_public_key: string;
+  seller_public_key?: string;
+  buyer_label?: string;
+  seller_label?: string;
+  volume_mwh: number;
+  price_brl: number;
+  pld_brl?: number;
+  start_date?: string;
+  end_date?: string;
+  settlement_date?: string;
+  memo?: string;
+  tx_hash?: string;
+  ledger?: number;
+  finality_ms?: number;
+  /** Multi-party approval list. Each entry maps a wallet address to its role. */
+  parties?: Array<{
+    publicKey: string;
+    userId?: string;
+    role: "SELLER" | "GUARANTOR" | "BROKER" | "WITNESS";
+    label?: string;
+  }>;
+}) =>
+  apiRequest<{ success: boolean; contract: DbContract }>("/api/contracts", {
+    method: "POST",
+    body: payload,
+  });
+
+export const apiActivateContract = (id: string) =>
+  apiRequest<{ success: boolean; contract: DbContract }>(`/api/contracts/${id}/activate`, {
+    method: "POST",
+  });
+
+export const apiRequestSettlement = (id: string) =>
+  apiRequest<{ success: boolean; contract: DbContract; idempotency_key: string }>(
+    `/api/contracts/${id}/request-settlement`,
+    { method: "POST" },
+  );
+
+export const apiExecuteContractSettlement = (id: string, idempotencyKey?: string) =>
+  apiRequest<{
+    success: boolean;
+    contract: DbContract;
+    tx_hash: string;
+    ledger: number;
+    finality_ms: number;
+    explorer_url: string;
+  }>(`/api/contracts/${id}/execute-settlement`, {
+    method: "POST",
+    body: { confirmed: true, idempotency_key: idempotencyKey },
+  });
+
+export const apiGetMovements = (id: string) =>
+  apiRequest<{ success: boolean; movements: ContractMovement[] }>(
+    `/api/contracts/${id}/movements`,
+    { method: "GET" },
+  );
+
+export const apiReconcileContract = (id: string) =>
+  apiRequest<{ success: boolean; reconciliation: ContractReconciliation }>(
+    `/api/contracts/${id}/reconcile`,
+    { method: "GET" },
+  );
+
+/* ------------------------------------------------------------------ */
+/*  Notifications                                                       */
+/* ------------------------------------------------------------------ */
+
+export type Notification = {
+  id: string;
+  user_id: string;
+  contract_id: string | null;
+  type: "APPROVAL_REQUIRED" | "APPROVED" | "REJECTED" | "SETTLED" | "INFO";
+  title: string;
+  message: string;
+  action_label: string | null;
+  action_url: string | null;
+  read: boolean;
+  created_at: string;
+};
+
+export type ContractApproval = {
+  id: string;
+  contract_id: string;
+  party_role: "BUYER" | "SELLER" | "GUARANTOR" | "BROKER" | "WITNESS";
+  party_user_id: string | null;
+  party_public_key: string;
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  approved_at: string | null;
+  rejected_at: string | null;
+  rejection_reason: string | null;
+  created_at: string;
+};
+
+export const apiGetNotifications = () =>
+  apiRequest<{ success: boolean; notifications: Notification[]; unread_count: number }>(
+    "/api/notifications",
+    { method: "GET" },
+  );
+
+export const apiMarkNotificationRead = (id: string) =>
+  apiRequest<{ success: boolean }>(`/api/notifications/${id}/read`, { method: "POST" });
+
+export const apiMarkAllNotificationsRead = () =>
+  apiRequest<{ success: boolean }>("/api/notifications/read-all", { method: "POST" });
+
+export const apiGetContractApprovals = (id: string) =>
+  apiRequest<{ success: boolean; approvals: ContractApproval[] }>(
+    `/api/contracts/${id}/approvals`,
+    { method: "GET" },
+  );
+
+export const apiApproveContract = (id: string) =>
+  apiRequest<{ success: boolean; approved: boolean; activated: boolean }>(
+    `/api/contracts/${id}/approve`,
+    { method: "POST" },
+  );
+
+export const apiRejectContract = (id: string, reason?: string) =>
+  apiRequest<{ success: boolean; rejected: boolean }>(
+    `/api/contracts/${id}/reject`,
+    { method: "POST", body: { reason } },
+  );

@@ -11,7 +11,7 @@ import {
 } from "@stellar/stellar-sdk";
 import { supabase } from "../lib/supabase.js";
 
-const server = new Horizon.Server("https://horizon-testnet.stellar.org");
+import { horizon as server, NETWORK_PASSPHRASE, explorerTxUrl } from "../lib/stellar-network.js";
 const SUPPORTED_ASSETS = new Set(["XLM", "EPWR"]);
 
 class SettlementInputError extends Error {
@@ -99,22 +99,48 @@ const resolveIssuerPublicKey = () => {
   return keypairFromEnv("ISSUER_SECRET").publicKey();
 };
 
-const resolvePaymentContext = (assetCode) => {
+const resolvePaymentContext = (assetCode, userKeypair) => {
+  const asset = assetCode === "XLM"
+    ? Asset.native()
+    : new Asset(assetCode, resolveIssuerPublicKey());
+
+  // If we have a user keypair, send from the user's own account
+  if (userKeypair) {
+    return { source: userKeypair, asset };
+  }
+
+  // Fallback: platform custody accounts
   if (assetCode === "XLM") {
-    return {
-      source: keypairFromEnv("STELLAR_SECRET"),
-      asset: Asset.native(),
-    };
+    return { source: keypairFromEnv("STELLAR_SECRET"), asset };
   }
 
   const source = process.env.DISTRIBUTION_SECRET
     ? keypairFromEnv("DISTRIBUTION_SECRET")
     : keypairFromEnv("STELLAR_SECRET");
 
-  return {
-    source,
-    asset: new Asset(assetCode, resolveIssuerPublicKey()),
-  };
+  return { source, asset };
+};
+
+/**
+ * Resolve the sender's Keypair from the authenticated user's Supabase record.
+ * Returns null if the user has no stored secret (caller falls back to custody).
+ */
+const resolveUserKeypair = async (userId) => {
+  if (!userId) return null;
+
+  try {
+    const { data: user, error } = await supabase
+      .from("users")
+      .select("stellar_secret_encrypted")
+      .eq("id", userId)
+      .single();
+
+    if (error || !user?.stellar_secret_encrypted) return null;
+
+    return Keypair.fromSecret(user.stellar_secret_encrypted);
+  } catch {
+    return null;
+  }
 };
 
 const buildSettlementRecord = (payload, result, operator) => ({
@@ -154,7 +180,11 @@ export async function executeSettlement(payload = {}, context = {}) {
   const amount = normalizeAmount(payload.amount ?? payload.amount_xlm ?? "0.1");
   const destination = resolveDestination(payload);
   const memo = resolveMemo(payload);
-  const { source, asset } = resolvePaymentContext(assetCode);
+
+  // Try to send from the authenticated user's own account
+  const senderId = readString(payload.sender_user_id) || context.operator?.sub || context.operator?.id;
+  const userKeypair = await resolveUserKeypair(senderId);
+  const { source, asset } = resolvePaymentContext(assetCode, userKeypair);
 
   const startedAt = Date.now();
 
@@ -162,7 +192,7 @@ export async function executeSettlement(payload = {}, context = {}) {
     const account = await server.loadAccount(source.publicKey());
     const tx = new TransactionBuilder(account, {
       fee: BASE_FEE,
-      networkPassphrase: Networks.TESTNET,
+      networkPassphrase: NETWORK_PASSPHRASE,
     })
       .addOperation(
         Operation.payment({

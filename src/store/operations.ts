@@ -108,8 +108,6 @@ const hhmm = () => {
   const d = new Date();
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
-const rndHash = () =>
-  Array.from({ length: 64 }, () => "0123456789abcdef"[Math.floor(Math.random() * 16)]).join("");
 
 const PHASE_TO_STATE: Record<QueuePhase, SettlementState> = {
   queued: "CREATED",
@@ -202,7 +200,7 @@ export const useOps = create<OpsState>()(
       },
 
       appendLog: ({ ts, ...rest }) => {
-        const id = `LOG-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e4)}`;
+        const id = `LOG-${Date.now().toString(36)}`;
         set((s) => ({
           logs: [...s.logs, { id, ts: ts ?? now(), ...rest }].slice(-500),
         }));
@@ -286,7 +284,7 @@ export const useOps = create<OpsState>()(
                   : np === "signing"
                     ? `signing payload · EPWR keypair (ed25519)`
                     : np === "broadcasting"
-                      ? `broadcasting ${q.id} → Stellar Testnet horizon`
+                      ? `broadcasting ${q.id} → Stellar horizon`
                       : `awaiting confirmation · ledger window…`,
             });
           }
@@ -296,7 +294,6 @@ export const useOps = create<OpsState>()(
         completed.forEach(async (q) => {
           const c = s.contracts.find((cc) => cc.id === q.contractId);
           if (!c) return;
-          const ledger = s.counters.ledger + Math.floor(Math.random() * 30);
           const response = await fetch(`${API_BASE}/settlement/execute`, {
             method: "POST",
             headers: {
@@ -331,15 +328,16 @@ export const useOps = create<OpsState>()(
             state: "SETTLED",
             status: "CONFIRMED",
           };
+          const realLedger = settlementResult.ledger ?? 0;
           get().recordSettlement(stl);
           get().appendLog({
             contractId: q.contractId,
             settlementId: q.id,
             state: "SETTLED",
             level: "ok",
-            message: `✓ ${q.id} finalized · ledger #${ledger.toLocaleString("en-US")} · BRL leg cleared`,
+            message: `✓ ${q.id} finalized${realLedger ? ` · ledger #${realLedger.toLocaleString("en-US")}` : ""} · BRL leg cleared`,
           });
-          set((cur) => ({ counters: { ...cur.counters, ledger: ledger + 1 } }));
+          if (realLedger) set((cur) => ({ counters: { ...cur.counters, ledger: realLedger } }));
         });
 
         // age feed labels
@@ -347,33 +345,6 @@ export const useOps = create<OpsState>()(
           ...f,
           ago: f.ago === "just now" ? "30s ago" : f.ago,
         }));
-
-        // occasionally emit an operational alert (~1 in 6 ticks)
-        if (Math.random() < 0.16) {
-          const candidates: Array<Omit<AlertItem, "id" | "time">> = [
-            {
-              level: "warn",
-              title: "Counterparty ack delay",
-              detail: "ack pending > 60s on active settlement",
-            },
-            {
-              level: "info",
-              title: "Reconciliation queue normalising",
-              detail: "pending items decreasing",
-            },
-            {
-              level: "warn",
-              title: "Oracle PLD lag",
-              detail: "GridRef feed drift 4.1s vs reference clock",
-            },
-            {
-              level: "info",
-              title: "New cycle window opened",
-              detail: "D+1 17:00 BRT clearing window active",
-            },
-          ];
-          get().pushAlert(candidates[Math.floor(Math.random() * candidates.length)]);
-        }
 
         set({ queue: newQueue, feed, lastTick: t });
       },
@@ -386,7 +357,7 @@ export const useOps = create<OpsState>()(
           queue: settlementQueue,
           feed: recentSettlementFeed,
           logs: seedLogs(),
-          counters: { stl: 90220, epc: 2042, ledger: 58921500, alert: 123 },
+          counters: { stl: 0, epc: 0, ledger: 0, alert: 0 },
           lastTick: 0,
         }),
     }),

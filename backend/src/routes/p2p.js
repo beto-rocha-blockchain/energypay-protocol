@@ -1,6 +1,7 @@
 import express from "express";
 import { requireAuth } from "../middleware/auth.js";
 import { executeSettlement } from "../services/stellarSettlementService.js";
+import { explorerTxUrl } from "../lib/stellar-network.js";
 
 const router = express.Router();
 const SETTLEMENT_ROLES = new Set(["SELLER", "GENERATOR"]);
@@ -41,7 +42,7 @@ router.post("/transfer", requireAuth, async (req, res) => {
       ledger: result.ledger,
       finality_ms: result.finalityMs,
       status: "FINALIZED",
-      explorer_link: `https://stellar.expert/explorer/testnet/tx/${result.txHash}`,
+      explorer_link: explorerTxUrl(result.txHash),
       timestamp: new Date().toISOString(),
       memo: result.memo,
     });

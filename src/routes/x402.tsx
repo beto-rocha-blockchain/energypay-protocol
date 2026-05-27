@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { STELLAR_NETWORK_LABEL, STELLAR_NETWORK } from "@/lib/stellar";
 import { useMemo, useState } from "react";
 import {
   Activity,
@@ -114,7 +115,7 @@ function X402Page() {
   const [logs, setLogs] = useState<LogLine[]>([]);
 
   const paymentHeader = useMemo(
-    () => (txHash.trim() ? `PAYMENT-SIGNATURE: stellar-testnet:${txHash.trim()}` : ""),
+    () => (txHash.trim() ? `PAYMENT-SIGNATURE: stellar-mainnet:${txHash.trim()}` : ""),
     [txHash],
   );
 
@@ -176,7 +177,7 @@ function X402Page() {
     const cleanTx = txHash.trim();
 
     if (!cleanTx) {
-      toast.error("Paste a Stellar Testnet transaction hash first");
+      toast.error(`Paste a ${STELLAR_NETWORK_LABEL} transaction hash first`);
       return;
     }
 
@@ -186,7 +187,7 @@ function X402Page() {
       append("→ Retrying /api/x402/pld with PAYMENT-SIGNATURE");
       const res = await fetch(`${API_BASE_URL}/api/x402/pld`, {
         headers: {
-          "PAYMENT-SIGNATURE": `stellar-testnet:${cleanTx}`,
+          "PAYMENT-SIGNATURE": `stellar-mainnet:${cleanTx}`,
         },
       });
 
@@ -227,13 +228,13 @@ function X402Page() {
           </h1>
           <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
             Demonstrates an x402-compatible HTTP 402 payment flow for premium PLD market data,
-            using Stellar Testnet transactions as verifiable payment proofs.
+            using {STELLAR_NETWORK_LABEL} transactions as verifiable payment proofs.
           </p>
         </div>
 
         <Badge className="gap-2 border-primary/30 bg-primary/10 px-3 py-1 text-primary">
           <Radio className="h-3.5 w-3.5" />
-          Stellar Testnet
+          {STELLAR_NETWORK_LABEL}
         </Badge>
       </div>
 
@@ -300,12 +301,12 @@ function X402Page() {
           </div>
 
           <div className="mt-5 space-y-2">
-            <Label htmlFor="txHash">Stellar Testnet txHash</Label>
+            <Label htmlFor="txHash">{STELLAR_NETWORK_LABEL} txHash</Label>
             <Input
               id="txHash"
               value={txHash}
               onChange={(e) => setTxHash(e.target.value)}
-              placeholder="Paste the Stellar Testnet payment transaction hash"
+              placeholder={`Paste the ${STELLAR_NETWORK_LABEL} payment transaction hash`}
               className="font-mono text-xs"
             />
             {paymentHeader ? (
@@ -338,7 +339,7 @@ function X402Page() {
                   <p className="font-mono text-sm font-semibold text-primary">ACCESS_GRANTED</p>
                 </div>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Premium market data unlocked after Stellar Testnet payment verification.
+                  Premium market data unlocked after {STELLAR_NETWORK_LABEL} payment verification.
                 </p>
               </div>
 

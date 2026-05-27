@@ -1,85 +1,79 @@
-import { COUNTERPARTIES, fmtUTC } from "@/lib/institutional-data";
+/**
+ * Settlements service — real data from /api/dashboard/settlements.
+ *
+ * Replaces the previous mock generator that produced 24 synthetic events.
+ * Each settlement row comes directly from the Supabase settlements table,
+ * normalised into the SettlementEvent shape used by the institutional UI.
+ */
+
 import type { SettlementEvent } from "@/types/domain";
-import type { LifecycleState } from "@/lib/terminology";
 import { pollSubscription, type ReadService, nowIso } from "./_base";
 import type { ListResult } from "@/types/domain";
+import { API_BASE_URL } from "@/lib/api";
 
-const lifeStates: LifecycleState[] = [
-  "INTAKE",
-  "VALIDATED",
-  "MATCHED",
-  "ANCHORED",
-  "CLEARED",
-  "SETTLED",
-  "ANCHORED",
-  "CLEARED",
-  "SETTLED",
-  "SETTLED",
-  "REJECTED",
-];
+async function fetchLive(): Promise<SettlementEvent[]> {
+  const res = await fetch(`${API_BASE_URL}/api/dashboard/settlements?limit=50`, {
+    headers: { Accept: "application/json" },
+    signal: AbortSignal.timeout(8_000),
+  });
+  if (!res.ok) throw new Error(`Settlements API ${res.status}`);
+  const json = await res.json();
+  if (!json.success) return [];
 
-function generate(): SettlementEvent[] {
-  const now = Date.now();
-  return Array.from({ length: 24 }).map((_, i) => {
-    const cp = COUNTERPARTIES[i % COUNTERPARTIES.length];
-    const lifecycle = lifeStates[i % lifeStates.length];
-    const submittedAt = new Date(now - i * 47_000 - (i % 7) * 1100).toISOString();
-    const anchorMs = 4200 + ((i * 97) % 2400);
-    const ledger = 51_224_197 - i;
-    const hashBytes = Array.from({ length: 16 }, (_, k) =>
-      ((i * 211 + k * 17) % 256).toString(16).padStart(2, "0"),
-    ).join("");
+  return (json.settlements as Array<{
+    id: string;
+    contract_id?: string;
+    buyer?: string;
+    seller?: string;
+    amount_brl?: number;
+    volume_mwh?: number;
+    pld?: number;
+    tx_hash?: string;
+    ledger?: number;
+    status?: string;
+    created_at?: string;
+  }>).map((s) => {
+    const status = (s.status ?? "SETTLED").toUpperCase();
+    const lifecycle =
+      status === "CONFIRMED" || status === "SETTLED"
+        ? "SETTLED"
+        : status === "FAILED"
+          ? "REJECTED"
+          : status === "PENDING"
+            ? "VALIDATED"
+            : status === "BROADCASTING"
+              ? "ANCHORED"
+              : ("INTAKE" as SettlementEvent["lifecycle"]);
+
     return {
-      id: `SE-${String(900_421 + i).padStart(6, "0")}`,
-      correlationId: `corr_${(i * 9301 + 49297).toString(36)}`,
-      contractId: `EPC-${2058 + (i % 32)}`,
-      counterpartyId: cp.id,
+      id: s.id,
+      correlationId: s.id,
+      contractId: s.contract_id ?? "—",
+      counterpartyId: s.buyer ?? s.seller ?? "—",
       lifecycle,
-      severity:
-        lifecycle === "REJECTED" ? "CRITICAL" : lifecycle === "ANCHORED" ? "ELEVATED" : "NOMINAL",
-      notionalBRL: Math.round((90_000 + ((i * 911) % 540_000)) / 10) * 10,
-      volumeMWh: Math.round(((i * 13) % 240) + 4),
-      txHash: hashBytes,
-      ledgerSeq: ledger,
-      submittedAt,
-      anchoredAt:
-        lifecycle !== "INTAKE" && lifecycle !== "VALIDATED"
-          ? new Date(new Date(submittedAt).getTime() + anchorMs).toISOString()
-          : undefined,
-      clearedAt: ["CLEARED", "SETTLED"].includes(lifecycle)
-        ? new Date(new Date(submittedAt).getTime() + anchorMs + 950).toISOString()
-        : undefined,
-      settledAt:
-        lifecycle === "SETTLED"
-          ? new Date(new Date(submittedAt).getTime() + anchorMs + 1400).toISOString()
-          : undefined,
-      rejectedAt:
-        lifecycle === "REJECTED"
-          ? new Date(new Date(submittedAt).getTime() + 280).toISOString()
-          : undefined,
-      latencyMs: anchorMs + ((i * 7) % 800),
-      channel: (["BILATERAL", "POOL", "P2P", "OTC"] as const)[i % 4],
-      failureCode: lifecycle === "REJECTED" ? "E_MATCH_TOLERANCE" : undefined,
-      failureReason:
-        lifecycle === "REJECTED"
-          ? "Price tolerance exceeded against PLD reference (Δ > 1.20%)"
-          : undefined,
-      retries: lifecycle === "REJECTED" ? 1 + (i % 2) : 0,
+      severity: lifecycle === "REJECTED" ? "CRITICAL" : lifecycle === "ANCHORED" ? "ELEVATED" : "NOMINAL",
+      notionalBRL: Number(s.amount_brl ?? 0),
+      volumeMWh: Number(s.volume_mwh ?? 0),
+      txHash: s.tx_hash ?? "",
+      ledgerSeq: Number(s.ledger ?? 0),
+      submittedAt: s.created_at ?? nowIso(),
+      latencyMs: 0,
+      channel: "BILATERAL" as const,
+      retries: 0,
     } satisfies SettlementEvent;
   });
 }
 
-void fmtUTC; // keep import warm
-
 export const settlementsService: ReadService<SettlementEvent, void> = {
   async list(): Promise<ListResult<SettlementEvent>> {
-    const items = generate();
-    return { items, total: items.length, asOf: nowIso(), source: "MOCK" };
+    const items = await fetchLive();
+    return { items, total: items.length, asOf: nowIso(), source: "LIVE" };
   },
   async get(id) {
-    return generate().find((s) => s.id === id) ?? null;
+    const items = await fetchLive();
+    return items.find((s) => s.id === id) ?? null;
   },
-  subscribe(onUpdate, _filter, intervalMs = 12_000) {
+  subscribe(onUpdate, _filter, intervalMs = 15_000) {
     return pollSubscription(this.list.bind(this), onUpdate, undefined, intervalMs);
   },
 };

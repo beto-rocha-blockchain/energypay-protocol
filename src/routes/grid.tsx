@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { stellarExpertAccount, STELLAR_NETWORK_LABEL } from "@/lib/stellar";
 import {
   Activity,
   Radio,
@@ -13,26 +14,31 @@ import {
   LineChart,
   Plug,
   Factory,
-  MapPin,
   Signal,
   Zap,
   ExternalLink,
   ShieldCheck,
+  RefreshCw,
+  Lock,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import {
   useGrid,
-  projectCoords,
+  haversineKm,
   ENERGY_LABEL,
   STATUS_TONE,
   type GridNode,
   type EnergyType,
   type NodeStatus,
 } from "@/store/grid";
-import { useOperator, maskAddress } from "@/store/operator";
+import { useOperator, maskAddress, ROLE_COLORS } from "@/store/operator";
 import type { ParticipantRole } from "@/store/operator";
+
+// Leaflet map — client-only, loaded lazily to avoid SSR issues
+const GridMapLeaflet = lazy(() => import("@/components/GridMapLeaflet"));
 
 export const Route = createFileRoute("/grid")({
   component: GridPage,
@@ -43,6 +49,7 @@ const ROLE_ICON: Record<ParticipantRole, React.ComponentType<{ className?: strin
   SELLER: Coins,
   INVESTOR: LineChart,
   USER: Plug,
+  UTILITY: Building2,
 };
 
 const ENERGY_ICON: Record<EnergyType, React.ComponentType<{ className?: string }>> = {
@@ -76,11 +83,22 @@ const TONE_CLASS = {
 
 function GridPage() {
   const nodes = useGrid((s) => s.nodes);
+  const gridLoading = useGrid((s) => s.loading);
+  const gridError = useGrid((s) => s.error);
+  const fetchGrid = useGrid((s) => s.fetch);
   const operator = useOperator((s) => s.operator);
-  const [selectedId, setSelectedId] = useState<string | null>(nodes[0]?.id ?? null);
+
+  useEffect(() => {
+    if (operator) fetchGrid();
+  }, [fetchGrid, operator]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filterRole, setFilterRole] = useState<"ALL" | ParticipantRole>("ALL");
   const [filterStatus, setFilterStatus] = useState<"ALL" | NodeStatus>("ALL");
   const [query, setQuery] = useState("");
+  const [mounted, setMounted] = useState(false);
+
+  // Ensure Leaflet only renders client-side
+  useEffect(() => { setMounted(true); }, []);
 
   const filtered = useMemo(
     () =>
@@ -112,8 +130,8 @@ function GridPage() {
     return { total, active, capacity, degraded, offline, generators: generators.length };
   }, [nodes]);
 
-  const operatorPos = operator?.coords
-    ? projectCoords(operator.coords.lat, operator.coords.lng)
+  const operatorCoords = operator?.coords
+    ? { lat: operator.coords.lat, lng: operator.coords.lng }
     : null;
 
   return (
@@ -135,6 +153,10 @@ function GridPage() {
           <Stat label="Offline" value={stats.offline.toString()} tone="destructive" />
           <Stat label="Generators" value={stats.generators.toString()} />
           <Stat label="Capacity" value={`${stats.capacity.toLocaleString()} MW`} tone="success" />
+          <Button size="sm" variant="outline" onClick={fetchGrid} disabled={gridLoading} className="h-7 px-2">
+            <RefreshCw className={`mr-1.5 h-3 w-3 ${gridLoading ? "animate-spin" : ""}`} />
+            <span className="font-mono text-[10px] uppercase tracking-widest">Refresh</span>
+          </Button>
         </div>
       </div>
 
@@ -170,139 +192,115 @@ function GridPage() {
         </div>
       </Card>
 
+      {/* ── Not authenticated ─────────────────────────────────────────── */}
+      {!operator ? (
+        <Card className="border-border bg-card/60 p-10 text-center">
+          <Lock className="mx-auto mb-3 h-10 w-10 text-muted-foreground/40" />
+          <p className="font-display text-base font-semibold">Authentication required</p>
+          <p className="mt-1 font-mono text-[11px] text-muted-foreground">
+            Sign in to view the settlement network map and participant nodes.
+          </p>
+        </Card>
+      ) : gridLoading && nodes.length === 0 ? (
+        <Card className="border-border bg-card/60 p-10 text-center">
+          <RefreshCw className="mx-auto mb-3 h-8 w-8 animate-spin text-muted-foreground/40" />
+          <p className="font-mono text-sm text-muted-foreground">Loading grid participants…</p>
+        </Card>
+      ) : nodes.length === 0 ? (
+        <Card className="border-border bg-card/60 p-10 text-center">
+          {/* Distinguish expired session from "empty grid" */}
+          {gridError && /bearer|token|unauthorized|401/i.test(gridError) ? (
+            <>
+              <Lock className="mx-auto mb-3 h-10 w-10 text-muted-foreground/40" />
+              <p className="font-display text-base font-semibold">Session expired</p>
+              <p className="mt-1 font-mono text-[11px] text-muted-foreground">
+                Your session has expired. Please sign in again.
+              </p>
+            </>
+          ) : (
+            <>
+              <Network className="mx-auto mb-3 h-10 w-10 text-muted-foreground/40" />
+              <p className="font-display text-base font-semibold">No verified participants</p>
+              <p className="mt-1 font-mono text-[11px] text-muted-foreground">
+                Grid nodes appear here once participants verify their email during registration.
+              </p>
+            </>
+          )}
+          {gridError && !/bearer|token|unauthorized|401/i.test(gridError) && (
+            <p className="mt-2 font-mono text-[11px] text-destructive">{gridError}</p>
+          )}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={fetchGrid}
+            className="mt-3 font-mono text-[10px] uppercase tracking-widest"
+          >
+            <RefreshCw className="mr-1.5 h-3 w-3" /> Retry
+          </Button>
+        </Card>
+      ) : (
+      <>
       <div className="grid gap-4 lg:grid-cols-[1.6fr_1fr]">
-        {/* Map */}
+        {/* Map — Leaflet with CartoDB dark tiles */}
         <Card className="overflow-hidden border-border bg-card/60">
           <div className="flex items-center justify-between border-b border-border bg-background/40 px-3 py-2 font-mono text-[10px] uppercase tracking-widest">
             <div className="flex items-center gap-2 text-muted-foreground">
               <Radio className="h-3 w-3 text-success" />
-              <span>Stellar Settlement Network · Regional Topology</span>
+              <span>Stellar Settlement Network · Live Map</span>
             </div>
             <div className="flex items-center gap-2 text-muted-foreground">
               <span className="flex items-center gap-1.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-success" /> ACTIVE
+                <span className="h-2 w-2 rounded-full bg-[#22c55e]" /> Generator
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-warning" /> DEGRADED
+                <span className="h-2 w-2 rounded-full bg-[#60a5fa]" /> Seller
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-destructive" /> OFFLINE
+                <span className="h-2 w-2 rounded-full bg-[#f59e0b]" /> Investor
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-[#94a3b8]" /> Consumer
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-[#fb923c]" /> Utility
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-[#06b6d4]" /> You
               </span>
             </div>
           </div>
-          <div className="relative aspect-[4/3] w-full bg-[radial-gradient(ellipse_at_center,oklch(0.22_0.02_240)_0%,oklch(0.16_0.018_240)_75%)]">
-            {/* grid overlay */}
-            <svg
-              className="absolute inset-0 h-full w-full"
-              viewBox="0 0 100 100"
-              preserveAspectRatio="none"
-            >
-              <defs>
-                <pattern id="grid-fine" width="5" height="5" patternUnits="userSpaceOnUse">
-                  <path
-                    d="M 5 0 L 0 0 0 5"
-                    fill="none"
-                    stroke="oklch(0.28 0.02 240)"
-                    strokeWidth="0.08"
-                  />
-                </pattern>
-                <pattern id="grid-bold" width="20" height="20" patternUnits="userSpaceOnUse">
-                  <path
-                    d="M 20 0 L 0 0 0 20"
-                    fill="none"
-                    stroke="oklch(0.32 0.025 240)"
-                    strokeWidth="0.18"
-                  />
-                </pattern>
-              </defs>
-              <rect width="100" height="100" fill="url(#grid-fine)" />
-              <rect width="100" height="100" fill="url(#grid-bold)" />
-
-              {/* connection lines */}
-              {nodes.map((n) =>
-                n.connections.map((cid) => {
-                  const target = nodes.find((x) => x.id === cid);
-                  if (!target) return null;
-                  const a = projectCoords(n.coords.lat, n.coords.lng);
-                  const b = projectCoords(target.coords.lat, target.coords.lng);
-                  const isActive = selected && (selected.id === n.id || selected.id === target.id);
-                  const stroke = isActive
-                    ? "oklch(0.78 0.18 145 / 0.85)"
-                    : "oklch(0.7 0.15 220 / 0.18)";
-                  return (
-                    <line
-                      key={`${n.id}-${cid}`}
-                      x1={a.x * 100}
-                      y1={a.y * 100}
-                      x2={b.x * 100}
-                      y2={b.y * 100}
-                      stroke={stroke}
-                      strokeWidth={isActive ? 0.35 : 0.2}
-                      strokeDasharray={isActive ? "0" : "0.6 0.4"}
-                    />
-                  );
-                }),
-              )}
-            </svg>
-
-            {/* Operator pin */}
-            {operatorPos && (
-              <div
-                className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-1/2"
-                style={{ left: `${operatorPos.x * 100}%`, top: `${operatorPos.y * 100}%` }}
-              >
-                <div className="flex flex-col items-center">
-                  <div className="h-3 w-3 rounded-full border border-accent bg-accent/30 shadow-[0_0_18px_oklch(0.7_0.15_220/0.7)]" />
-                  <div className="mt-1 rounded-sm border border-accent/40 bg-background/80 px-1 py-0.5 font-mono text-[9px] uppercase tracking-widest text-accent">
-                    YOU · {operator?.organization?.slice(0, 18)}
+          {/* Map container — fixed height, Leaflet fills it */}
+          <div className="relative h-[420px] w-full overflow-hidden">
+            {mounted ? (
+              <Suspense
+                fallback={
+                  <div className="flex h-full items-center justify-center bg-[#0d1117]">
+                    <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground/40" />
                   </div>
-                </div>
+                }
+              >
+                <GridMapLeaflet
+                  nodes={filtered}
+                  operatorCoords={operatorCoords}
+                  operatorName={operator?.organization ?? ""}
+                  selectedId={selectedId}
+                  onSelect={setSelectedId}
+                />
+              </Suspense>
+            ) : (
+              <div className="flex h-full items-center justify-center bg-[#0d1117]">
+                <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground/40" />
               </div>
             )}
-
-            {/* Nodes */}
-            {filtered.map((n) => {
-              const p = projectCoords(n.coords.lat, n.coords.lng);
-              const tone = TONE_CLASS[STATUS_TONE[n.status]];
-              const isSel = selected?.id === n.id;
-              const Icon = ENERGY_ICON[n.energyType];
-              return (
-                <button
-                  key={n.id}
-                  onClick={() => setSelectedId(n.id)}
-                  className="absolute z-20 -translate-x-1/2 -translate-y-1/2 transition"
-                  style={{ left: `${p.x * 100}%`, top: `${p.y * 100}%` }}
-                  title={n.organization}
-                >
-                  <span className="relative flex items-center justify-center">
-                    {n.status === "ACTIVE" && (
-                      <span
-                        className={`absolute h-6 w-6 animate-ping rounded-full ${tone.dot} opacity-25`}
-                      />
-                    )}
-                    <span
-                      className={`flex h-5 w-5 items-center justify-center rounded-full border ${tone.border} ${
-                        isSel ? `${tone.glow} scale-125` : ""
-                      } bg-background`}
-                    >
-                      <Icon className={`h-2.5 w-2.5 ${tone.text}`} />
-                    </span>
-                  </span>
-                  {isSel && (
-                    <span className="absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap rounded-sm border border-border bg-background/90 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-widest text-foreground">
-                      {n.organization}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-
-            {/* Footer ticker */}
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-between border-t border-border bg-background/70 px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground backdrop-blur">
+            {/* Overlay footer ticker — z-index above Leaflet tiles but below controls */}
+            <div
+              className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-between border-t border-border bg-background/80 px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground backdrop-blur"
+              style={{ zIndex: 450 }}
+            >
               <span className="flex items-center gap-1.5">
-                <Activity className="h-3 w-3 text-success" /> Telemetry · Stellar Testnet
+                <Activity className="h-3 w-3 text-success" /> Live · {STELLAR_NETWORK_LABEL}
               </span>
-              <span>Lat range −34° to +6° · Lng −75° to −33°</span>
+              <span className="hidden md:block">Click a node to inspect · Scroll to zoom</span>
               <span>
                 {filtered.length} of {nodes.length} nodes visible
               </span>
@@ -361,29 +359,24 @@ function GridPage() {
 
                 <div className="grid grid-cols-2 gap-2 font-mono text-[10px] uppercase tracking-widest">
                   <Mini label="Energy Type" value={ENERGY_LABEL[selected.energyType]} />
-                  <Mini
-                    label="Capacity"
-                    value={
-                      selected.role === "GENERATOR"
-                        ? `${selected.capacityMW.toLocaleString()} MW`
-                        : "—"
-                    }
-                    tone={selected.role === "GENERATOR" ? "success" : undefined}
-                  />
                   <Mini label="Region" value={selected.region} />
-                  <Mini
-                    label="Uptime"
-                    value={`${selected.uptime.toFixed(2)}%`}
-                    tone={
-                      selected.uptime >= 99.5
-                        ? "success"
-                        : selected.uptime >= 98
-                          ? "warning"
-                          : "destructive"
-                    }
-                  />
                   <Mini label="Connectivity" value={`${selected.connections.length} peers`} />
-                  <Mini label="Last Settlement" value={`${selected.lastSettlementAgo} ago`} />
+                  <Mini
+                    label="Location"
+                    value={selected.approximateLocation ? "≈ City-level" : "GPS · Exact"}
+                    tone={selected.approximateLocation ? "warning" : "success"}
+                  />
+                  {operatorCoords && (
+                    <Mini
+                      label="Distance"
+                      value={`${Math.round(haversineKm(operatorCoords.lat, operatorCoords.lng, selected.coords.lat, selected.coords.lng)).toLocaleString()} km`}
+                      tone="success"
+                    />
+                  )}
+                  <Mini
+                    label="Coordinates"
+                    value={`${selected.coords.lat.toFixed(2)}, ${selected.coords.lng.toFixed(2)}`}
+                  />
                 </div>
 
                 <div>
@@ -395,7 +388,7 @@ function GridPage() {
                       {selected.settlementAddress}
                     </code>
                     <a
-                      href={`https://stellar.expert/explorer/testnet/account/${selected.settlementAddress}`}
+                      href={stellarExpertAccount(selected.settlementAddress)}
                       target="_blank"
                       rel="noreferrer"
                       className="ml-2 flex items-center gap-1 font-mono text-[10px] uppercase tracking-widest text-muted-foreground hover:text-primary"
@@ -404,27 +397,7 @@ function GridPage() {
                     </a>
                   </div>
                   <div className="mt-1 font-mono text-[10px] text-muted-foreground">
-                    {maskAddress(selected.settlementAddress)} · STELLAR TESTNET
-                  </div>
-                </div>
-
-                <div>
-                  <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-                    Recent Settlements
-                  </div>
-                  <div className="mt-1 space-y-1">
-                    {selected.recentSettlements.map((s) => (
-                      <div
-                        key={s.id}
-                        className="flex items-center justify-between rounded-md border border-border bg-background/40 px-2 py-1.5 font-mono text-[11px]"
-                      >
-                        <span className="text-foreground">{s.id}</span>
-                        <span className={s.amount < 0 ? "text-destructive" : "text-success"}>
-                          {s.amount < 0 ? "-" : "+"}R$ {Math.abs(s.amount).toLocaleString()}
-                        </span>
-                        <span className="text-muted-foreground">{s.ago} ago</span>
-                      </div>
-                    ))}
+                    {maskAddress(selected.settlementAddress)} · {STELLAR_NETWORK_LABEL}
                   </div>
                 </div>
 
@@ -452,16 +425,15 @@ function GridPage() {
                 <div className="rounded-md border border-border bg-background/40 p-2 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
                   <div className="flex items-center justify-between">
                     <span className="flex items-center gap-1.5">
-                      <Signal className="h-3 w-3 text-success" /> Telemetry Feed
+                      <Signal className="h-3 w-3 text-success" /> Settlement Network
                     </span>
-                    <span className="text-success">LIVE</span>
+                    <span className="text-success">{STELLAR_NETWORK_LABEL}</span>
                   </div>
-                  <div className="mt-1 flex items-center justify-between">
-                    <span>Coordinates</span>
-                    <span className="text-foreground">
-                      {selected.coords.lat.toFixed(2)}, {selected.coords.lng.toFixed(2)}
-                    </span>
-                  </div>
+                  {selected.approximateLocation && (
+                    <div className="mt-1 text-[9px] text-warning/80">
+                      ⚠ Location is city-level approximate — participant has not provided GPS coordinates.
+                    </div>
+                  )}
                 </div>
               </div>
             </>
@@ -501,7 +473,7 @@ function GridPage() {
                     className={`cursor-pointer border-b border-border/60 transition hover:bg-background/40 ${isSel ? "bg-primary/5" : ""}`}
                   >
                     <td className="px-3 py-2 font-mono text-foreground">{n.organization}</td>
-                    <td className="px-3 py-2 font-mono uppercase tracking-widest text-muted-foreground">
+                    <td className={`px-3 py-2 font-mono uppercase tracking-widest ${ROLE_COLORS[n.role]?.text ?? "text-muted-foreground"}`}>
                       {n.role}
                     </td>
                     <td className="px-3 py-2 font-mono uppercase tracking-widest text-muted-foreground">
@@ -531,6 +503,8 @@ function GridPage() {
           </table>
         </div>
       </Card>
+      </>
+      )}
 
       <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
         <span className="flex items-center gap-1.5">
@@ -538,8 +512,7 @@ function GridPage() {
           Bound
         </span>
         <span className="flex items-center gap-1.5">
-          <Zap className="h-3 w-3 text-primary" /> Future API: live settlement feeds · operational
-          telemetry · regional liquidity
+          <Zap className="h-3 w-3 text-primary" /> {STELLAR_NETWORK_LABEL}
         </span>
       </div>
     </div>

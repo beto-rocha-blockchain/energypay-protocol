@@ -1,254 +1,343 @@
 import { createFileRoute } from "@tanstack/react-router";
 import {
-  Panel,
-  KpiStrip,
-  KpiTile,
-  SeverityBadge,
-  StatusDot,
-  CellNum,
-} from "@/components/ops/primitives";
-import { RECON_EXCEPTIONS, fmtUTC } from "@/lib/institutional-data";
-import { ArrowRight } from "lucide-react";
+  Activity,
+  CheckCircle2,
+  ExternalLink,
+  Gauge,
+  Radio,
+  RefreshCw,
+  ShieldCheck,
+  XCircle,
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useDashboard } from "@/hooks/useDashboard";
+import { useSettlementRail } from "@/hooks/useSettlementRail";
+import { stellarExpertTx, STELLAR_NETWORK_LABEL } from "@/lib/stellar";
 
 export const Route = createFileRoute("/reconciliation")({
   head: () => ({
     meta: [
-      { title: "Reconciliation Engine — EnergyPay" },
+      { title: "Reconciliation — EnergyPay" },
       {
         name: "description",
-        content: "Automated reconciliation pipeline, oracle verification and ledger validation.",
+        content:
+          "Settlement reconciliation, ledger validation, finality metrics and transaction audit.",
       },
     ],
   }),
   component: ReconciliationPage,
 });
 
-const STAGES = [
-  { name: "Ingest", tps: 1240, ok: 99.92, sla: 250 },
-  { name: "Match", tps: 1235, ok: 99.78, sla: 480 },
-  { name: "Verify", tps: 1232, ok: 99.66, sla: 720 },
-  { name: "Anchor", tps: 1228, ok: 99.51, sla: 4200 },
-  { name: "Confirm", tps: 1226, ok: 99.4, sla: 5800 },
-];
+const fmtBRL = (n: number) =>
+  n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+
+const fmtPct = (n: number) => `${n.toFixed(1)}%`;
+
+const shortHash = (h: string) =>
+  h && h.length > 12 ? `${h.slice(0, 6)}…${h.slice(-6)}` : h || "—";
+
+const timeAgo = (iso: string) => {
+  if (!iso) return "—";
+  const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60_000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+};
 
 function ReconciliationPage() {
-  const open = RECON_EXCEPTIONS.filter((e) => e.state !== "RESOLVED");
-  const critical = RECON_EXCEPTIONS.filter((e) => e.severity === "CRITICAL").length;
+  const { stats, settlements, horizon, loading, refresh } = useDashboard();
+  const { health, telemetry } = useSettlementRail();
+
+  const total = stats?.total_settlements ?? 0;
+  const settled = stats?.settled_count ?? 0;
+  const failed = stats?.failed_count ?? 0;
+  const pending = total - settled - failed;
+  const successRate = total > 0 ? (settled / total) * 100 : 0;
+  const finalityMs = stats?.avg_finality_ms ?? 0;
+  const horizonLatency = horizon?.latency_ms ?? 0;
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-end justify-between">
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="label-op">Reconciliation · Continuous Pipeline</p>
+          <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+            Reconciliation · Ledger Validation
+          </p>
           <h1 className="font-display text-2xl font-semibold tracking-tight">
             Reconciliation Engine
           </h1>
         </div>
-        <SeverityBadge
-          level={critical > 0 ? "CRITICAL" : "OK"}
-          label={`${open.length} OPEN · ${critical} CRITICAL`}
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="font-mono text-[10px] uppercase tracking-widest">
+            <Radio className="mr-1.5 h-3 w-3 text-success" />
+            {STELLAR_NETWORK_LABEL}
+          </Badge>
+          <Button size="sm" variant="outline" onClick={refresh} disabled={loading}>
+            <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+        </div>
+      </div>
+
+      {/* KPI Strip */}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+        <KpiCard
+          label="Total Processed"
+          value={String(total)}
+          sub="reconciliation entries"
+          loading={loading && !stats}
+        />
+        <KpiCard
+          label="Reconciled"
+          value={String(settled)}
+          sub="ledger-confirmed"
+          loading={loading && !stats}
+          tone="ok"
+        />
+        <KpiCard
+          label="Failed"
+          value={String(failed)}
+          sub="mismatch / reverted"
+          loading={loading && !stats}
+          tone={failed > 0 ? "warn" : "ok"}
+          led={failed > 0}
+        />
+        <KpiCard
+          label="Pending"
+          value={String(pending)}
+          sub="awaiting confirmation"
+          loading={loading && !stats}
+          tone={pending > 0 ? "warn" : "ok"}
+        />
+        <KpiCard
+          label="Success Rate"
+          value={total > 0 ? fmtPct(successRate) : "—"}
+          sub="reconciliation rate"
+          loading={loading && !stats}
+          tone={successRate >= 95 ? "ok" : "warn"}
+          led={successRate >= 95}
+        />
+        <KpiCard
+          label="Horizon"
+          value={horizon?.horizon_online ? "ONLINE" : "OFFLINE"}
+          sub={`${horizonLatency} ms latency`}
+          loading={loading && !horizon}
+          tone={horizon?.horizon_online ? "ok" : "warn"}
+          led
         />
       </div>
 
-      <KpiStrip>
-        <KpiTile label="Pipeline TPS" value="1 226" tone="primary" sub="rolling 5m" />
-        <KpiTile
-          label="Open Exceptions"
-          value={open.length}
-          tone={open.length > 8 ? "warn" : "ok"}
-        />
-        <KpiTile label="Critical" value={critical} tone={critical > 0 ? "bad" : "ok"} />
-        <KpiTile label="Auto-Resolved · 24h" value="3 184" tone="ok" sub="97.4% rate" />
-        <KpiTile label="Oracle Divergence" value="0.06%" tone="ok" sub="vs PLD reference" />
-        <KpiTile label="Audit Anchors · 24h" value="48" tone="ok" sub="block 51 224 197" />
-      </KpiStrip>
-
-      <Panel
-        title="Reconciliation Pipeline"
-        subtitle="Stage throughput · SLA envelope · success rate"
-      >
-        <div className="flex flex-wrap items-stretch gap-2">
-          {STAGES.map((s, i) => (
-            <div key={s.name} className="flex flex-1 items-center gap-2 min-w-[180px]">
-              <div className="flex-1 rounded-sm border border-border bg-background/40 p-3">
-                <div className="flex items-center justify-between">
-                  <span className="label-op">{s.name}</span>
-                  <StatusDot tone={s.ok > 99.7 ? "ok" : "warn"} />
-                </div>
-                <div className="kpi-num mt-1 text-xl font-semibold">{s.tps.toLocaleString()}</div>
-                <div className="mt-1 flex justify-between font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-                  <span>tx/min</span>
-                  <span className={s.ok > 99.7 ? "text-success" : "text-warning"}>{s.ok}% ok</span>
-                </div>
-                <div className="mt-1 font-mono text-[9.5px] uppercase tracking-widest text-muted-foreground">
-                  SLA p95 · {s.sla} ms
-                </div>
-              </div>
-              {i < STAGES.length - 1 && (
-                <ArrowRight className="hidden h-4 w-4 shrink-0 text-muted-foreground md:block" />
-              )}
-            </div>
-          ))}
-        </div>
-      </Panel>
-
-      <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
-        <Panel
-          title="Exception Queue"
-          subtitle="Open mismatches · age-sorted"
-          className="xl:col-span-2"
-        >
-          <div className="overflow-x-auto">
-            <table className="table-inst w-full">
-              <thead>
-                <tr>
-                  <th>Ref</th>
-                  <th>Counterparty</th>
-                  <th>Kind</th>
-                  <th>Δ</th>
-                  <th>Sev</th>
-                  <th>State</th>
-                  <th className="!text-right">Age</th>
-                </tr>
-              </thead>
-              <tbody>
-                {RECON_EXCEPTIONS.map((e) => (
-                  <tr key={e.id}>
-                    <td className="font-mono text-[10.5px]">{e.id}</td>
-                    <td>{e.counterparty}</td>
-                    <td className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-                      {e.kind.replace("_", " ")}
-                    </td>
-                    <td>
-                      <CellNum
-                        tone={
-                          e.severity === "CRITICAL"
-                            ? "bad"
-                            : e.severity === "WARN"
-                              ? "warn"
-                              : "default"
-                        }
-                      >
-                        {e.delta}
-                      </CellNum>
-                    </td>
-                    <td>
-                      <SeverityBadge level={e.severity} />
-                    </td>
-                    <td>
-                      <SeverityBadge
-                        level={
-                          e.state === "RESOLVED"
-                            ? "OK"
-                            : e.state === "ESCALATED"
-                              ? "CRITICAL"
-                              : "INFO"
-                        }
-                        label={e.state}
-                      />
-                    </td>
-                    <td className="text-right font-mono text-[10.5px] text-muted-foreground">
-                      {e.ageMin}m
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      {/* Reconciliation Pipeline + Telemetry */}
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+        <Card className="border-border bg-card p-4 lg:col-span-2">
+          <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+            Reconciliation Pipeline · Health
+          </p>
+          <div className="mt-3 space-y-3">
+            <HealthBar label="Ledger Reconciliation" value={successRate} />
+            <HealthBar label="Horizon Connectivity" value={horizon?.horizon_online ? 100 : 0} />
+            <HealthBar label="Backend Availability" value={health?.status === "ok" ? 100 : health?.status === "degraded" ? 50 : 0} />
+            <HealthBar label="Finality SLA (< 6s)" value={finalityMs > 0 ? Math.min(100, (6000 / finalityMs) * 100) : 0} />
           </div>
-        </Panel>
+        </Card>
 
-        <Panel title="Oracle Verification" subtitle="PLD reference · feed integrity">
-          <div className="space-y-2">
-            {[
-              { feed: "PLD-SECO · ONS", lat: 412, div: 0.04, ok: true },
-              { feed: "PLD-S · ONS", lat: 388, div: 0.02, ok: true },
-              { feed: "PLD-NE · ONS", lat: 1640, div: 0.18, ok: false },
-              { feed: "PLD-N · ONS", lat: 502, div: 0.06, ok: true },
-              { feed: "Fallback B · CCEE", lat: 720, div: 0.09, ok: true },
-              { feed: "Settlement Ref · IPCA", lat: 240, div: 0.01, ok: true },
-            ].map((o) => (
-              <div
-                key={o.feed}
-                className="rounded-sm border border-border bg-background/40 px-2.5 py-2"
-              >
-                <div className="flex items-center justify-between text-[11.5px]">
-                  <span className="font-display font-medium">{o.feed}</span>
-                  <SeverityBadge
-                    level={o.ok ? "OK" : "WARN"}
-                    label={o.ok ? "VERIFIED" : "DIVERGENT"}
-                  />
-                </div>
-                <div className="mt-1 flex justify-between font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-                  <span>latency · {o.lat} ms</span>
-                  <span className={o.div > 0.1 ? "text-warning" : ""}>div · {o.div}%</span>
-                </div>
-              </div>
+        <Card className="border-border bg-card p-4">
+          <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+            Reconciliation Telemetry
+          </p>
+          <div className="mt-3 space-y-2">
+            <TelRow icon={<ShieldCheck className="h-3.5 w-3.5" />} label="Reconciled rate" value={total > 0 ? fmtPct(successRate) : "—"} tone={successRate >= 95 ? "ok" : "warn"} />
+            <TelRow icon={<Gauge className="h-3.5 w-3.5" />} label="Avg finality" value={finalityMs ? `${(finalityMs / 1000).toFixed(2)}s` : "—"} tone={finalityMs && finalityMs < 6000 ? "ok" : "warn"} />
+            <TelRow icon={<Activity className="h-3.5 w-3.5" />} label="Horizon latency" value={`${horizonLatency} ms`} tone={horizonLatency < 1000 ? "ok" : "warn"} />
+            <TelRow icon={<CheckCircle2 className="h-3.5 w-3.5" />} label="Confirmed" value={String(settled)} tone="ok" />
+            <TelRow icon={<XCircle className="h-3.5 w-3.5" />} label="Exceptions" value={String(failed)} tone={failed > 0 ? "warn" : "ok"} />
+          </div>
+        </Card>
+      </div>
+
+      {/* Ledger Audit Table */}
+      <Card className="border-border bg-card p-5">
+        <div className="mb-4">
+          <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+            Ledger Audit · Reconciled Transactions
+          </p>
+          <p className="font-display text-lg font-semibold">Transaction Reconciliation</p>
+        </div>
+
+        {loading && settlements.length === 0 ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-10 w-full" />
             ))}
           </div>
-          <div className="mt-3 flex gap-2 border-t border-border pt-3">
-            <button className="flex-1 rounded-sm border border-border bg-background/40 px-2 py-1.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground hover:border-primary/50 hover:text-primary">
-              Engage Fallback
-            </button>
-            <button className="flex-1 rounded-sm border border-border bg-background/40 px-2 py-1.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground hover:border-primary/50 hover:text-primary">
-              Re-anchor batch
-            </button>
+        ) : settlements.length === 0 ? (
+          <div className="py-10 text-center">
+            <Activity className="mx-auto mb-3 h-8 w-8 text-muted-foreground/40" />
+            <p className="font-mono text-sm text-muted-foreground">No reconciliation entries yet.</p>
           </div>
-        </Panel>
-      </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow className="border-border hover:bg-transparent">
+                <TableHead className="text-[11px] uppercase tracking-wider">ID</TableHead>
+                <TableHead className="text-[11px] uppercase tracking-wider">Seller</TableHead>
+                <TableHead className="text-right text-[11px] uppercase tracking-wider">Amount</TableHead>
+                <TableHead className="text-[11px] uppercase tracking-wider">Tx Hash</TableHead>
+                <TableHead className="text-[11px] uppercase tracking-wider">Status</TableHead>
+                <TableHead className="text-[11px] uppercase tracking-wider">When</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {settlements.map((s) => (
+                <TableRow key={s.id + s.created_at} className="border-border">
+                  <TableCell className="font-mono text-xs">{s.id}</TableCell>
+                  <TableCell className="max-w-[120px] truncate font-mono text-xs">
+                    {s.seller ? shortHash(s.seller) : "—"}
+                  </TableCell>
+                  <TableCell className="text-right font-mono text-sm text-success">
+                    {s.amount_brl ? fmtBRL(s.amount_brl) : "—"}
+                  </TableCell>
+                  <TableCell className="font-mono text-xs text-muted-foreground">
+                    {s.tx_hash && s.tx_hash !== "UNAVAILABLE" ? (
+                      <a
+                        href={stellarExpertTx(s.tx_hash)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 hover:text-primary"
+                      >
+                        {shortHash(s.tx_hash)}
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    ) : (
+                      "—"
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      variant="outline"
+                      className={`font-mono text-[10px] ${
+                        s.status === "SETTLED" || s.status === "CONFIRMED"
+                          ? "border-success/40 bg-success/10 text-success"
+                          : s.status === "FAILED"
+                            ? "border-destructive/40 bg-destructive/10 text-destructive"
+                            : "border-warning/40 bg-warning/10 text-warning"
+                      }`}
+                    >
+                      {s.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="font-mono text-[11px] text-muted-foreground">
+                    {timeAgo(s.created_at)}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </Card>
+    </div>
+  );
+}
 
-      <Panel title="Audit Trail Explorer" subtitle="Resolved exceptions · 24h provenance">
-        <ol className="space-y-1.5 font-mono text-[11px]">
-          {[
-            {
-              t: -5,
-              ref: "EX-38201",
-              action: "AUTO-RESOLVE",
-              detail:
-                "Price mismatch within 0.5% tolerance — collapsed to canonical PLD reference.",
-            },
-            {
-              t: -22,
-              ref: "EX-38195",
-              action: "ESCALATE",
-              detail: "Volume drift +6.2 MWh on EPC-2061 — supervisor.dias notified.",
-            },
-            {
-              t: -38,
-              ref: "EX-38188",
-              action: "REANCHOR",
-              detail: "Ledger gap seq −2 — block 51 224 188 reanchored to canonical chain.",
-            },
-            {
-              t: -64,
-              ref: "EX-38174",
-              action: "FALLBACK",
-              detail: "Oracle PLD-NE latency 1.6s > 1.0s — fallback B engaged.",
-            },
-            {
-              t: -91,
-              ref: "EX-38161",
-              action: "AUTO-RESOLVE",
-              detail: "Timestamp skew 220ms recovered after NTP resync.",
-            },
-            {
-              t: -128,
-              ref: "EX-38149",
-              action: "CLOSE",
-              detail: "Settlement discrepancy on EPC-2070 cleared after CP confirmation.",
-            },
-          ].map((e, i) => (
-            <li key={i} className="flex items-start gap-2 border-l border-border pl-2.5">
-              <span className="text-muted-foreground">{e.t}m</span>
-              <span className="text-primary">{e.ref}</span>
-              <SeverityBadge
-                level={e.action === "ESCALATE" ? "WARN" : e.action === "FALLBACK" ? "WARN" : "OK"}
-                label={e.action}
-              />
-              <span className="flex-1 text-foreground/90">{e.detail}</span>
-            </li>
-          ))}
-        </ol>
-      </Panel>
+/* ── Sub-components ── */
+
+function KpiCard({
+  label,
+  value,
+  sub,
+  loading,
+  tone = "ok",
+  led = false,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+  loading?: boolean;
+  tone?: "ok" | "warn" | "muted";
+  led?: boolean;
+}) {
+  const valueColor = led
+    ? tone === "ok" ? "text-success" : tone === "warn" ? "text-destructive" : ""
+    : "";
+  const ledColor = tone === "ok" ? "bg-success" : tone === "warn" ? "bg-destructive" : "bg-muted-foreground";
+  const fontSize = value.length > 16 ? "text-sm" : value.length > 12 ? "text-base" : "text-xl";
+
+  return (
+    <Card className="border-border bg-card p-3">
+      <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">{label}</p>
+      {loading ? (
+        <Skeleton className="mt-1 h-7 w-20" />
+      ) : (
+        <p className={`mt-1 font-mono font-semibold tracking-tight ${fontSize} ${valueColor} flex items-center gap-2`}>
+          {led && (
+            <span className="relative flex h-2.5 w-2.5 shrink-0">
+              <span className={`absolute inline-flex h-full w-full animate-ping rounded-full opacity-60 ${ledColor}`} />
+              <span className={`relative inline-flex h-2.5 w-2.5 rounded-full ${ledColor}`} />
+            </span>
+          )}
+          {value}
+        </p>
+      )}
+      {sub && (
+        <p className="mt-0.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+          {sub}
+        </p>
+      )}
+    </Card>
+  );
+}
+
+function HealthBar({ label, value }: { label: string; value: number }) {
+  const pct = Math.max(0, Math.min(100, value));
+  const color = pct >= 95 ? "bg-success" : pct >= 70 ? "bg-warning" : "bg-destructive";
+  return (
+    <div>
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] text-muted-foreground">{label}</span>
+        <span className={`font-mono text-[11px] ${pct >= 95 ? "text-success" : pct >= 70 ? "text-warning" : "text-destructive"}`}>
+          {pct.toFixed(1)}%
+        </span>
+      </div>
+      <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+        <div className={`h-full rounded-full transition-all ${color}`} style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  );
+}
+
+function TelRow({
+  icon,
+  label,
+  value,
+  tone,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value?: string;
+  tone: "ok" | "warn" | "muted";
+}) {
+  const color = tone === "ok" ? "text-success" : tone === "warn" ? "text-destructive" : "text-foreground";
+  return (
+    <div className="flex items-center justify-between rounded-md border border-border bg-background/40 px-2.5 py-1.5">
+      <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+        {icon}
+        {label}
+      </span>
+      <span className={`font-mono text-[11px] ${color}`}>{value ?? "—"}</span>
     </div>
   );
 }

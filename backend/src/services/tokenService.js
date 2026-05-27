@@ -3,13 +3,14 @@ import {
   BASE_FEE,
   Horizon,
   Keypair,
+  Memo,
   Networks,
   Operation,
   StrKey,
   TransactionBuilder,
 } from "@stellar/stellar-sdk";
 
-const server = new Horizon.Server("https://horizon-testnet.stellar.org");
+import { horizon as server, NETWORK_PASSPHRASE, explorerTxUrl } from "../lib/stellar-network.js";
 
 const EPWR_CODE = "EPWR";
 
@@ -102,14 +103,32 @@ const normalizeAmount = (value, fallback = "1000") => {
   return amount.toFixed(7).replace(/\.?0+$/, "");
 };
 
-const explorerLink = (hash) =>
-  `https://stellar.expert/explorer/testnet/tx/${hash}`;
+const explorerLink = (hash) => explorerTxUrl(hash);
 
-const serializeError = (error) => ({
-  success: false,
-  error: error.message || "Token service failed.",
-  code: error.code || "TOKEN_SERVICE_ERROR",
-});
+const serializeError = (error) => {
+  // Extract Stellar/Horizon result codes when the SDK throws an Axios-style error
+  // (older stellar-sdk wraps Horizon HTTP 400 as Axios "Request failed with status code 400")
+  const resultCodes =
+    error?.response?.data?.extras?.result_codes ??
+    error?.extras?.result_codes ??
+    null;
+
+  let errorMessage = error.message || "Token service failed.";
+  if (resultCodes) {
+    const txCode = resultCodes.transaction || "";
+    const opCodes = Array.isArray(resultCodes.operations)
+      ? resultCodes.operations.join(", ")
+      : "";
+    errorMessage = `Stellar transaction rejected: ${txCode}${opCodes ? ` [ops: ${opCodes}]` : ""}`;
+  }
+
+  return {
+    success: false,
+    error: errorMessage,
+    code: error.code || "TOKEN_SERVICE_ERROR",
+    ...(resultCodes ? { result_codes: resultCodes } : {}),
+  };
+};
 
 export function getIssuerAddress() {
   return getIssuerPublicKey();
@@ -137,7 +156,7 @@ export async function createTrustline() {
 
     const transaction = new TransactionBuilder(account, {
       fee: BASE_FEE,
-      networkPassphrase: Networks.TESTNET,
+      networkPassphrase: NETWORK_PASSPHRASE,
     })
       .addOperation(
         Operation.changeTrust({
@@ -179,7 +198,7 @@ export async function createTrustlineForSecret(
 
     const transaction = new TransactionBuilder(account, {
       fee: BASE_FEE,
-      networkPassphrase: Networks.TESTNET,
+      networkPassphrase: NETWORK_PASSPHRASE,
     })
       .addOperation(
         Operation.changeTrust({
@@ -222,7 +241,7 @@ export async function mintEPWR(amount = "1000") {
 
     const transaction = new TransactionBuilder(issuerAccount, {
       fee: BASE_FEE,
-      networkPassphrase: Networks.TESTNET,
+      networkPassphrase: NETWORK_PASSPHRASE,
     })
       .addOperation(
         Operation.payment({
@@ -275,7 +294,7 @@ export async function sendEPWR(destination, amount = "10") {
 
     const transaction = new TransactionBuilder(distributionAccount, {
       fee: BASE_FEE,
-      networkPassphrase: Networks.TESTNET,
+      networkPassphrase: NETWORK_PASSPHRASE,
     })
       .addOperation(
         Operation.payment({
@@ -339,7 +358,7 @@ export async function buyEPWRWithXLMForUser(userSecret, epwrAmount = "10") {
 
     const transaction = new TransactionBuilder(buyerAccount, {
       fee: BASE_FEE,
-      networkPassphrase: Networks.TESTNET,
+      networkPassphrase: NETWORK_PASSPHRASE,
     })
       .addOperation(
         Operation.payment({
@@ -380,6 +399,181 @@ export async function buyEPWRWithXLMForUser(userSecret, epwrAmount = "10") {
     };
   } catch (error) {
     console.error("EPWR purchase error:", error);
+    return serializeError(error);
+  }
+}
+
+export async function sellEPWRForXLMForUser(userSecret, epwrAmount = "10") {
+  try {
+    const sellerKeypair = keypairFromSecret(userSecret, "seller account secret");
+    const distributionKeypair = getDistributionKeypair();
+
+    const normalizedEPWRAmount = normalizeAmount(epwrAmount, "10");
+
+    // Same price as buy: 1 EPWR = 1 XLM (configurable via EPWR_PRICE_XLM)
+    const priceXLM = Number(readString(process.env.EPWR_PRICE_XLM) || "1");
+
+    if (!Number.isFinite(priceXLM) || priceXLM <= 0) {
+      throw new TokenServiceError(
+        "EPWR_PRICE_XLM must be a positive number.",
+        500,
+        "INVALID_EPWR_PRICE",
+      );
+    }
+
+    const xlmToReceive = normalizeAmount(
+      Number(normalizedEPWRAmount) * priceXLM,
+      "10",
+    );
+
+    const sellerPublicKey = sellerKeypair.publicKey();
+    const distributionPublicKey = distributionKeypair.publicKey();
+
+    // Verify distribution has enough XLM to pay the user
+    const distAccount = await server.loadAccount(distributionPublicKey);
+    const distXLM = Number(
+      distAccount.balances.find((b) => b.asset_type === "native")?.balance ?? 0,
+    );
+    // Keep minimum reserve: 1 XLM + 0.5 per subentry
+    const reserve = 1 + distAccount.subentry_count * 0.5;
+    const available = distXLM - reserve;
+    if (available < Number(xlmToReceive)) {
+      return {
+        success: false,
+        error: `Distribution wallet has insufficient XLM for this redemption (available: ${available.toFixed(4)} XLM).`,
+        code: "DISTRIBUTION_INSUFFICIENT_XLM",
+      };
+    }
+
+    const sellerAccount = await server.loadAccount(sellerPublicKey);
+
+    const transaction = new TransactionBuilder(sellerAccount, {
+      fee: BASE_FEE,
+      networkPassphrase: NETWORK_PASSPHRASE,
+    })
+      .addOperation(
+        // User sends EPWR → Distribution (return tokens)
+        Operation.payment({
+          source: sellerPublicKey,
+          destination: distributionPublicKey,
+          asset: getEPWRAsset(),
+          amount: normalizedEPWRAmount,
+        }),
+      )
+      .addOperation(
+        // Distribution sends XLM → User (redeem value)
+        Operation.payment({
+          source: distributionPublicKey,
+          destination: sellerPublicKey,
+          asset: Asset.native(),
+          amount: xlmToReceive,
+        }),
+      )
+      .setTimeout(30)
+      .build();
+
+    transaction.sign(sellerKeypair);
+    transaction.sign(distributionKeypair);
+
+    const result = await server.submitTransaction(transaction);
+
+    return {
+      success: true,
+      type: "epwr-redemption",
+      seller: sellerPublicKey,
+      buyer: distributionPublicKey,
+      asset: getEPWRAssetInfo(),
+      epwr_sold: normalizedEPWRAmount,
+      xlm_received: xlmToReceive,
+      price_xlm_per_epwr: priceXLM.toString(),
+      hash: result.hash,
+      ledger: result.ledger,
+      explorer_url: explorerLink(result.hash),
+    };
+  } catch (error) {
+    console.error("EPWR sell error:", error);
+    return serializeError(error);
+  }
+}
+
+export async function atomicTokenizeContract({
+  buyerPublicKey,
+  sellerPublicKey,
+  volumeMWh,
+  priceBRL,
+  contractNumber,
+  startDate,
+  endDate,
+  settlementDate,
+  memo,
+}) {
+  try {
+    const issuerKeypair = getIssuerKeypair();
+    const distributionKeypair = getDistributionKeypair();
+    const epwrAsset = getEPWRAsset();
+
+    const tokenAmount = normalizeAmount(volumeMWh, "1");
+
+    const distributionAccount = await server.loadAccount(distributionKeypair.publicKey());
+
+    const txBuilder = new TransactionBuilder(distributionAccount, {
+      fee: BASE_FEE,
+      networkPassphrase: NETWORK_PASSPHRASE,
+      memo: memo
+        ? Memo.text(memo.slice(0, 28))
+        : Memo.text(`EP:${(contractNumber || "ATOM").slice(0, 24)}`),
+    });
+
+    // Op 1 — Token issuance: issuer mints EPWR to distribution (represents contract energy)
+    txBuilder.addOperation(
+      Operation.payment({
+        source: issuerKeypair.publicKey(),
+        destination: distributionKeypair.publicKey(),
+        asset: epwrAsset,
+        amount: tokenAmount,
+      }),
+    );
+
+    // Op 2 — Settlement lock: distribution sends EPWR to buyer (tokenized energy delivery)
+    txBuilder.addOperation(
+      Operation.payment({
+        source: distributionKeypair.publicKey(),
+        destination: buyerPublicKey,
+        asset: epwrAsset,
+        amount: tokenAmount,
+      }),
+    );
+
+    // Op 3 (removed) — manageData was used to anchor contract metadata on-chain, but each
+    // entry permanently consumes 0.5 XLM in Stellar base reserve on the distribution account.
+    // After N contracts this causes op_low_reserve failures. The tx hash + DB record serve
+    // as the durable anchor; the memo already carries the contract reference.
+
+    const tx = txBuilder.setTimeout(30).build();
+
+    tx.sign(issuerKeypair);
+    tx.sign(distributionKeypair);
+
+    const result = await server.submitTransaction(tx);
+
+    return {
+      success: true,
+      type: "atomic-contract-tokenization",
+      contract_number: contractNumber || null,
+      operations: [
+        { op: "token_issuance", detail: `Minted ${tokenAmount} EPWR (issuer → distribution)` },
+        { op: "settlement_lock", detail: `Transferred ${tokenAmount} EPWR to buyer` },
+      ],
+      token_amount: tokenAmount,
+      asset: getEPWRAssetInfo(),
+      buyer: buyerPublicKey,
+      seller: sellerPublicKey,
+      hash: result.hash,
+      ledger: result.ledger,
+      explorer_url: explorerLink(result.hash),
+    };
+  } catch (error) {
+    console.error("Atomic tokenization error:", error);
     return serializeError(error);
   }
 }

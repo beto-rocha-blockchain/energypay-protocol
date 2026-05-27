@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { Zap, Mail, ArrowRight, Loader2, CheckCircle2 } from "lucide-react";
+import { API_BASE_URL } from "@/lib/api";
+import { Zap, Mail, ArrowRight, Loader2, CheckCircle2, ExternalLink } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,6 +19,8 @@ function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
+  // dev_reset_url is only returned when RESEND_API_KEY is absent (dev mode)
+  const [devResetUrl, setDevResetUrl] = useState<string | null>(null);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,12 +30,15 @@ function ForgotPasswordPage() {
     }
     setBusy(true);
     try {
-      const res = await fetch("/api/auth/forgot-password", {
+      const res = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
-      await res.json();
+      const data = await res.json();
+      if (data.dev_reset_url) {
+        setDevResetUrl(data.dev_reset_url);
+      }
       setSent(true);
     } catch {
       toast.error("Request failed — check your connection and retry.");
@@ -71,6 +77,27 @@ function ForgotPasswordPage() {
                 If <span className="font-mono text-foreground">{email}</span> is registered, a
                 password reset link has been sent. The link expires in 1 hour.
               </p>
+
+              {/* Dev-mode fallback: shown when the mail provider is not configured */}
+              {devResetUrl && (
+                <div className="rounded-md border border-warning/40 bg-warning/5 p-3 text-left">
+                  <p className="mb-2 font-mono text-[10px] uppercase tracking-widest text-warning">
+                    ⚠ Dev mode — email not configured
+                  </p>
+                  <p className="mb-3 text-[11px] text-muted-foreground">
+                    No mail provider (RESEND_API_KEY) is set. Use this link directly to reset your
+                    password:
+                  </p>
+                  <a
+                    href={devResetUrl}
+                    className="inline-flex items-center gap-1.5 break-all font-mono text-[11px] text-primary hover:underline"
+                  >
+                    <ExternalLink className="h-3 w-3 shrink-0" />
+                    {devResetUrl}
+                  </a>
+                </div>
+              )}
+
               <Link
                 to="/login"
                 className="block font-mono text-[11px] uppercase tracking-widest text-primary hover:underline"

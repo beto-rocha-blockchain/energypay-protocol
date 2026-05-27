@@ -10,8 +10,7 @@
 
 import { createFileRoute } from "@tanstack/react-router";
 import { StrKey } from "@stellar/stellar-sdk";
-
-const HORIZON_URL = "https://horizon-testnet.stellar.org";
+import { HORIZON_URL } from "@/lib/stellar";
 
 const buildCors = (request: Request): Record<string, string> => {
   const origin = request.headers.get("origin");

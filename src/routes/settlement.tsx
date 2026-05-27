@@ -40,8 +40,26 @@ function SettlementPage() {
   const contract = contracts.find((c) => c.id === contractId) ?? contracts[0];
   const [pld, setPld] = useState<number>(278);
 
-  const settlement = useMemo(() => (pld - contract.priceBRL) * contract.volumeMWh, [pld, contract]);
+  const settlement = useMemo(() => contract ? (pld - contract.priceBRL) * contract.volumeMWh : 0, [pld, contract]);
   const direction = settlement >= 0 ? "Buyer receives" : "Seller receives";
+
+  if (!contract) {
+    return (
+      <div className="mx-auto max-w-6xl space-y-6">
+        <div>
+          <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+            Settlement Engine
+          </p>
+          <h1 className="mt-1 font-display text-3xl font-semibold tracking-tight">
+            No contracts registered
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Register a bilateral contract first to use the settlement engine.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const [open, setOpen] = useState(false);
 

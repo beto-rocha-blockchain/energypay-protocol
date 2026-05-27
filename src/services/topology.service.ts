@@ -14,7 +14,7 @@ export const topologyService: ReadService<TopologySnapshot, void> & {
       items: TOPO_NODES,
       total: TOPO_NODES.length,
       asOf: nowIso(),
-      source: "MOCK",
+      source: "EMPTY",
     } as ListResult<TopologyNode>;
   },
   async get(id) {

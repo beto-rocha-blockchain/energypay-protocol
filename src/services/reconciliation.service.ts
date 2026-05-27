@@ -64,7 +64,7 @@ export const reconciliationService: ReadService<ReconciliationRow, void> = {
       items,
       total: items.length,
       asOf: nowIso(),
-      source: "MOCK",
+      source: "EMPTY",
     } as ListResult<ReconciliationRow>;
   },
   async get(id) {

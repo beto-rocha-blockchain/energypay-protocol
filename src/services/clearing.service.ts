@@ -1,45 +1,79 @@
-import { COUNTERPARTIES } from "@/lib/institutional-data";
+/**
+ * Clearing service — real data from /api/dashboard/contracts.
+ *
+ * Replaces the previous mock generator that produced 12 synthetic bilateral
+ * contracts.  Each contract row comes from the Supabase contracts table,
+ * normalised into the BilateralContract shape used by the institutional UI.
+ */
+
 import type { BilateralContract } from "@/types/domain";
 import { pollSubscription, type ReadService, nowIso } from "./_base";
 import type { ListResult } from "@/types/domain";
+import { API_BASE_URL } from "@/lib/api";
 
-function generate(): BilateralContract[] {
-  return Array.from({ length: 12 }).map((_, i) => {
-    const buyer = COUNTERPARTIES[(i * 3) % COUNTERPARTIES.length];
-    const seller = COUNTERPARTIES[(i * 5 + 1) % COUNTERPARTIES.length];
-    const price = 220 + ((i * 13) % 80);
-    const volume = 800 + ((i * 71) % 6400);
-    const notional = price * volume;
-    const startAt = new Date(Date.now() - i * 86_400_000).toISOString();
-    const endAt = new Date(Date.now() + (180 - i * 7) * 86_400_000).toISOString();
-    const delivered = Math.round(volume * (0.18 + ((i * 41) % 78) / 100));
+async function fetchLive(): Promise<BilateralContract[]> {
+  const res = await fetch(`${API_BASE_URL}/api/dashboard/contracts`, {
+    headers: { Accept: "application/json" },
+    signal: AbortSignal.timeout(8_000),
+  });
+  if (!res.ok) throw new Error(`Contracts API ${res.status}`);
+  const json = await res.json();
+  if (!json.success) return [];
+
+  return (json.contracts as Array<{
+    id: string;
+    buyer_id?: string;
+    seller_id?: string;
+    buyer?: string;
+    seller?: string;
+    submercado?: string;
+    notional_brl?: number;
+    volume_mwh?: number;
+    price_brl_per_mwh?: number;
+    start_at?: string;
+    end_at?: string;
+    settlement_date?: string;
+    status?: string;
+    delivered_mwh?: number;
+    margin_posted_brl?: number;
+    mtm_brl?: number;
+    created_at?: string;
+  }>).map((c) => {
+    const status = (c.status ?? "ACTIVE") as BilateralContract["status"];
+    const rawSub = c.submercado ?? "SE_CO";
+    const sub = (rawSub === "SE/CO" ? "SE_CO" : rawSub) as BilateralContract["submercado"];
     return {
-      id: `EPC-${2058 + i}`,
-      buyerId: buyer.id,
-      sellerId: seller.id,
-      buyerName: buyer.shortName,
-      sellerName: seller.shortName,
-      submercado: buyer.submercado === "SE/CO" ? "SE_CO" : (buyer.submercado as "S" | "NE" | "N"),
-      notionalBRL: notional,
-      volumeMWh: volume,
-      priceBRLPerMWh: price,
-      startAt,
-      endAt,
-      status: i === 0 ? "DELIVERING" : i % 5 === 0 ? "PENDING_APPROVAL" : "ACTIVE",
-      deliveredMWh: delivered,
-      marginPostedBRL: Math.round(notional * 0.18),
-      mtmBRL: Math.round((i % 2 === 0 ? 1 : -1) * notional * 0.012),
+      id: c.id,
+      buyerId: c.buyer_id ?? c.buyer ?? "—",
+      sellerId: c.seller_id ?? c.seller ?? "—",
+      buyerName: c.buyer ?? "—",
+      sellerName: c.seller ?? "—",
+      submercado: sub,
+      notionalBRL: Number(c.notional_brl ?? 0),
+      volumeMWh: Number(c.volume_mwh ?? 0),
+      priceBRLPerMWh: Number(c.price_brl_per_mwh ?? 0),
+      startAt: c.start_at ?? c.created_at ?? nowIso(),
+      endAt: c.end_at ?? c.settlement_date ?? nowIso(),
+      status: ["DELIVERING", "PENDING_APPROVAL", "ACTIVE", "SETTLED", "FAILED", "DRAFT"].includes(
+        status,
+      )
+        ? status
+        : "ACTIVE",
+      deliveredMWh: Number(c.delivered_mwh ?? 0),
+      marginPostedBRL: Number(c.margin_posted_brl ?? 0),
+      mtmBRL: Number(c.mtm_brl ?? 0),
     } satisfies BilateralContract;
   });
 }
 
 export const clearingService: ReadService<BilateralContract, void> = {
   async list(): Promise<ListResult<BilateralContract>> {
-    const items = generate();
-    return { items, total: items.length, asOf: nowIso(), source: "MOCK" };
+    const items = await fetchLive();
+    return { items, total: items.length, asOf: nowIso(), source: "LIVE" };
   },
   async get(id) {
-    return generate().find((c) => c.id === id) ?? null;
+    const items = await fetchLive();
+    return items.find((c) => c.id === id) ?? null;
   },
   subscribe(onUpdate, _f, intervalMs = 20_000) {
     return pollSubscription(this.list.bind(this), onUpdate, undefined, intervalMs);

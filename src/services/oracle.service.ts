@@ -1,45 +1,65 @@
-import { buildPldSeries } from "@/lib/institutional-data";
+/**
+ * Oracle service — real CMO/PLD prices from ONS Open Data.
+ *
+ * Data flow:  ONS S3 (cmo_semi_horario CSV) → backend /api/oracle/pld → UI
+ *
+ * signerCount / divergencePct / latencyMs are protocol fields not yet measured
+ * by the backend oracle; they remain at safe defaults until the oracle monitoring
+ * layer is implemented.
+ */
+
 import type { OracleSample } from "@/types/domain";
 import type { SubmercadoCode } from "@/lib/terminology";
 import { PLD_FEED_ID } from "@/lib/terminology";
 import { pollSubscription, type ReadService, nowIso } from "./_base";
 import type { ListResult } from "@/types/domain";
+import { API_BASE_URL } from "@/lib/api";
 
-function generate(): OracleSample[] {
-  const series = buildPldSeries(1);
-  const point = series[series.length - 1];
-  const map: Record<SubmercadoCode, number> = {
-    SE_CO: point.SECO,
-    S: point.S,
-    NE: point.NE,
-    N: point.N,
-  };
-  return (Object.keys(map) as SubmercadoCode[]).map((sm, i) => ({
-    feedId: PLD_FEED_ID(sm),
-    submercado: sm,
-    observedAt: point.t,
-    priceBRLPerMWh: map[sm],
-    signerCount: 4 + (i % 2),
-    divergencePct: Math.round((Math.sin(i) * 0.6 + 0.4) * 100) / 100,
-    latencyMs: 820 + i * 140,
-    source: i === 3 ? "FALLBACK_AGGREGATE" : i === 2 ? "CCEE_SECONDARY" : "CCEE_PRIMARY",
+/** Map ONS subsistema codes to internal SubmercadoCode */
+const ONS_TO_SM: Record<string, SubmercadoCode> = {
+  SE: "SE_CO",
+  S: "S",
+  NE: "NE",
+  N: "N",
+};
+
+async function fetchLive(): Promise<OracleSample[]> {
+  const res = await fetch(`${API_BASE_URL}/api/oracle/pld`);
+  if (!res.ok) throw new Error(`Oracle API ${res.status}`);
+  const json = await res.json();
+  if (!json.success || !Array.isArray(json.prices)) return [];
+
+  return (json.prices as Array<{
+    subsistema: string;
+    cmo_brl_mwh: number;
+    timestamp: string;
+  }>).map((p, i) => ({
+    feedId: PLD_FEED_ID(ONS_TO_SM[p.subsistema] ?? (p.subsistema as SubmercadoCode)),
+    submercado: ONS_TO_SM[p.subsistema] ?? (p.subsistema as SubmercadoCode),
+    observedAt: p.timestamp,
+    priceBRLPerMWh: p.cmo_brl_mwh,
+    signerCount: 4,
+    divergencePct: 0,
+    latencyMs: 0,
+    source: "CCEE_PRIMARY" as const,
   }));
 }
 
 export const oracleService: ReadService<OracleSample, void> = {
   async list() {
-    const items = generate();
+    const items = await fetchLive();
     return {
       items,
       total: items.length,
       asOf: nowIso(),
-      source: "MOCK",
+      source: "ONS",
     } as ListResult<OracleSample>;
   },
   async get(id) {
-    return generate().find((s) => s.feedId === id) ?? null;
+    const items = await fetchLive();
+    return items.find((s) => s.feedId === id) ?? null;
   },
-  subscribe(onUpdate, _f, intervalMs = 10_000) {
+  subscribe(onUpdate, _f, intervalMs = 60_000) {
     return pollSubscription(this.list.bind(this), onUpdate, undefined, intervalMs);
   },
 };

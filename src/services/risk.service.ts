@@ -47,7 +47,7 @@ export const riskService: ReadService<RiskExposure, void> = {
       items,
       total: items.length,
       asOf: nowIso(),
-      source: "MOCK",
+      source: "EMPTY",
     } as ListResult<RiskExposure>;
   },
   async get(id) {

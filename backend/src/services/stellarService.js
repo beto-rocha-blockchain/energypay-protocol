@@ -1,6 +1,5 @@
 import StellarSdk from "@stellar/stellar-sdk";
-
-const server = new StellarSdk.Horizon.Server("https://horizon-testnet.stellar.org");
+import { horizon as server, NETWORK_PASSPHRASE, FRIENDBOT_URL, FRIENDBOT_AVAILABLE, explorerTxUrl } from "../lib/stellar-network.js";
 
 const EPRW = "EPWR";
 
@@ -16,7 +15,10 @@ export function createWallet() {
 
 // 💸 Fund account
 export async function fundAccount(publicKey) {
-  const response = await fetch(`https://friendbot.stellar.org?addr=${publicKey}`);
+  if (!FRIENDBOT_AVAILABLE) {
+    throw new Error("Friendbot is only available on Stellar Testnet. Fund this account manually on mainnet.");
+  }
+  const response = await fetch(`${FRIENDBOT_URL}?addr=${publicKey}`);
 
   return response.json();
 }
@@ -40,7 +42,7 @@ export async function createTrustline(privateKey, issuerPublicKey) {
 
   const transaction = new StellarSdk.TransactionBuilder(account, {
     fee: StellarSdk.BASE_FEE,
-    networkPassphrase: StellarSdk.Networks.TESTNET,
+    networkPassphrase: NETWORK_PASSPHRASE,
   })
     .addOperation(
       StellarSdk.Operation.changeTrust({
@@ -65,7 +67,7 @@ export async function issueToken(issuerPrivateKey, destinationPublic, amount) {
 
   const transaction = new StellarSdk.TransactionBuilder(issuerAccount, {
     fee: StellarSdk.BASE_FEE,
-    networkPassphrase: StellarSdk.Networks.TESTNET,
+    networkPassphrase: NETWORK_PASSPHRASE,
   })
     .addOperation(
       StellarSdk.Operation.payment({
@@ -94,7 +96,7 @@ export async function createSellOffer(privateKey, amount, price, issuerPublicKey
 
   const transaction = new StellarSdk.TransactionBuilder(account, {
     fee: StellarSdk.BASE_FEE,
-    networkPassphrase: StellarSdk.Networks.TESTNET,
+    networkPassphrase: NETWORK_PASSPHRASE,
   })
     .addOperation(
       StellarSdk.Operation.manageSellOffer({
@@ -125,7 +127,7 @@ export async function createBuyOffer(privateKey, amount, price, issuerPublicKey)
 
   const transaction = new StellarSdk.TransactionBuilder(account, {
     fee: StellarSdk.BASE_FEE,
-    networkPassphrase: StellarSdk.Networks.TESTNET,
+    networkPassphrase: NETWORK_PASSPHRASE,
   })
     .addOperation(
       StellarSdk.Operation.manageBuyOffer({
@@ -156,7 +158,7 @@ export async function buyEPRW({ buyerSecret, issuerPublicKey, amountToReceive, m
 
   const transaction = new StellarSdk.TransactionBuilder(account, {
     fee: StellarSdk.BASE_FEE,
-    networkPassphrase: StellarSdk.Networks.TESTNET,
+    networkPassphrase: NETWORK_PASSPHRASE,
   })
     .addOperation(
       StellarSdk.Operation.pathPaymentStrictReceive({

@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { stellarExpertAccount, STELLAR_NETWORK_LABEL, HORIZON_URL, IS_MAINNET } from "@/lib/stellar";
 import {
   Zap,
   Building2,
@@ -23,27 +24,42 @@ import {
   Eye,
   EyeOff,
   Phone,
+  Sun,
+  Moon,
+  ExternalLink,
+  Droplets,
+  Wind,
+  Flame,
+  Waves,
+  Leaf,
+  Atom,
+  Recycle,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { useOperator, maskAddress, ROLE_META, type ParticipantRole } from "@/store/operator";
+import { useOperator, maskAddress, ROLE_META, ROLE_COLORS, type ParticipantRole } from "@/store/operator";
+import { useUiStore, type Theme } from "@/store/ui";
 import { toast } from "sonner";
 import { safeErrorMessage } from "@/lib/safe-error";
+import { apiResendVerification, apiSendPhoneCode, apiVerifyPhoneCode } from "@/lib/api";
+import { getSession } from "@/lib/session";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/register")({
   component: RegisterPage,
 });
 
-type Step = "form" | "provisioning" | "success";
+type Step = "form" | "provisioning" | "verify-email" | "verify-phone" | "success";
 
 const ROLE_ICON: Record<ParticipantRole, React.ComponentType<{ className?: string }>> = {
   GENERATOR: Factory,
   SELLER: Coins,
   INVESTOR: LineChart,
   USER: Plug,
+  UTILITY: Building2,
 };
 
 const PROVISIONING_STEPS = [
@@ -51,7 +67,7 @@ const PROVISIONING_STEPS = [
   "Allocating operator identity",
   "Generating ed25519 keypair",
   "Binding settlement address to operator",
-  "Funding settlement account · Friendbot",
+  IS_MAINNET ? "Verifying settlement account funding" : "Funding settlement account · Friendbot",
   "Registering market participant roles",
   "Publishing identity to Settlement Network",
 ];
@@ -82,6 +98,13 @@ function RegisterPage() {
   const [geoStatus, setGeoStatus] = useState<"idle" | "requesting" | "granted" | "denied">("idle");
   const [manualLat, setManualLat] = useState("");
   const [manualLng, setManualLng] = useState("");
+  const [walletMode, setWalletMode] = useState<"generate" | "link">("generate");
+  const [existingPublicKey, setExistingPublicKey] = useState("");
+  const [existingSecretKey, setExistingSecretKey] = useState("");
+  const [showExistingSecret, setShowExistingSecret] = useState(false);
+  const [energyType, setEnergyType] = useState<
+    "SOLAR" | "HYDRO" | "SMALL_HYDRO" | "WIND" | "BIOMASS" | "NATURAL_GAS" | "NUCLEAR" | "THERMAL" | "COGENERATION"
+  >("SOLAR");
 
   // If a session already exists when landing on /register fresh (no in-flight
   // provisioning), send the operator to the dashboard. Never redirect once we
@@ -98,6 +121,21 @@ useEffect(() => {
 
   const selectAll = () => setRoles(["GENERATOR", "SELLER", "INVESTOR", "USER"]);
 
+  // Basic phone validation: must have country code + at least 8 digits
+  const phoneValid = useMemo(() => {
+    const digits = phone.replace(/[^\d]/g, "");
+    return phone.trim().startsWith("+") && digits.length >= 8;
+  }, [phone]);
+
+  const linkValid = useMemo(() => {
+    if (walletMode !== "link") return true;
+    const pubOk =
+      existingPublicKey.trim().startsWith("G") && existingPublicKey.trim().length === 56;
+    const secOk =
+      existingSecretKey.trim().startsWith("S") && existingSecretKey.trim().length === 56;
+    return pubOk && secOk;
+  }, [walletMode, existingPublicKey, existingSecretKey]);
+
   const formValid = useMemo(
     () =>
       fullName.trim() &&
@@ -106,8 +144,20 @@ useEffect(() => {
       organization.trim() &&
       country.trim() &&
       city.trim() &&
-      roles.length > 0,
-    [fullName, email, password, organization, country, city, roles],
+      roles.length > 0 &&
+      phoneValid &&
+      linkValid,
+    [fullName, email, password, organization, country, city, roles, phoneValid, linkValid],
+  );
+
+  const provisioningSteps = useMemo(
+    () =>
+      PROVISIONING_STEPS.map((s) =>
+        s === "Generating ed25519 keypair" && walletMode === "link"
+          ? "Importing existing ed25519 keypair"
+          : s,
+      ),
+    [walletMode],
   );
 
   const submit = async (e: React.FormEvent) => {
@@ -119,7 +169,7 @@ useEffect(() => {
     setProvisionError(null);
     setStep("provisioning");
     setProgress(0);
-    for (let i = 0; i < PROVISIONING_STEPS.length; i++) {
+    for (let i = 0; i < provisioningSteps.length; i++) {
       await new Promise((r) => setTimeout(r, 500 + Math.random() * 350));
       setProgress(i + 1);
     }
@@ -135,9 +185,13 @@ useEffect(() => {
         roles,
         fund,
         coords,
+        energyType: roles.includes("GENERATOR") ? energyType : undefined,
+        walletMode,
+        existingPublicKey: walletMode === "link" ? existingPublicKey : undefined,
+        existingSecretKey: walletMode === "link" ? existingSecretKey : undefined,
       });
       setProvisionError(null);
-      setStep("success");
+      setStep("verify-email");
     } catch (err) {
       const reason = safeErrorMessage(err, "Settlement Network unreachable.");
       setProvisionError(reason);
@@ -226,7 +280,7 @@ useEffect(() => {
                 <Terminal className="mt-0.5 h-3.5 w-3.5 text-accent" />
                 <span>
                   <span className="font-mono text-foreground">Settlement keypair</span> · ed25519 ·
-                  funded via Friendbot
+                  {IS_MAINNET ? "mainnet custody" : "funded via Friendbot"}
                 </span>
               </li>
               <li className="flex items-start gap-2">
@@ -242,18 +296,19 @@ useEffect(() => {
               <div className="flex items-center justify-between">
                 <span>Network</span>
                 <span className="flex items-center gap-1.5 text-success">
-                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-success" /> Stellar
-                  Testnet · Nominal
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-success" /> {STELLAR_NETWORK_LABEL} · Nominal
                 </span>
               </div>
               <div className="mt-1.5 flex items-center justify-between">
                 <span>Horizon</span>
-                <span className="text-foreground">horizon-testnet.stellar.org</span>
+                <span className="text-foreground">{HORIZON_URL.replace("https://", "")}</span>
               </div>
+              {!IS_MAINNET && (
               <div className="mt-1.5 flex items-center justify-between">
                 <span>Friendbot</span>
                 <span className="text-foreground">friendbot.stellar.org</span>
               </div>
+              )}
             </div>
           </div>
 
@@ -325,15 +380,28 @@ useEffect(() => {
                       className="h-9 pl-8 font-mono text-xs"
                     />
                   </Field>
-                  <Field label="Phone (optional)" icon={<Phone className="h-3.5 w-3.5" />}>
+                  <Field
+                    label="Phone Number *"
+                    icon={<Phone className="h-3.5 w-3.5" />}
+                    hint="Required for 2FA. Include country code, e.g. +55 11 99999-9999"
+                  >
                     <Input
                       type="tel"
+                      required
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                       placeholder="+55 11 9 0000-0000"
-                      className="h-9 pl-8 font-mono text-xs"
+                      className={cn(
+                        "h-9 pl-8 font-mono text-xs",
+                        phone && !phoneValid && "border-destructive/60",
+                      )}
                     />
                   </Field>
+                  {phone && !phoneValid && (
+                    <p className="-mt-1 font-mono text-[10px] text-destructive">
+                      Include country code — e.g. +55 11 99999-9999
+                    </p>
+                  )}
                   <Field
                     label="Password"
                     icon={<Lock className="h-3.5 w-3.5" />}
@@ -498,7 +566,7 @@ useEffect(() => {
                         onClick={() => toggleRole(r)}
                         className={`group relative overflow-hidden rounded-md border p-3 text-left transition-all duration-200 ${
                           active
-                            ? "border-primary/60 bg-primary/5 shadow-[var(--shadow-glow)]"
+                            ? `${ROLE_COLORS[r].border} ${ROLE_COLORS[r].bg}`
                             : "border-border bg-background/40 hover:border-border/80 hover:bg-background/60"
                         }`}
                       >
@@ -506,7 +574,7 @@ useEffect(() => {
                           <div
                             className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md border ${
                               active
-                                ? "border-primary/50 bg-primary/10 text-primary"
+                                ? `${ROLE_COLORS[r].border} ${ROLE_COLORS[r].bg} ${ROLE_COLORS[r].text}`
                                 : "border-border bg-background/60 text-muted-foreground"
                             }`}
                           >
@@ -514,13 +582,13 @@ useEffect(() => {
                           </div>
                           <div className="flex-1">
                             <div className="flex items-center justify-between">
-                              <div className="font-mono text-[11px] uppercase tracking-widest text-foreground">
+                              <div className={`font-mono text-[11px] uppercase tracking-widest ${active ? ROLE_COLORS[r].text : "text-foreground"}`}>
                                 {ROLE_META[r].label}
                               </div>
                               <div
                                 className={`flex h-4 w-4 items-center justify-center rounded-sm border transition ${
                                   active
-                                    ? "border-primary bg-primary text-primary-foreground"
+                                    ? `${ROLE_COLORS[r].border} ${ROLE_COLORS[r].bg} ${ROLE_COLORS[r].text}`
                                     : "border-border bg-background/60"
                                 }`}
                               >
@@ -553,6 +621,53 @@ useEffect(() => {
                 </div>
               </div>
 
+              {/* § 03b · Generation Source — only visible when GENERATOR role is active */}
+              {roles.includes("GENERATOR") && (
+                <div>
+                  <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+                    § 03b · Generation Source
+                  </div>
+                  <div className="mt-2 grid grid-cols-3 gap-2">
+                    {(
+                      [
+                        { type: "SOLAR",       label: "Solar PV",      Icon: Sun      },
+                        { type: "HYDRO",       label: "Hydroelectric", Icon: Droplets },
+                        { type: "SMALL_HYDRO", label: "Small Hydro",   Icon: Waves    },
+                        { type: "WIND",        label: "Wind",          Icon: Wind     },
+                        { type: "BIOMASS",     label: "Biomass",       Icon: Leaf     },
+                        { type: "NATURAL_GAS", label: "Natural Gas",   Icon: Flame    },
+                        { type: "NUCLEAR",     label: "Nuclear",       Icon: Atom     },
+                        { type: "THERMAL",     label: "Thermal",       Icon: Factory  },
+                        { type: "COGENERATION",label: "Cogeneration",  Icon: Recycle  },
+                      ] as const
+                    ).map(({ type, label, Icon }) => {
+                      const active = energyType === type;
+                      return (
+                        <button
+                          key={type}
+                          type="button"
+                          onClick={() => setEnergyType(type)}
+                          className={`group flex flex-col items-center gap-1.5 rounded-md border p-3 text-center transition-all duration-200 ${
+                            active
+                              ? "border-success/50 bg-success/10 text-success"
+                              : "border-border bg-background/40 text-muted-foreground hover:border-border/80 hover:bg-background/60"
+                          }`}
+                        >
+                          <Icon className="h-5 w-5" />
+                          <span className="font-mono text-[10px] uppercase tracking-widest leading-tight">
+                            {label}
+                          </span>
+                          {active && <Check className="h-3 w-3" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="mt-1.5 font-mono text-[10px] text-muted-foreground">
+                    Primary energy source used for generation and settlement.
+                  </div>
+                </div>
+              )}
+
               <label className="flex cursor-pointer items-start gap-2 rounded-md border border-border bg-background/40 p-3 text-xs">
                 <input
                   type="checkbox"
@@ -562,14 +677,171 @@ useEffect(() => {
                 />
                 <span>
                   <span className="block font-mono uppercase tracking-widest text-foreground">
-                    Fund settlement account on Stellar Testnet
+                    Fund settlement account on {STELLAR_NETWORK_LABEL}
                   </span>
                   <span className="block text-[11px] text-muted-foreground">
-                    Provisions a Stellar Testnet account funded via Friendbot for settlement
-                    operations.
+                    {IS_MAINNET
+                      ? "Provisions a Stellar Mainnet account for settlement operations."
+                      : "Provisions a Stellar Testnet account funded via Friendbot for settlement operations."}
                   </span>
                 </span>
               </label>
+
+              <ThemeSelector />
+
+              {/* § 04b · Settlement Wallet */}
+              <div>
+                <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+                  § 04b · Settlement Wallet
+                </div>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  {(
+                    [
+                      {
+                        id: "generate" as const,
+                        icon: Zap,
+                        label: "Generate New Account",
+                        desc: "Platform generates and manages your ed25519 keypair",
+                      },
+                      {
+                        id: "link" as const,
+                        icon: KeyRound,
+                        label: "Link Existing Account",
+                        desc: "Connect your existing Stellar wallet to this identity",
+                      },
+                    ] as const
+                  ).map((opt) => {
+                    const active = walletMode === opt.id;
+                    const Icon = opt.icon;
+                    return (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => setWalletMode(opt.id)}
+                        className={`group relative overflow-hidden rounded-md border p-3 text-left transition-all duration-200 ${
+                          active
+                            ? "border-primary/60 bg-primary/5 shadow-[var(--shadow-glow)]"
+                            : "border-border bg-background/40 hover:border-border/80 hover:bg-background/60"
+                        }`}
+                      >
+                        <div className="flex items-start gap-2.5">
+                          <div
+                            className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md border ${
+                              active
+                                ? "border-primary/50 bg-primary/10 text-primary"
+                                : "border-border bg-background/60 text-muted-foreground"
+                            }`}
+                          >
+                            <Icon className="h-3.5 w-3.5" />
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between">
+                              <div className="font-mono text-[11px] uppercase tracking-widest text-foreground">
+                                {opt.label}
+                              </div>
+                              <div
+                                className={`flex h-4 w-4 items-center justify-center rounded-full border transition ${
+                                  active
+                                    ? "border-primary bg-primary text-primary-foreground"
+                                    : "border-border bg-background/60"
+                                }`}
+                              >
+                                {active && <Check className="h-3 w-3" />}
+                              </div>
+                            </div>
+                            <div className="mt-0.5 text-[10px] text-muted-foreground">
+                              {opt.desc}
+                            </div>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {walletMode === "generate" && (
+                  <div className="mt-2 rounded-md border border-border bg-background/40 p-2.5">
+                    <p className="font-mono text-[10px] text-muted-foreground">
+                      A new ed25519 keypair will be generated and held by the EnergyPay backend.
+                      Your public key is always accessible from your profile. The frontend never
+                      receives the secret key.
+                    </p>
+                  </div>
+                )}
+
+                {walletMode === "link" && (
+                  <div className="mt-3 space-y-3 rounded-md border border-border bg-background/40 p-3">
+                    <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                      Existing Wallet Credentials
+                    </div>
+                    <Field
+                      label="Stellar Public Key (G…)"
+                      icon={<KeyRound className="h-3.5 w-3.5" />}
+                    >
+                      <Input
+                        value={existingPublicKey}
+                        onChange={(e) => setExistingPublicKey(e.target.value.trim())}
+                        placeholder="GABC… · 56 characters"
+                        className="h-9 pl-8 font-mono text-xs"
+                        maxLength={58}
+                        autoComplete="off"
+                        spellCheck={false}
+                      />
+                    </Field>
+                    {existingPublicKey &&
+                      (existingPublicKey.length !== 56 || !existingPublicKey.startsWith("G")) && (
+                        <p className="-mt-1 font-mono text-[10px] text-destructive">
+                          Must be a 56-character Stellar public key starting with G
+                        </p>
+                      )}
+                    <Field label="Secret Key (S…)" icon={<Lock className="h-3.5 w-3.5" />}>
+                      <Input
+                        type={showExistingSecret ? "text" : "password"}
+                        value={existingSecretKey}
+                        onChange={(e) => setExistingSecretKey(e.target.value.trim())}
+                        placeholder="SABC… · 56 characters"
+                        className="h-9 pl-8 pr-9 font-mono text-xs tracking-widest"
+                        maxLength={58}
+                        autoComplete="off"
+                        spellCheck={false}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowExistingSecret((v) => !v)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        {showExistingSecret ? (
+                          <EyeOff className="h-3.5 w-3.5" />
+                        ) : (
+                          <Eye className="h-3.5 w-3.5" />
+                        )}
+                      </button>
+                    </Field>
+                    {existingSecretKey &&
+                      (existingSecretKey.length !== 56 || !existingSecretKey.startsWith("S")) && (
+                        <p className="-mt-1 font-mono text-[10px] text-destructive">
+                          Must be a 56-character Stellar secret key starting with S
+                        </p>
+                      )}
+                    <div className="rounded-md border border-warning/40 bg-warning/5 p-2.5">
+                      <p className="font-mono text-[10px] uppercase tracking-widest text-warning">
+                        ⚠ Key Custody Notice
+                      </p>
+                      <p className="mt-1 text-[10px] text-muted-foreground">
+                        Your secret key will be stored by the EnergyPay backend to enable managed
+                        operations such as trustline creation and settlement execution. Only link a
+                        wallet you control and trust the platform to operate on your behalf.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="mt-1.5 font-mono text-[10px] text-muted-foreground">
+                  {walletMode === "generate"
+                    ? "Backend-managed keypair · ed25519 · funded on Stellar Network"
+                    : "Self-custody import · provide public and secret keys to link"}
+                </div>
+              </div>
 
               <Button
                 type="submit"
@@ -596,17 +868,17 @@ useEffect(() => {
                   Provisioning Settlement Identity
                 </div>
                 <div className="font-mono text-[10px] text-muted-foreground">
-                  {progress}/{PROVISIONING_STEPS.length}
+                  {progress}/{provisioningSteps.length}
                 </div>
               </div>
               <div className="h-1 w-full overflow-hidden rounded-full bg-border/60">
                 <div
                   className="h-full bg-[image:var(--gradient-primary)] transition-all duration-300"
-                  style={{ width: `${(progress / PROVISIONING_STEPS.length) * 100}%` }}
+                  style={{ width: `${(progress / provisioningSteps.length) * 100}%` }}
                 />
               </div>
               <div className="space-y-1.5 rounded-md border border-border bg-background/60 p-3 font-mono text-[11px]">
-                {PROVISIONING_STEPS.map((s, i) => {
+                {provisioningSteps.map((s, i) => {
                   const done = i < progress;
                   const active = i === progress;
                   return (
@@ -638,13 +910,24 @@ useEffect(() => {
                 })}
               </div>
               <div className="flex items-center justify-between text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-                <span>Network: Stellar Testnet</span>
+                <span>Network: {STELLAR_NETWORK_LABEL}</span>
                 <span className="flex items-center gap-1.5 text-success">
                   <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-success" />{" "}
                   Provisioning
                 </span>
               </div>
             </div>
+          )}
+
+          {step === "verify-email" && (
+            <VerifyEmailStep onVerified={() => setStep("verify-phone")} />
+          )}
+
+          {step === "verify-phone" && (
+            <VerifyPhoneStep
+              hasPhone={!!phone.trim()}
+              onVerified={() => setStep("success")}
+            />
           )}
 
           {step === "success" && operator && (
@@ -675,11 +958,13 @@ useEffect(() => {
                     Signer custody
                   </div>
                   <div className="mt-0.5 font-mono text-[11px] text-foreground">
-                    Backend custody · ed25519 · {operator.wallet.status}
+                    {walletMode === "link" ? "Linked wallet" : "Backend custody"} · ed25519 ·{" "}
+                    {operator.wallet.status}
                   </div>
                   <div className="mt-1 font-mono text-[10px] text-muted-foreground">
-                    Secret seed is held by the EnergyPay backend. The frontend never receives the
-                    secret key.
+                    {walletMode === "link"
+                      ? "Existing Stellar wallet linked to this identity. Secret key held by EnergyPay backend for managed operations."
+                      : "Secret seed is held by the EnergyPay backend. The frontend never receives the secret key."}
                   </div>
                 </div>
               </div>
@@ -720,12 +1005,12 @@ useEffect(() => {
               <div className="grid grid-cols-2 gap-2 font-mono text-[10px] uppercase tracking-widest">
                 <Mini
                   label="Network"
-                  value={operator.network || "Stellar Testnet"}
+                  value={operator.network || STELLAR_NETWORK_LABEL}
                   tone="success"
                 />
                 <Mini
                   label="Funded"
-                  value={operator.wallet.funded ? "Yes · Friendbot" : "No · Friendbot failed"}
+                  value={operator.wallet.funded ? (IS_MAINNET ? "Yes" : "Yes · Friendbot") : (IS_MAINNET ? "No · Pending" : "No · Friendbot failed")}
                   tone={operator.wallet.funded ? "success" : undefined}
                 />
                 <Mini label="Roles" value={operator.roles.length.toString()} />
@@ -749,7 +1034,7 @@ useEffect(() => {
               </div>
 
               <a
-                href={`https://stellar.expert/explorer/testnet/account/${operator.wallet.publicKey}`}
+                href={stellarExpertAccount(operator.wallet.publicKey)}
                 target="_blank"
                 rel="noreferrer"
                 className="flex items-center justify-between rounded-md border border-border bg-background/40 px-3 py-2 font-mono text-[10px] uppercase tracking-widest text-foreground transition hover:border-primary/50 hover:text-primary"
@@ -773,22 +1058,254 @@ useEffect(() => {
   );
 }
 
+/* ─── Verify Email Step ─── */
+function VerifyEmailStep({ onVerified }: { onVerified: () => void }) {
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [devVerifyUrl, setDevVerifyUrl] = useState<string | null>(null);
+
+  const resend = async () => {
+    setSending(true);
+    try {
+      const result = await apiResendVerification();
+      setSent(true);
+      if (result.dev_verify_url) {
+        setDevVerifyUrl(result.dev_verify_url);
+      } else {
+        toast.success("Verification email sent — check your inbox.");
+      }
+    } catch (e) {
+      toast.error(safeErrorMessage(e));
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4 p-5">
+      <div className="flex items-center gap-2">
+        <div className="flex h-7 w-7 items-center justify-center rounded-md border border-primary/40 bg-primary/10 text-primary">
+          <Mail className="h-4 w-4" />
+        </div>
+        <div>
+          <div className="font-mono text-[11px] uppercase tracking-widest text-foreground">
+            Verify Your Email
+          </div>
+          <div className="text-[10px] text-muted-foreground">
+            We sent a verification link to your email address.
+          </div>
+        </div>
+      </div>
+
+      {devVerifyUrl && (
+        <div className="rounded-md border border-warning/40 bg-warning/5 p-3">
+          <p className="mb-1.5 font-mono text-[10px] uppercase tracking-widest text-warning">
+            ⚠ Dev mode — email not configured
+          </p>
+          <p className="mb-2 text-[11px] text-muted-foreground">
+            Resend blocked the email. Open this link directly to verify:
+          </p>
+          <a
+            href={devVerifyUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 break-all font-mono text-[11px] text-primary hover:underline"
+          >
+            <ExternalLink className="h-3 w-3 shrink-0" />
+            {devVerifyUrl}
+          </a>
+        </div>
+      )}
+
+      <div className="rounded-md border border-border bg-background/40 p-4 text-center space-y-3">
+        <p className="text-xs text-muted-foreground">
+          Click the link in your email to verify your account. After verifying, click the button below to continue.
+        </p>
+        <div className="flex flex-col gap-2">
+          <Button size="sm" onClick={onVerified}>
+            <Check className="mr-1.5 h-3.5 w-3.5" />
+            I've Verified My Email
+          </Button>
+          <Button variant="ghost" size="sm" onClick={resend} disabled={sending || sent}>
+            {sending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Mail className="mr-1.5 h-3.5 w-3.5" />}
+            {sent ? "Email Sent" : "Resend Verification Email"}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Verify Phone Step ─── */
+function VerifyPhoneStep({
+  hasPhone,
+  onVerified,
+}: {
+  hasPhone: boolean;
+  onVerified: () => void;
+}) {
+  const [phoneInput, setPhoneInput] = useState("");
+  const [codeSent, setCodeSent] = useState(false);
+  const [devCode, setDevCode] = useState<string | null>(null);
+  const [code, setCode] = useState("");
+  const [sending, setSending] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [phoneSaved, setPhoneSaved] = useState(hasPhone);
+
+  const savePhone = async () => {
+    if (!phoneInput.trim()) return;
+    setSending(true);
+    try {
+      const res = await fetch("/api/auth/update-phone", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${getSession()?.token ?? ""}`,
+        },
+        body: JSON.stringify({ phone: phoneInput.trim() }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error || "Failed to save phone");
+      setPhoneSaved(true);
+      toast.success("Phone number saved.");
+    } catch (e) {
+      toast.error(safeErrorMessage(e));
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const sendCode = async () => {
+    setSending(true);
+    try {
+      const result = await apiSendPhoneCode();
+      setCodeSent(true);
+      // Dev fallback: Twilio not configured — code returned in response
+      if (result.dev_code) {
+        setDevCode(result.dev_code);
+      } else {
+        toast.success("Verification code sent via WhatsApp.");
+      }
+    } catch (e) {
+      toast.error(safeErrorMessage(e));
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const verify = async () => {
+    if (code.length !== 6) return;
+    setVerifying(true);
+    try {
+      await apiVerifyPhoneCode(code);
+      toast.success("Phone verified!");
+      onVerified();
+    } catch (e) {
+      toast.error(safeErrorMessage(e));
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4 p-5">
+      <div className="flex items-center gap-2">
+        <div className="flex h-7 w-7 items-center justify-center rounded-md border border-primary/40 bg-primary/10 text-primary">
+          <Phone className="h-4 w-4" />
+        </div>
+        <div>
+          <div className="font-mono text-[11px] uppercase tracking-widest text-foreground">
+            Verify Your Phone
+          </div>
+          <div className="text-[10px] text-muted-foreground">
+            We'll send a 6-digit code via WhatsApp.
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-md border border-border bg-background/40 p-4 space-y-3">
+        {!phoneSaved ? (
+          <div className="space-y-2">
+            <Label className="text-xs">Phone Number (with country code)</Label>
+            <div className="flex gap-2">
+              <Input
+                placeholder="+55 11 99999-9999"
+                value={phoneInput}
+                onChange={(e) => setPhoneInput(e.target.value)}
+                className="flex-1 font-mono text-xs"
+              />
+              <Button size="sm" onClick={savePhone} disabled={sending || !phoneInput.trim()}>
+                {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Save"}
+              </Button>
+            </div>
+          </div>
+        ) : !codeSent ? (
+          <div className="text-center space-y-2">
+            <p className="text-xs text-muted-foreground">
+              Click below to receive a verification code on your WhatsApp.
+            </p>
+            <Button size="sm" onClick={sendCode} disabled={sending}>
+              {sending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Phone className="mr-1.5 h-3.5 w-3.5" />}
+              Send WhatsApp Code
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {devCode && (
+              <div className="rounded-md border border-warning/40 bg-warning/5 p-2.5">
+                <p className="mb-1 font-mono text-[10px] uppercase tracking-widest text-warning">
+                  ⚠ Dev mode — Twilio not configured
+                </p>
+                <p className="text-[11px] text-muted-foreground">
+                  Your code is:{" "}
+                  <span className="font-mono font-bold text-foreground">{devCode}</span>
+                </p>
+              </div>
+            )}
+            <Label className="text-xs">Enter 6-digit code</Label>
+            <div className="flex gap-2">
+              <Input
+                placeholder="000000"
+                maxLength={6}
+                value={code}
+                onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+                className="flex-1 font-mono text-center text-lg tracking-[0.3em]"
+                autoFocus
+              />
+              <Button size="sm" onClick={verify} disabled={verifying || code.length !== 6}>
+                {verifying ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+              </Button>
+            </div>
+            <Button variant="ghost" size="sm" className="w-full" onClick={sendCode} disabled={sending}>
+              {sending ? "Sending…" : "Resend Code"}
+            </Button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function Field({
   label,
   icon,
   children,
   className = "",
+  hint,
 }: {
   label: string;
   icon: React.ReactNode;
   children: React.ReactNode;
   className?: string;
+  hint?: string;
 }) {
   return (
     <div className={`space-y-1.5 ${className}`}>
       <Label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
         {label}
       </Label>
+      {hint && (
+        <p className="font-mono text-[9px] text-muted-foreground/70">{hint}</p>
+      )}
       <div className="relative">
         <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground">
           {icon}
@@ -851,6 +1368,76 @@ function Mini({ label, value, tone }: { label: string; value: string; tone?: "su
         className={`mt-0.5 text-[11px] ${tone === "success" ? "text-success" : "text-foreground"}`}
       >
         {value}
+      </div>
+    </div>
+  );
+}
+
+function ThemeSelector() {
+  const theme = useUiStore((s) => s.theme);
+  const setTheme = useUiStore((s) => s.setTheme);
+
+  return (
+    <div>
+      <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+        § 04 · Interface Theme
+      </div>
+      <div className="mt-2 grid grid-cols-2 gap-2">
+        {(
+          [
+            { id: "dark" as Theme, icon: Moon, label: "Dark", desc: "Institutional dark mode — reduced eye strain for control room environments" },
+            { id: "light" as Theme, icon: Sun, label: "Light", desc: "Clean light interface — high contrast for daylight and presentation use" },
+          ] as const
+        ).map((opt) => {
+          const active = theme === opt.id;
+          const Icon = opt.icon;
+          return (
+            <button
+              key={opt.id}
+              type="button"
+              onClick={() => setTheme(opt.id)}
+              className={`group relative overflow-hidden rounded-md border p-3 text-left transition-all duration-200 ${
+                active
+                  ? "border-primary/60 bg-primary/5 shadow-[var(--shadow-glow)]"
+                  : "border-border bg-background/40 hover:border-border/80 hover:bg-background/60"
+              }`}
+            >
+              <div className="flex items-start gap-2.5">
+                <div
+                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md border ${
+                    active
+                      ? "border-primary/50 bg-primary/10 text-primary"
+                      : "border-border bg-background/60 text-muted-foreground"
+                  }`}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <div className="font-mono text-[11px] uppercase tracking-widest text-foreground">
+                      {opt.label}
+                    </div>
+                    <div
+                      className={`flex h-4 w-4 items-center justify-center rounded-full border transition ${
+                        active
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-border bg-background/60"
+                      }`}
+                    >
+                      {active && <Check className="h-3 w-3" />}
+                    </div>
+                  </div>
+                  <div className="mt-0.5 text-[10px] text-muted-foreground">
+                    {opt.desc}
+                  </div>
+                </div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+      <div className="mt-1.5 font-mono text-[10px] text-muted-foreground">
+        You can change the theme anytime from the Operator Profile menu.
       </div>
     </div>
   );

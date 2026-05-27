@@ -2,6 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Radio, Layers, Gauge, CheckCircle2, AlertTriangle } from "lucide-react";
 import { useSettlementRail } from "@/hooks/useSettlementRail";
+import { IS_MAINNET } from "@/lib/stellar";
 
 const fmt = (n: number) => n.toLocaleString("en-US", { maximumFractionDigits: 0 });
 
@@ -91,7 +92,7 @@ export function StellarRailMonitor() {
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-2 md:grid-cols-4">
-        <NodeChip label="horizon-testnet" status={health?.horizon?.status ?? "ok"} />
+        <NodeChip label={IS_MAINNET ? "horizon" : "horizon-testnet"} status={health?.horizon?.status ?? "ok"} />
         <NodeChip label="settlement-adapter" status={health?.backend?.status ?? "ok"} />
         <NodeChip label="ledger-stream" status={isOffline ? "offline" : "ok"} />
         <NodeChip label="trustline-monitor" status="ok" />

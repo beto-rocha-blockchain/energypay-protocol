@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { STELLAR_NETWORK_LABEL } from "@/lib/stellar";
 import { useEffect, useState } from "react";
 import {
   Zap,
@@ -10,6 +11,8 @@ import {
   Terminal,
   Loader2,
   ArrowRight,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,6 +20,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useOperator } from "@/store/operator";
+import { useUiStore, type Theme } from "@/store/ui";
 import { toast } from "sonner";
 import { safeErrorMessage } from "@/lib/safe-error";
 
@@ -38,6 +42,16 @@ function LoginPage() {
     if (isAuthenticated) navigate({ to: "/" });
   }, [isAuthenticated, navigate]);
 
+  // Show success toast when redirected after email verification
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("verified") === "true") {
+      toast.success("Email verified successfully! You can now log in.");
+      // Clean URL
+      window.history.replaceState({}, "", "/login");
+    }
+  }, []);
+
   const onAccess = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
@@ -47,7 +61,7 @@ function LoginPage() {
     setBusy(true);
     try {
       const id = await login({ email, password, organization: organization || undefined });
-      toast.success(`Operator ${id.operatorId} connected · Stellar Testnet active`);
+      toast.success(`Operator ${id.operatorId} connected · ${STELLAR_NETWORK_LABEL} active`);
       navigate({ to: "/" });
     } catch (err) {
       toast.error(safeErrorMessage(err, "Authentication failed"));
@@ -84,7 +98,7 @@ function LoginPage() {
               </h1>
               <p className="mt-2 max-w-sm text-xs text-muted-foreground">
                 Operator access connects an existing settlement identity to the EnergyPay clearing
-                network, anchored to Stellar Testnet for institutional reconciliation.
+                network, anchored to {STELLAR_NETWORK_LABEL} for institutional reconciliation.
               </p>
             </div>
 
@@ -228,13 +242,27 @@ function LoginPage() {
               <Link to="/forgot-password" className="text-muted-foreground hover:text-primary">
                 Forgot password →
               </Link>
-              <span className="flex items-center gap-1.5 text-success">
-                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-success" /> Online
-              </span>
+              <LoginThemeToggle />
             </div>
           </form>
         </Card>
       </div>
     </div>
+  );
+}
+
+function LoginThemeToggle() {
+  const theme = useUiStore((s) => s.theme);
+  const setTheme = useUiStore((s) => s.setTheme);
+  const next: Theme = theme === "dark" ? "light" : "dark";
+  return (
+    <button
+      type="button"
+      onClick={() => setTheme(next)}
+      className="flex items-center gap-1.5 text-muted-foreground transition hover:text-primary"
+    >
+      {theme === "dark" ? <Sun className="h-3 w-3" /> : <Moon className="h-3 w-3" />}
+      {next} mode
+    </button>
   );
 }

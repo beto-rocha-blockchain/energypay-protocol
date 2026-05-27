@@ -30,7 +30,7 @@ function generate(): AuditEvent[] {
 export const auditService: ReadService<AuditEvent, void> = {
   async list() {
     const items = generate();
-    return { items, total: items.length, asOf: nowIso(), source: "MOCK" } as ListResult<AuditEvent>;
+    return { items, total: items.length, asOf: nowIso(), source: "EMPTY" } as ListResult<AuditEvent>;
   },
   async get(id) {
     return generate().find((a) => a.id === id) ?? null;

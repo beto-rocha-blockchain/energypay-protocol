@@ -1,16 +1,29 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
 import {
-  Panel,
-  KpiStrip,
-  KpiTile,
-  SeverityBadge,
-  CellNum,
-  StatusDot,
-} from "@/components/ops/primitives";
-import { AUDIT_LOG, KYC_RECORDS, fmtUTC, shortHash } from "@/lib/institutional-data";
-import { stellarExpertTx } from "@/lib/stellar";
-import { ExternalLink, FileText, Download } from "lucide-react";
+  Activity,
+  CheckCircle2,
+  ExternalLink,
+  FileCheck,
+  Radio,
+  RefreshCw,
+  ShieldCheck,
+  XCircle,
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useDashboard } from "@/hooks/useDashboard";
+import { useSettlementRail } from "@/hooks/useSettlementRail";
+import { stellarExpertTx, STELLAR_NETWORK_LABEL } from "@/lib/stellar";
 
 export const Route = createFileRoute("/audit")({
   head: () => ({
@@ -19,248 +32,310 @@ export const Route = createFileRoute("/audit")({
       {
         name: "description",
         content:
-          "Immutable audit logs, KYC verification, institutional access control and regulatory reporting.",
+          "Immutable audit logs, settlement provenance, compliance indicators and regulatory readiness.",
       },
     ],
   }),
   component: AuditPage,
 });
 
+const fmtBRL = (n: number) =>
+  n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+
+const fmtPct = (n: number) => `${n.toFixed(1)}%`;
+
+const shortHash = (h: string) =>
+  h && h.length > 12 ? `${h.slice(0, 6)}…${h.slice(-6)}` : h || "—";
+
+const timeAgo = (iso: string) => {
+  if (!iso) return "—";
+  const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60_000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+};
+
 function AuditPage() {
-  const [filter, setFilter] = useState<"ALL" | "OK" | "DENIED" | "ERROR">("ALL");
-  const filtered = filter === "ALL" ? AUDIT_LOG : AUDIT_LOG.filter((a) => a.result === filter);
+  const { stats, settlements, horizon, loading, refresh } = useDashboard();
+  const { health, telemetry } = useSettlementRail();
+
+  const total = stats?.total_settlements ?? 0;
+  const settled = stats?.settled_count ?? 0;
+  const failed = stats?.failed_count ?? 0;
+  const successRate = total > 0 ? (settled / total) * 100 : 0;
+  const horizonLatency = horizon?.latency_ms ?? 0;
+  const finalityMs = stats?.avg_finality_ms ?? 0;
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-end justify-between">
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="label-op">Compliance Office · Institutional Access</p>
+          <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+            Compliance Office · Ledger Provenance
+          </p>
           <h1 className="font-display text-2xl font-semibold tracking-tight">
             Audit & Compliance Center
           </h1>
         </div>
-        <SeverityBadge level="OK" label="ATTESTATION CURRENT · ATT-2026-Q2-018" />
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="font-mono text-[10px] uppercase tracking-widest">
+            <Radio className="mr-1.5 h-3 w-3 text-success" />
+            {STELLAR_NETWORK_LABEL}
+          </Badge>
+          <Button size="sm" variant="outline" onClick={refresh} disabled={loading}>
+            <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+        </div>
       </div>
 
-      <KpiStrip>
-        <KpiTile label="Audit Records · 24h" value={AUDIT_LOG.length} tone="primary" />
-        <KpiTile
-          label="Denied · 24h"
-          value={AUDIT_LOG.filter((a) => a.result === "DENIED").length}
-          tone="warn"
+      {/* KPI Strip */}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+        <KpiCard
+          label="Audit Records"
+          value={String(total)}
+          sub="settlement entries"
+          loading={loading && !stats}
         />
-        <KpiTile
-          label="Errors · 24h"
-          value={AUDIT_LOG.filter((a) => a.result === "ERROR").length}
-          tone={AUDIT_LOG.filter((a) => a.result === "ERROR").length > 0 ? "bad" : "ok"}
-        />
-        <KpiTile
-          label="KYC Verified"
-          value={KYC_RECORDS.filter((k) => k.status === "VERIFIED").length}
+        <KpiCard
+          label="Confirmed"
+          value={String(settled)}
+          sub="on-chain confirmed"
+          loading={loading && !stats}
           tone="ok"
         />
-        <KpiTile
-          label="KYC Expiring"
-          value={KYC_RECORDS.filter((k) => k.status === "EXPIRING").length}
-          tone="warn"
+        <KpiCard
+          label="Failed / Reverted"
+          value={String(failed)}
+          sub={failed > 0 ? "requires review" : "no failures"}
+          loading={loading && !stats}
+          tone={failed > 0 ? "warn" : "ok"}
         />
-        <KpiTile label="Reports Due" value="3" tone="warn" sub="CCEE · ANEEL · BCB" />
-      </KpiStrip>
+        <KpiCard
+          label="Cleared Volume"
+          value={fmtBRL(stats?.total_value_brl ?? 0)}
+          sub="total BRL settled"
+          loading={loading && !stats}
+        />
+        <KpiCard
+          label="Compliance Rate"
+          value={total > 0 ? fmtPct(successRate) : "—"}
+          sub={total > 0 ? "settlement success" : "no data"}
+          loading={loading && !stats}
+          tone={successRate >= 95 ? "ok" : "warn"}
+        />
+        <KpiCard
+          label="Ledger Status"
+          value={horizon?.horizon_online ? "ANCHORED" : "OFFLINE"}
+          sub={`Horizon ${horizonLatency} ms`}
+          loading={loading && !horizon}
+          tone={horizon?.horizon_online ? "ok" : "warn"}
+          led
+        />
+      </div>
 
-      <Panel
-        title="Immutable Audit Log"
-        subtitle="Operator actions · ledger anchored · provenance"
-        right={
-          <div className="flex gap-1">
-            {(["ALL", "OK", "DENIED", "ERROR"] as const).map((f) => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={`rounded-sm border px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest ${
-                  filter === f
-                    ? "border-primary/60 bg-primary/10 text-primary"
-                    : "border-border text-muted-foreground hover:border-primary/40"
-                }`}
-              >
-                {f}
-              </button>
+      {/* Compliance Indicators + Telemetry */}
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+        <Card className="border-border bg-card p-4 lg:col-span-2">
+          <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+            Compliance Health Indicators
+          </p>
+          <div className="mt-3 space-y-3">
+            <HealthBar label="Settlement Compliance" value={successRate} />
+            <HealthBar label="Horizon Connectivity" value={horizon?.horizon_online ? 100 : 0} />
+            <HealthBar label="Backend Availability" value={health?.status === "ok" ? 100 : health?.status === "degraded" ? 50 : 0} />
+            <HealthBar label="Finality SLA (< 6s)" value={finalityMs > 0 ? Math.min(100, (6000 / finalityMs) * 100) : 0} />
+          </div>
+        </Card>
+
+        <Card className="border-border bg-card p-4">
+          <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+            Audit Telemetry
+          </p>
+          <div className="mt-3 space-y-2">
+            <TelRow icon={<ShieldCheck className="h-3.5 w-3.5" />} label="Compliance rate" value={total > 0 ? fmtPct(successRate) : "—"} tone={successRate >= 95 ? "ok" : "warn"} />
+            <TelRow icon={<Activity className="h-3.5 w-3.5" />} label="Horizon latency" value={`${horizonLatency} ms`} tone={horizonLatency < 1000 ? "ok" : "warn"} />
+            <TelRow icon={<CheckCircle2 className="h-3.5 w-3.5" />} label="Confirmed" value={String(settled)} tone="ok" />
+            <TelRow icon={<XCircle className="h-3.5 w-3.5" />} label="Failed" value={String(failed)} tone={failed > 0 ? "warn" : "ok"} />
+            <TelRow icon={<FileCheck className="h-3.5 w-3.5" />} label="Counterparties" value={String(stats?.total_users ?? 0)} tone="muted" />
+          </div>
+        </Card>
+      </div>
+
+      {/* Immutable Audit Log — Real Settlement Data */}
+      <Card className="border-border bg-card p-5">
+        <div className="mb-4">
+          <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+            Immutable Audit Log · Ledger Anchored · Provenance
+          </p>
+          <p className="font-display text-lg font-semibold">Settlement Audit Trail</p>
+        </div>
+
+        {loading && settlements.length === 0 ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-10 w-full" />
             ))}
           </div>
-        }
-      >
-        <div className="overflow-x-auto">
-          <table className="table-inst w-full">
-            <thead>
-              <tr>
-                <th>Audit ID</th>
-                <th className="!text-right">Timestamp</th>
-                <th>Actor</th>
-                <th>Action</th>
-                <th>Resource</th>
-                <th>Source IP</th>
-                <th>Result</th>
-                <th>Anchor</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((a) => (
-                <tr key={a.id}>
-                  <td className="font-mono text-[10.5px]">{a.id}</td>
-                  <td className="text-right font-mono text-[10.5px] text-muted-foreground">
-                    {fmtUTC(a.ts)} UTC
-                  </td>
-                  <td className="font-mono text-[11px]">{a.actor}</td>
-                  <td className="font-mono text-[10.5px] uppercase tracking-widest text-foreground/90">
-                    {a.action}
-                  </td>
-                  <td className="font-mono text-[10.5px] text-muted-foreground">{a.resource}</td>
-                  <td className="font-mono text-[10.5px] text-muted-foreground">{a.ip}</td>
-                  <td>
-                    <SeverityBadge
-                      level={a.result === "OK" ? "OK" : a.result === "DENIED" ? "WARN" : "CRITICAL"}
-                      label={a.result}
-                    />
-                  </td>
-                  <td>
-                    {a.txHash ? (
+        ) : settlements.length === 0 ? (
+          <div className="py-10 text-center">
+            <ShieldCheck className="mx-auto mb-3 h-8 w-8 text-muted-foreground/40" />
+            <p className="font-mono text-sm text-muted-foreground">
+              No audit records yet. Settlements will appear here with full ledger provenance.
+            </p>
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow className="border-border hover:bg-transparent">
+                <TableHead className="text-[11px] uppercase tracking-wider">ID</TableHead>
+                <TableHead className="text-[11px] uppercase tracking-wider">Seller</TableHead>
+                <TableHead className="text-right text-[11px] uppercase tracking-wider">Amount</TableHead>
+                <TableHead className="text-[11px] uppercase tracking-wider">Tx Hash</TableHead>
+                <TableHead className="text-[11px] uppercase tracking-wider">Status</TableHead>
+                <TableHead className="text-[11px] uppercase tracking-wider">When</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {settlements.map((s) => (
+                <TableRow key={s.id + s.created_at} className="border-border">
+                  <TableCell className="font-mono text-xs">{s.id}</TableCell>
+                  <TableCell className="max-w-[120px] truncate font-mono text-xs">
+                    {s.seller ? shortHash(s.seller) : "—"}
+                  </TableCell>
+                  <TableCell className="text-right font-mono text-sm text-success">
+                    {s.amount_brl ? fmtBRL(s.amount_brl) : "—"}
+                  </TableCell>
+                  <TableCell className="font-mono text-xs text-muted-foreground">
+                    {s.tx_hash && s.tx_hash !== "UNAVAILABLE" ? (
                       <a
-                        href={stellarExpertTx(a.txHash)}
+                        href={stellarExpertTx(s.tx_hash)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 font-mono text-[10.5px] text-primary hover:underline"
+                        className="inline-flex items-center gap-1 hover:text-primary"
                       >
-                        {shortHash(a.txHash)} <ExternalLink className="h-2.5 w-2.5" />
+                        {shortHash(s.tx_hash)}
+                        <ExternalLink className="h-3 w-3" />
                       </a>
                     ) : (
-                      <span className="font-mono text-[10px] text-muted-foreground">—</span>
+                      "—"
                     )}
-                  </td>
-                </tr>
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      variant="outline"
+                      className={`font-mono text-[10px] ${
+                        s.status === "SETTLED" || s.status === "CONFIRMED"
+                          ? "border-success/40 bg-success/10 text-success"
+                          : s.status === "FAILED"
+                            ? "border-destructive/40 bg-destructive/10 text-destructive"
+                            : "border-warning/40 bg-warning/10 text-warning"
+                      }`}
+                    >
+                      {s.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="font-mono text-[11px] text-muted-foreground">
+                    {timeAgo(s.created_at)}
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-        </div>
-      </Panel>
+            </TableBody>
+          </Table>
+        )}
+      </Card>
+    </div>
+  );
+}
 
-      <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
-        <Panel
-          title="KYC Status Board"
-          subtitle="Counterparty verification · institutional tier"
-          className="xl:col-span-2"
-        >
-          <div className="overflow-x-auto">
-            <table className="table-inst w-full">
-              <thead>
-                <tr>
-                  <th>Counterparty</th>
-                  <th>Tier</th>
-                  <th>Status</th>
-                  <th>Last Review</th>
-                  <th>Reviewer</th>
-                </tr>
-              </thead>
-              <tbody>
-                {KYC_RECORDS.map((k) => (
-                  <tr key={k.cpId}>
-                    <td>
-                      {k.shortName}{" "}
-                      <span className="ml-1 font-mono text-[10px] text-muted-foreground">
-                        {k.cpId}
-                      </span>
-                    </td>
-                    <td>
-                      <SeverityBadge
-                        level={k.level === "TIER-1" ? "OK" : k.level === "TIER-2" ? "INFO" : "WARN"}
-                        label={k.level}
-                      />
-                    </td>
-                    <td>
-                      <span className="inline-flex items-center gap-1.5">
-                        <StatusDot
-                          tone={
-                            k.status === "VERIFIED"
-                              ? "ok"
-                              : k.status === "EXPIRING"
-                                ? "warn"
-                                : k.status === "REJECTED"
-                                  ? "bad"
-                                  : "info"
-                          }
-                        />
-                        <span className="font-mono text-[10px] uppercase tracking-widest">
-                          {k.status}
-                        </span>
-                      </span>
-                    </td>
-                    <td className="font-mono text-[10.5px]">{k.lastReview}</td>
-                    <td className="font-mono text-[10.5px] text-muted-foreground">{k.reviewer}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Panel>
+/* ── Sub-components ── */
 
-        <Panel title="Regulatory Reporting" subtitle="Filing queue · institutional disclosures">
-          <ul className="space-y-2 text-[11.5px]">
-            {[
-              {
-                id: "RPT-2026-Q2-018",
-                title: "CCEE Monthly Settlement",
-                due: "in 3d",
-                state: "DRAFT" as const,
-              },
-              {
-                id: "RPT-2026-Q2-014",
-                title: "ANEEL Quarterly Filing",
-                due: "in 11d",
-                state: "DRAFT" as const,
-              },
-              {
-                id: "RPT-2026-Q2-008",
-                title: "BCB IF.DATA / SETTLEMENT",
-                due: "in 2d",
-                state: "REVIEW" as const,
-              },
-              {
-                id: "RPT-2026-Q1-079",
-                title: "Annual Risk Disclosure",
-                due: "filed",
-                state: "FILED" as const,
-              },
-              {
-                id: "RPT-2026-Q1-074",
-                title: "Audit Attestation Pack",
-                due: "filed",
-                state: "FILED" as const,
-              },
-            ].map((r) => (
-              <li
-                key={r.id}
-                className="flex items-start gap-2 rounded-sm border border-border bg-background/40 p-2"
-              >
-                <FileText className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-display text-[11.5px] font-medium">{r.title}</span>
-                    <SeverityBadge
-                      level={r.state === "FILED" ? "OK" : r.state === "REVIEW" ? "WARN" : "INFO"}
-                      label={r.state}
-                    />
-                  </div>
-                  <div className="flex justify-between font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-                    <span>{r.id}</span>
-                    <span>{r.due}</span>
-                  </div>
-                </div>
-                <button className="inline-flex items-center gap-1 rounded-sm border border-border px-1.5 py-1 font-mono text-[9px] uppercase tracking-widest text-muted-foreground hover:border-primary/50 hover:text-primary">
-                  <Download className="h-2.5 w-2.5" /> Pack
-                </button>
-              </li>
-            ))}
-          </ul>
-        </Panel>
+function KpiCard({
+  label,
+  value,
+  sub,
+  loading,
+  tone = "ok",
+  led = false,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+  loading?: boolean;
+  tone?: "ok" | "warn" | "muted";
+  led?: boolean;
+}) {
+  const valueColor = led
+    ? tone === "ok" ? "text-success" : tone === "warn" ? "text-destructive" : ""
+    : "";
+  const ledColor = tone === "ok" ? "bg-success" : tone === "warn" ? "bg-destructive" : "bg-muted-foreground";
+  const fontSize = value.length > 16 ? "text-sm" : value.length > 12 ? "text-base" : "text-xl";
+
+  return (
+    <Card className="border-border bg-card p-3">
+      <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">{label}</p>
+      {loading ? (
+        <Skeleton className="mt-1 h-7 w-20" />
+      ) : (
+        <p className={`mt-1 font-mono font-semibold tracking-tight ${fontSize} ${valueColor} flex items-center gap-2`}>
+          {led && (
+            <span className="relative flex h-2.5 w-2.5 shrink-0">
+              <span className={`absolute inline-flex h-full w-full animate-ping rounded-full opacity-60 ${ledColor}`} />
+              <span className={`relative inline-flex h-2.5 w-2.5 rounded-full ${ledColor}`} />
+            </span>
+          )}
+          {value}
+        </p>
+      )}
+      {sub && (
+        <p className="mt-0.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+          {sub}
+        </p>
+      )}
+    </Card>
+  );
+}
+
+function HealthBar({ label, value }: { label: string; value: number }) {
+  const pct = Math.max(0, Math.min(100, value));
+  const color = pct >= 95 ? "bg-success" : pct >= 70 ? "bg-warning" : "bg-destructive";
+  return (
+    <div>
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] text-muted-foreground">{label}</span>
+        <span className={`font-mono text-[11px] ${pct >= 95 ? "text-success" : pct >= 70 ? "text-warning" : "text-destructive"}`}>
+          {pct.toFixed(1)}%
+        </span>
       </div>
+      <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+        <div className={`h-full rounded-full transition-all ${color}`} style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  );
+}
+
+function TelRow({
+  icon,
+  label,
+  value,
+  tone,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value?: string;
+  tone: "ok" | "warn" | "muted";
+}) {
+  const color = tone === "ok" ? "text-success" : tone === "warn" ? "text-destructive" : "text-foreground";
+  return (
+    <div className="flex items-center justify-between rounded-md border border-border bg-background/40 px-2.5 py-1.5">
+      <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+        {icon}
+        {label}
+      </span>
+      <span className={`font-mono text-[11px] ${color}`}>{value ?? "—"}</span>
     </div>
   );
 }
